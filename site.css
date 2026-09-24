@@ -439,8 +439,9 @@ a.card:hover .card__cta i { transform: translateX(5px); }
   .hero--bp { grid-template-columns: 1fr; align-content: start; gap: 28px; padding-bottom: 80px; }
   .hero--bp .hero__title { font-size: clamp(52px, 17vw, 120px); }
   .hero--bp .badge { left: auto; right: -10px; bottom: auto; top: -42px; width: 92px; }
-  .branch--tl { width: 70vw; top: calc(var(--header-h) - 10px); opacity: .8; }
-  .branch--br { width: 55vw; bottom: -10px; }
+  .branch--tl { width: min(46vw, 360px); top: calc(var(--header-h) - 18px); opacity: .85; }
+  .branch--br { width: min(40vw, 300px); bottom: -10px; }
+  .hero--bp .hero__copy { padding-top: clamp(56px, 11vh, 120px); }
   .hero__grid { -webkit-mask-image: linear-gradient(transparent 40%, #000 70%); mask-image: linear-gradient(transparent 40%, #000 70%); }
   .stage__hud { grid-template-columns: 1fr; }
 }
