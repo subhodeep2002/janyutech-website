@@ -1,5 +1,7 @@
 # JanyuTech website (redesign)
 
+**Live:** https://janyutech.duckdns.org
+
 A static rebuild of every page of janyutech.com (55 pages), with the original content and a new design:
 smooth scrolling, letter-by-letter title reveals, the liquid "black hole" mouse effect, page transitions, a mega-menu, sliders, a lightbox, tabs and more.
 
@@ -46,17 +48,25 @@ python3 build/blueprint.py 2024-04-Some-Robot.webp
 
 It needs Pillow and numpy. Renders on white backgrounds give the cleanest drawings.
 
-## Deploying
+## Hosting (current setup)
 
-Upload everything **except the `build/` folder** to the web root of janyutech.com. Any static host works (cPanel/Apache, Netlify, Vercel, S3). The URLs match the old WordPress site, so existing Google results and bookmarks keep working. `sitemap.xml`, `robots.txt` and `404.html` are included.
+- **GitHub Pages:** every push to `main` runs `.github/workflows/pages.yml`. It publishes the site within about 15 seconds, leaving out `build/`, this README and the repo files.
+- **Domain:** `janyutech.duckdns.org` is a free DuckDNS name. Its IP is set to `185.199.108.153` (GitHub Pages), and it is configured as the custom domain in the repo's Pages settings, with HTTPS enforced. GitHub issues and renews the certificate automatically.
+- **Keep the DuckDNS IP fixed:** do **not** run a DuckDNS auto-update script or router setting for this name. Those set the IP to your own internet connection, and the site would go offline.
+- **Old address:** `subhodeep2002.github.io/janyutech-website/` redirects to the domain above.
+- **SEO tags:** canonical tags and `sitemap.xml` still point to `https://janyutech.com`, so search engines treat janyutech.com as the real site.
 
-Pages need to be served from a web server rather than opened as files, because links start with `/`. For a local preview, run:
+## Moving it to janyutech.com
+
+Upload everything **except the `build/` folder** to the web root, on any static host (cPanel/Apache, Netlify, Vercel, S3). The URLs match the old WordPress site, so existing Google results and bookmarks keep working. `sitemap.xml`, `robots.txt` and `404.html` are included.
+
+Links between pages are relative, so the site also works under a sub-path. For a local preview, serve the folder rather than opening the files:
 
 ```bash
 python3 -m http.server 5178
 ```
 
-and open http://localhost:5178.
+Then open http://localhost:5178.
 
 ## Things to know
 
