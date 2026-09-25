@@ -43,12 +43,12 @@
     else { scrollToEl(el); history.replaceState(null, "", url.hash); }
   });
 
-  /* ---------- Header: solid on scroll, hides going down ---------- */
+  /* ---------- Header: white bar, hides going down ---------- */
   const header = $("[data-header]");
+  header?.classList.add("is-solid");
   let lastY = 0;
   const onScroll = y => {
     if (!header) return;
-    header.classList.toggle("is-solid", y > 20 || !isHome);
     const down = y > lastY + 4, up = y < lastY - 4;
     if (down && y > 240 && !document.body.classList.contains("menu-open")) header.classList.add("is-hidden");
     if (up || y < 240) header.classList.remove("is-hidden");
@@ -240,70 +240,21 @@
     return;
   }
 
-  /* ---------- Liquid / black-hole mouse effect (fluid.js) ---------- */
-  const fluidMade = new WeakSet();
-  let fluidCount = 0;
-  const FLUID_MAX = 14;
-  function makeFluid(host, src, o) {
-    if (!window.FluidLens || fluidMade.has(host) || fluidCount >= FLUID_MAX) return;
-    fluidMade.add(host);
-    try { new FluidLens(host, src, o); fluidCount++; } catch (e) { console.warn("FluidLens off:", e); }
-  }
-  const sameOrigin = im => { try { return new URL(im.currentSrc || im.src, location.href).origin === location.origin; } catch (e) { return false; } };
-  function lazyFluid(host, opts) {
-    const im = host.querySelector("img");
-    if (!im || !sameOrigin(im)) return;
-    const io = new IntersectionObserver(([e]) => {
-      if (!e.isIntersecting) return;
-      io.disconnect();
-      const go = () => makeFluid(host, im, opts);
-      im.complete && im.naturalWidth ? go() : im.addEventListener("load", go, { once: true });
-    }, { rootMargin: "200px" });
-    io.observe(host);
-  }
+  /* ---------- Fluid image hover effect (fluid.js) ---------- */
   function setupFluid() {
-    if (!window.FluidLens) return;
-    $$(".panel__bg").forEach(h => lazyFluid(h, { strength: 0.05, rgb: 0.8, radius: 0.2 }));
-    $$("[data-fluid]").forEach(h => lazyFluid(h, { strength: 0.05, rgb: 0.9 }));
-
-    const title = $(".hero__title");
-    if (!title) return;
-    const chars = $$(".ch", title);
-    const src = document.createElement("canvas");
-    const ctx = src.getContext("2d");
-    let key = "";
-    makeFluid(title, src, {
-      strength: 0.05, rgb: 1.1, lens: 0.8, radius: 0.16, transparent: true,
-      onResize: inst => { src.width = inst.canvas.width; src.height = inst.canvas.height; key = ""; },
-      update: inst => {
-        const k = scrollY + "|" + inst.w;
-        if (k === key) return false;
-        key = k;
-        const tr = title.getBoundingClientRect(), cs = getComputedStyle(title), d = inst.dpr;
-        ctx.setTransform(1, 0, 0, 1, 0, 0);
-        ctx.clearRect(0, 0, src.width, src.height);
-        ctx.setTransform(d, 0, 0, d, 0, 0);
-        ctx.font = `${cs.fontWeight} ${cs.fontSize} ${cs.fontFamily}`;
-        ctx.fillStyle = "#0b0b0c";
-        chars.forEach(ch => {
-          const r = ch.getBoundingClientRect();
-          const t = ch.textContent.toUpperCase();
-          const m = ctx.measureText(t);
-          const A = m.fontBoundingBoxAscent, D = m.fontBoundingBoxDescent;
-          ctx.fillText(t, r.left - tr.left, r.top - tr.top + (r.height - (A + D)) / 2 + A);
-        });
-        return true;
-      }
-    });
+    if (!window.FluidFlow) return;
+    $$(".panel__bg, [data-fluid]").forEach(h => FluidFlow.attach(h));
   }
 
   /* ---------- Generic scroll reveals ---------- */
   function reveals() {
-    gsap.set(".reveal-up", { opacity: 0, y: 40 });
-    ScrollTrigger.batch(".reveal-up", {
-      start: "top 92%", once: true,
-      onEnter: els => gsap.to(els.filter(el => !el.closest("[hidden]")), { y: 0, opacity: 1, duration: 1, stagger: 0.06, ease: "expo.out", overwrite: true })
-    });
+    if ($$(".reveal-up").length) {
+      gsap.set(".reveal-up", { opacity: 0, y: 40 });
+      ScrollTrigger.batch(".reveal-up", {
+        start: "top 92%", once: true,
+        onEnter: els => { const shown = els.filter(el => !el.closest("[hidden]")); if (shown.length) gsap.to(shown, { y: 0, opacity: 1, duration: 1, stagger: 0.06, ease: "expo.out", overwrite: true }); }
+      });
+    }
     // items inside hidden tab panels are revealed when their tab opens
     $$("[hidden] .reveal-up").forEach(el => gsap.set(el, { opacity: 1, y: 0 }));
 
@@ -328,10 +279,10 @@
 
   /* ---------- Inner page intro ---------- */
   function innerIntro() {
-    const tl = gsap.timeline({ onComplete: setupFluid });
-    tl.from(".crumbs", { y: 20, opacity: 0, duration: 0.8, ease: "expo.out" })
-      .from(".phero__title .ch", { yPercent: 110, duration: 1.1, stagger: 0.02, ease: "expo.out" }, "<0.05")
-      .from(".phero__lead, .phero__meta", { y: 30, opacity: 0, duration: 0.9, stagger: 0.1, ease: "expo.out" }, "<0.3");
+    const tl = gsap.timeline(), some = s => $$(s).length > 0;       // the 404 page has no breadcrumbs or reveals
+    if (some(".crumbs")) tl.from(".crumbs", { y: 20, opacity: 0, duration: 0.8, ease: "expo.out" });
+    tl.from(".phero__title .ch", { yPercent: 110, duration: 1.1, stagger: 0.02, ease: "expo.out" }, "<0.05");
+    if (some(".phero__lead, .phero__meta")) tl.from(".phero__lead, .phero__meta", { y: 30, opacity: 0, duration: 0.9, stagger: 0.1, ease: "expo.out" }, "<0.3");
     if ($(".phero__banner")) {
       tl.from(".phero__banner", { clipPath: "inset(30% 8% 0% 8% round 6px)", duration: 1.5, ease: "expo.out" }, "<0.1")
         .from(".phero__banner img", { scale: 1.25, duration: 1.8, ease: "expo.out" }, "<");
@@ -345,13 +296,10 @@
   function home() {
     const loader = $(".loader"), num = $(".loader__num");
     const intro = () => {
-      const tl = gsap.timeline({ onComplete: () => { document.body.classList.remove("is-loading"); lenis && lenis.start(); setupFluid(); } });
+      document.dispatchEvent(new CustomEvent("jt:intro"));          // hero.js: branches draw in, petals start
+      const tl = gsap.timeline({ onComplete: () => { document.body.classList.remove("is-loading"); lenis && lenis.start(); } });
       if (loader) tl.to(loader, { clipPath: "inset(0 0 100% 0)", duration: 1, ease: "expo.inOut" }).set(loader, { display: "none" });
-      tl.from(".hero__title .ch", { yPercent: 110, duration: 1.1, stagger: 0.04, ease: "expo.out" }, loader ? "-=0.45" : 0)
-        .from(".badge", { scale: 0, rotate: -180, duration: 1.2, ease: "expo.out" }, "<0.2")
-        .from(".site-header", { yPercent: -100, opacity: 0, duration: 0.9, ease: "expo.out", clearProps: "transform,opacity" }, "<0.2")
-        .from(".hero__eyebrow, .hero__intro > *, .hero__scroll", { y: 30, opacity: 0, duration: 0.9, stagger: 0.08, ease: "expo.out" }, "<0.1")
-        .from(".stage", { y: 60, opacity: 0, duration: 1.2, ease: "expo.out" }, "<0.1");
+      tl.from(".site-header", { yPercent: -100, opacity: 0, duration: 0.9, ease: "expo.out", clearProps: "transform,opacity" }, loader ? "-=0.45" : 0);
     };
     if (loader && store.get("seenLoader") !== "1") {
       store.set("seenLoader", "1");
@@ -367,14 +315,6 @@
       loader?.remove();
       intro();
     }
-
-    const badge = $(".badge > svg:first-child");
-    let rot = 0, boost = 0;
-    gsap.ticker.add(() => { boost *= 0.92; rot += 0.25 + boost; if (badge) badge.style.transform = `rotate(${rot}deg)`; });
-
-    gsap.to(".hero__title .line:first-child", { xPercent: -8, ease: "none", scrollTrigger: { trigger: ".hero", start: "top top", end: "bottom top", scrub: true } });
-    gsap.to(".hero__title .line--indent", { xPercent: 8, ease: "none", scrollTrigger: { trigger: ".hero", start: "top top", end: "bottom top", scrub: true } });
-    gsap.to(".badge", { y: -120, ease: "none", scrollTrigger: { trigger: ".hero", start: "top top", end: "bottom top", scrub: true } });
 
     // first scroll: the robot rises as a blueprint, a scan converts it to the render, then it flies past
     const wf = $(".warp__frame"), wPct = $(".warp__pct"), wMode = $(".warp__mode");
@@ -399,7 +339,7 @@
 
     const track = $(".marquee__track");
     let x = 0, dir = -1, vel = 0;
-    ScrollTrigger.create({ onUpdate: s => { const v = s.getVelocity(); dir = v > 0 ? -1 : v < 0 ? 1 : dir; vel = Math.min(Math.abs(v) / 200, 8); boost = Math.min(Math.abs(v) / 400, 3); } });
+    ScrollTrigger.create({ onUpdate: s => { const v = s.getVelocity(); dir = v > 0 ? -1 : v < 0 ? 1 : dir; vel = Math.min(Math.abs(v) / 200, 8); } });
     gsap.ticker.add(() => {
       if (!track) return;
       vel *= 0.94; x += dir * (1.2 + vel);
@@ -423,6 +363,7 @@
     reveals();
   }
 
+  setupFluid();
   isHome ? home() : innerIntro();
 
   /* ---------- Cursor, hover preview, magnetic (mouse only) ---------- */

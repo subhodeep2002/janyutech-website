@@ -1,226 +1,476 @@
 /*
- * FluidLens — mouse-driven liquid smear with a gentle "black hole" pull.
- * Each instance owns a WebGL canvas laid over its host element:
- *   1. a small flow map (ping-pong) records mouse velocity, advects and fades it,
- *   2. the display pass offsets the source texture by that flow, swirls it,
- *      pinches it toward the cursor (gravitational lensing) and splits RGB.
- * Desktop pointers only; touch and reduced-motion users keep the plain DOM.
+ * FluidFlow — the site's image hover effect: the picture flows like liquid
+ * around the pointer, curls into eddies, then settles back into place.
+ *
+ * One shared WebGL context runs a small incompressible fluid simulation for
+ * each image the pointer is stirring: semi-Lagrangian advection, vorticity
+ * confinement (the curls) and a Jacobi pressure solve (keeps the flow swirling
+ * instead of spreading out). The velocity field carries a displacement map and
+ * the image is redrawn through that map: no colour splitting, no lens zoom.
+ * Each frame is copied into a 2D canvas laid exactly over the <img>. While an
+ * image is calm the plain <img> shows and nothing runs.
+ * Desktop pointers only; touch and reduced-motion visitors keep the plain images.
  */
 (() => {
+  window.FluidFlow = null;
   const fine = matchMedia("(hover: hover) and (pointer: fine)").matches;
   const reduce = matchMedia("(prefers-reduced-motion: reduce)").matches;
-  if (!fine || reduce) { window.FluidLens = null; return; }
+  if (!fine || reduce) return;
 
-  const VERT = `attribute vec2 p; varying vec2 vUv;
-    void main(){ vUv = p * 0.5 + 0.5; gl_Position = vec4(p, 0.0, 1.0); }`;
+  // tuned by eye: a visible liquid wake around the cursor that settles in about a second
+  const CFG = {
+    simRes: 128,        // velocity grid, short side
+    dispRes: 256,       // displacement grid, short side
+    curl: 12,           // vorticity confinement: how curly the flow gets
+    velDecay: 2,        // velocity dissipation per second
+    pressureDecay: 0.8,
+    pressureIter: 12,
+    grip: 0.85,         // how firmly the pointer drags the fluid (0–1)
+    maxSpeed: 2400,     // px/s cap on pointer speed
+    relax: 6,           // per second: how fast the picture flows back
+    strength: 0.5,      // share of the fluid's displacement that shows
+    maxDisp: 0.14,      // UV clamp on displacement
+    settleMs: 2200,     // keep simulating this long after the last movement
+    maxPixels: 3.4e6,   // render budget per image, in device pixels
+  };
 
-  const FLOW = `precision highp float; varying vec2 vUv;
-    uniform sampler2D tPrev; uniform vec2 uMouse, uVel; uniform float uAspect, uRadius, uDiss;
-    vec2 dec(vec4 c){ return c.xy * 2.0 - 1.0; }
-    void main(){
-      vec2 v0 = dec(texture2D(tPrev, vUv));
-      vec2 v = dec(texture2D(tPrev, vUv - v0 * 0.015)) * uDiss;          // advect = smear trail
-      if (length(v) < 0.02) v = vec2(0.0);                                // kill 8-bit drift
-      vec2 c = vUv - uMouse; c.x *= uAspect;
-      float f = smoothstep(uRadius, 0.0, length(c)) * clamp(length(uVel) * 1.5, 0.0, 1.0);
-      v = mix(v, clamp(uVel, -1.0, 1.0), f);
-      gl_FragColor = vec4(v * 0.5 + 0.5, 0.0, 1.0);
-    }`;
+  /* ------------------------------------------------ shared WebGL context */
+  const glCanvas = document.createElement("canvas");
+  glCanvas.width = glCanvas.height = 16;
+  const attrs = { alpha: true, depth: false, stencil: false, antialias: false, premultipliedAlpha: true, preserveDrawingBuffer: false };
+  let gl = glCanvas.getContext("webgl2", attrs);
+  const gl2 = !!gl;
+  if (!gl) gl = glCanvas.getContext("webgl", attrs);
+  if (!gl) return;
 
-  const DISPLAY = `precision highp float; varying vec2 vUv;
-    uniform sampler2D tMap, tFlow; uniform vec2 uCover, uMouse;
-    uniform float uAspect, uStrength, uLens, uRGB, uSwirl, uClear;
-    vec2 cover(vec2 uv){ return (uv - 0.5) * uCover + 0.5; }
-    void main(){
-      vec2 flow = texture2D(tFlow, vUv).xy * 2.0 - 1.0;
-      if (length(flow) < 0.02) flow = vec2(0.0);
-      float m = length(flow);
-      float a = m * uSwirl;                                              // swirl like an accretion disk
-      flow = mat2(cos(a), -sin(a), sin(a), cos(a)) * flow;
-
-      vec2 d = vUv - uMouse; d.x *= uAspect;
-      float r = length(d);
-      vec2 dir = r > 1e-4 ? d / r : vec2(0.0); dir.x /= uAspect;
-      float lens = uLens * 0.045 * smoothstep(0.32, 0.0, r) * smoothstep(0.0, 0.08, r);  // pinch toward cursor
-
-      vec2 base = vUv - flow * uStrength + dir * lens;
-      vec2 off = (flow * uStrength * 0.35 + dir * lens * 0.5) * uRGB;
-      vec4 tr = texture2D(tMap, cover(base + off));
-      vec4 tg = texture2D(tMap, cover(base));
-      vec4 tb = texture2D(tMap, cover(base - off));
-      // composite each channel over white, then (for transparent hosts) un-composite so it sits on anything
-      vec3 w = vec3(mix(1.0, tr.r, tr.a), mix(1.0, tg.g, tg.a), mix(1.0, tb.b, tb.a));
-      if (uClear > 0.5) {
-        float a = 1.0 - min(w.r, min(w.g, w.b));
-        gl_FragColor = vec4(w - (1.0 - a), a);
-      } else {
-        gl_FragColor = vec4(w, 1.0);
-      }
-    }`;
-
-  const FLOW_SIZE = 128;
-  const instances = [];
-  const mouse = { x: -9999, y: -9999 };
-  addEventListener("mousemove", e => { mouse.x = e.clientX; mouse.y = e.clientY; }, { passive: true });
-
-  function compile(gl, vs, fs) {
-    const p = gl.createProgram();
-    [[gl.VERTEX_SHADER, vs], [gl.FRAGMENT_SHADER, fs]].forEach(([t, src]) => {
-      const s = gl.createShader(t); gl.shaderSource(s, src); gl.compileShader(s);
-      if (!gl.getShaderParameter(s, gl.COMPILE_STATUS)) throw new Error(gl.getShaderInfoLog(s));
-      gl.attachShader(p, s);
-    });
-    gl.bindAttribLocation(p, 0, "p");
-    gl.linkProgram(p);
-    const u = {};
-    const n = gl.getProgramParameter(p, gl.ACTIVE_UNIFORMS);
-    for (let i = 0; i < n; i++) { const name = gl.getActiveUniform(p, i).name; u[name] = gl.getUniformLocation(p, name); }
-    return { p, u };
+  let HALF, linear;
+  if (gl2) {
+    gl.getExtension("EXT_color_buffer_float");
+    gl.getExtension("EXT_color_buffer_half_float");
+    HALF = gl.HALF_FLOAT; linear = true;                  // 16-bit float textures filter natively in WebGL2
+  } else {
+    const hf = gl.getExtension("OES_texture_half_float");
+    HALF = hf && hf.HALF_FLOAT_OES;
+    linear = !!gl.getExtension("OES_texture_half_float_linear");
+    gl.getExtension("EXT_color_buffer_half_float");
   }
+  if (!HALF || !linear) return;
 
-  function texture(gl) {
+  function renderable(internal, format) {
     const t = gl.createTexture();
     gl.bindTexture(gl.TEXTURE_2D, t);
-    gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, gl.LINEAR);
-    gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MAG_FILTER, gl.LINEAR);
+    gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, gl.NEAREST);
+    gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MAG_FILTER, gl.NEAREST);
+    gl.texImage2D(gl.TEXTURE_2D, 0, internal, 4, 4, 0, format, HALF, null);
+    const fb = gl.createFramebuffer();
+    gl.bindFramebuffer(gl.FRAMEBUFFER, fb);
+    gl.framebufferTexture2D(gl.FRAMEBUFFER, gl.COLOR_ATTACHMENT0, gl.TEXTURE_2D, t, 0);
+    const ok = gl.checkFramebufferStatus(gl.FRAMEBUFFER) === gl.FRAMEBUFFER_COMPLETE;
+    gl.bindFramebuffer(gl.FRAMEBUFFER, null);
+    gl.deleteFramebuffer(fb); gl.deleteTexture(t);
+    return ok;
+  }
+  const pick = (...cands) => cands.find(c => renderable(c[0], c[1])) || null;
+  const FMT_RG = gl2 ? pick([gl.RG16F, gl.RG], [gl.RGBA16F, gl.RGBA]) : pick([gl.RGBA, gl.RGBA]);
+  const FMT_R = gl2 ? pick([gl.R16F, gl.RED], [gl.RG16F, gl.RG], [gl.RGBA16F, gl.RGBA]) : FMT_RG;
+  if (!FMT_RG || !FMT_R) return;
+
+  /* ------------------------------------------------ shaders */
+  const VS = `precision highp float;
+    attribute vec2 aPos;
+    uniform vec2 texel;
+    varying vec2 vUv, vL, vR, vT, vB;
+    void main() {
+      vUv = aPos * 0.5 + 0.5;
+      vL = vUv - vec2(texel.x, 0.0); vR = vUv + vec2(texel.x, 0.0);
+      vT = vUv + vec2(0.0, texel.y); vB = vUv - vec2(0.0, texel.y);
+      gl_Position = vec4(aPos, 0.0, 1.0);
+    }`;
+  const HEAD = `precision highp float; precision highp sampler2D; varying vec2 vUv, vL, vR, vT, vB;\n`;
+  const FS = {
+    // the pointer drags the fluid along the segment it walked this frame (a soft capsule brush)
+    brush: HEAD + `uniform sampler2D uVel; uniform vec2 uA, uB, uForce; uniform float uAspect, uRadius, uGrip;
+      void main() {
+        vec2 p = vUv, a = uA, b = uB;
+        p.x *= uAspect; a.x *= uAspect; b.x *= uAspect;
+        vec2 ab = b - a;
+        float t = clamp(dot(p - a, ab) / max(dot(ab, ab), 1e-7), 0.0, 1.0);
+        vec2 d = p - (a + ab * t);
+        float w = exp(-dot(d, d) / uRadius) * uGrip;
+        gl_FragColor = vec4(mix(texture2D(uVel, vUv).xy, uForce, w), 0.0, 1.0);
+      }`,
+    curl: HEAD + `uniform sampler2D uVel;
+      void main() {
+        float L = texture2D(uVel, vL).y, R = texture2D(uVel, vR).y, T = texture2D(uVel, vT).x, B = texture2D(uVel, vB).x;
+        gl_FragColor = vec4(0.5 * (R - L - T + B), 0.0, 0.0, 1.0);
+      }`,
+    vorticity: HEAD + `uniform sampler2D uVel, uCurl; uniform float uCurlAmt, uDt;
+      void main() {
+        float L = texture2D(uCurl, vL).x, R = texture2D(uCurl, vR).x, T = texture2D(uCurl, vT).x, B = texture2D(uCurl, vB).x;
+        float C = texture2D(uCurl, vUv).x;
+        vec2 f = 0.5 * vec2(abs(T) - abs(B), abs(R) - abs(L));
+        f /= length(f) + 1e-4;
+        f *= uCurlAmt * C; f.y *= -1.0;
+        vec2 v = texture2D(uVel, vUv).xy + f * uDt;
+        gl_FragColor = vec4(clamp(v, -1000.0, 1000.0), 0.0, 1.0);
+      }`,
+    divergence: HEAD + `uniform sampler2D uVel;
+      void main() {
+        float L = texture2D(uVel, vL).x, R = texture2D(uVel, vR).x, T = texture2D(uVel, vT).y, B = texture2D(uVel, vB).y;
+        vec2 C = texture2D(uVel, vUv).xy;
+        if (vL.x < 0.0) L = -C.x;
+        if (vR.x > 1.0) R = -C.x;
+        if (vT.y > 1.0) T = -C.y;
+        if (vB.y < 0.0) B = -C.y;
+        gl_FragColor = vec4(0.5 * (R - L + T - B), 0.0, 0.0, 1.0);
+      }`,
+    scale: HEAD + `uniform sampler2D uTex; uniform float uValue;
+      void main() { gl_FragColor = uValue * texture2D(uTex, vUv); }`,
+    pressure: HEAD + `uniform sampler2D uP, uDiv;
+      void main() {
+        float L = texture2D(uP, vL).x, R = texture2D(uP, vR).x, T = texture2D(uP, vT).x, B = texture2D(uP, vB).x;
+        gl_FragColor = vec4((L + R + T + B - texture2D(uDiv, vUv).x) * 0.25, 0.0, 0.0, 1.0);
+      }`,
+    gradient: HEAD + `uniform sampler2D uP, uVel;
+      void main() {
+        float L = texture2D(uP, vL).x, R = texture2D(uP, vR).x, T = texture2D(uP, vT).x, B = texture2D(uP, vB).x;
+        gl_FragColor = vec4(texture2D(uVel, vUv).xy - vec2(R - L, T - B), 0.0, 1.0);
+      }`,
+    advect: HEAD + `uniform sampler2D uVel, uSrc; uniform vec2 uVelTexel; uniform float uDt, uDecay;
+      void main() {
+        vec2 coord = vUv - uDt * texture2D(uVel, vUv).xy * uVelTexel;
+        gl_FragColor = texture2D(uSrc, coord) / (1.0 + uDecay * uDt);
+      }`,
+    // displacement map: carried along by the flow, and eased back toward zero
+    carry: HEAD + `uniform sampler2D uVel, uDisp; uniform vec2 uVelTexel; uniform float uDt, uKeep, uMax;
+      void main() {
+        vec2 step = uDt * texture2D(uVel, vUv).xy * uVelTexel;
+        vec2 d = (texture2D(uDisp, vUv - step).xy - step) * uKeep;
+        float m = length(d);
+        if (m > uMax) d *= uMax / m;
+        gl_FragColor = vec4(d, 0.0, 1.0);
+      }`,
+    // redraw the image through the displacement map
+    display: HEAD + `uniform sampler2D uImg, uDisp; uniform vec2 uScale; uniform float uStrength, uContain;
+      void main() {
+        vec2 t = (vUv + texture2D(uDisp, vUv).xy * uStrength - 0.5) * uScale + 0.5;
+        if (uContain > 0.5) {
+          if (t.x < 0.0 || t.x > 1.0 || t.y < 0.0 || t.y > 1.0) { gl_FragColor = vec4(0.0); return; }
+        } else {
+          t = 1.0 - abs(1.0 - abs(t));                 // mirror at the edges
+        }
+        gl_FragColor = texture2D(uImg, t);
+      }`,
+  };
+
+  function program(fs) {
+    const p = gl.createProgram();
+    for (const [type, src] of [[gl.VERTEX_SHADER, VS], [gl.FRAGMENT_SHADER, fs]]) {
+      const s = gl.createShader(type);
+      gl.shaderSource(s, src); gl.compileShader(s);
+      if (!gl.getShaderParameter(s, gl.COMPILE_STATUS)) throw new Error(gl.getShaderInfoLog(s));
+      gl.attachShader(p, s);
+    }
+    gl.bindAttribLocation(p, 0, "aPos");
+    gl.linkProgram(p);
+    if (!gl.getProgramParameter(p, gl.LINK_STATUS)) throw new Error(gl.getProgramInfoLog(p));
+    const u = {};
+    for (let i = 0, n = gl.getProgramParameter(p, gl.ACTIVE_UNIFORMS); i < n; i++) {
+      const name = gl.getActiveUniform(p, i).name;
+      u[name] = gl.getUniformLocation(p, name);
+    }
+    return { p, u };
+  }
+  let PR;
+  try { PR = Object.fromEntries(Object.entries(FS).map(([k, src]) => [k, program(src)])); }
+  catch (e) { console.warn("FluidFlow off:", e); return; }
+
+  const buf = gl.createBuffer();
+  gl.bindBuffer(gl.ARRAY_BUFFER, buf);
+  gl.bufferData(gl.ARRAY_BUFFER, new Float32Array([-1, -1, 3, -1, -1, 3]), gl.STATIC_DRAW);
+  gl.vertexAttribPointer(0, 2, gl.FLOAT, false, 0, 0);
+  gl.enableVertexAttribArray(0);
+  gl.disable(gl.BLEND);
+
+  const use = (prog, tx = 0, ty = 0) => { gl.useProgram(prog.p); if (prog.u.texel) gl.uniform2f(prog.u.texel, tx, ty); return prog.u; };
+  function blit(target, w, h) {
+    if (target) { gl.bindFramebuffer(gl.FRAMEBUFFER, target.fbo); gl.viewport(0, 0, target.w, target.h); }
+    else { gl.bindFramebuffer(gl.FRAMEBUFFER, null); gl.viewport(0, 0, w, h); }
+    gl.drawArrays(gl.TRIANGLES, 0, 3);
+  }
+
+  /* ------------------------------------------------ render targets */
+  function fbo(w, h, fmt, filter) {
+    gl.activeTexture(gl.TEXTURE0);
+    const tex = gl.createTexture();
+    gl.bindTexture(gl.TEXTURE_2D, tex);
+    gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, filter);
+    gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MAG_FILTER, filter);
     gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_S, gl.CLAMP_TO_EDGE);
     gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_T, gl.CLAMP_TO_EDGE);
-    return t;
+    gl.texImage2D(gl.TEXTURE_2D, 0, fmt[0], w, h, 0, fmt[1], HALF, null);
+    const fb = gl.createFramebuffer();
+    gl.bindFramebuffer(gl.FRAMEBUFFER, fb);
+    gl.framebufferTexture2D(gl.FRAMEBUFFER, gl.COLOR_ATTACHMENT0, gl.TEXTURE_2D, tex, 0);
+    gl.viewport(0, 0, w, h);
+    gl.clearColor(0, 0, 0, 0);
+    gl.clear(gl.COLOR_BUFFER_BIT);
+    return {
+      fbo: fb, w, h, tx: 1 / w, ty: 1 / h,
+      attach(unit) { gl.activeTexture(gl.TEXTURE0 + unit); gl.bindTexture(gl.TEXTURE_2D, tex); return unit; },
+      free() { gl.deleteTexture(tex); gl.deleteFramebuffer(fb); },
+    };
+  }
+  function double(w, h, fmt, filter) {
+    let a = fbo(w, h, fmt, filter), b = fbo(w, h, fmt, filter);
+    return {
+      w, h, tx: 1 / w, ty: 1 / h,
+      get read() { return a; }, get write() { return b; },
+      swap() { [a, b] = [b, a]; },
+      free() { a.free(); b.free(); },
+    };
   }
 
-  class FluidLens {
-    /**
-     * host   element the canvas covers (gets class "is-gl" once live)
-     * source HTMLImageElement or HTMLCanvasElement
-     * opts   strength, rgb, lens, swirl, radius, diss, update(ctx) → bool (for canvas sources)
-     */
-    constructor(host, source, opts = {}) {
+  /* ------------------------------------------------ image textures (small LRU) */
+  const texCache = new Map();          // img -> texture
+  function imageTexture(img) {
+    if (texCache.has(img)) { const t = texCache.get(img); texCache.delete(img); texCache.set(img, t); return t; }
+    const tex = gl.createTexture();
+    gl.activeTexture(gl.TEXTURE0);
+    gl.bindTexture(gl.TEXTURE_2D, tex);
+    gl.pixelStorei(gl.UNPACK_FLIP_Y_WEBGL, true);
+    gl.pixelStorei(gl.UNPACK_PREMULTIPLY_ALPHA_WEBGL, true);
+    try { gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA, gl.RGBA, gl.UNSIGNED_BYTE, img); }
+    catch (e) { gl.deleteTexture(tex); return null; }        // e.g. a cross-origin image
+    finally { gl.pixelStorei(gl.UNPACK_FLIP_Y_WEBGL, false); gl.pixelStorei(gl.UNPACK_PREMULTIPLY_ALPHA_WEBGL, false); }
+    gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_S, gl.CLAMP_TO_EDGE);
+    gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_T, gl.CLAMP_TO_EDGE);
+    gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MAG_FILTER, gl.LINEAR);
+    if (gl2) { gl.generateMipmap(gl.TEXTURE_2D); gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, gl.LINEAR_MIPMAP_LINEAR); }
+    else gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, gl.LINEAR);
+    texCache.set(img, tex);
+    for (const [k, t] of texCache) {                        // keep at most six photos on the GPU
+      if (texCache.size <= 6) break;
+      if ([...active].some(f => f.img === k)) continue;
+      gl.deleteTexture(t); texCache.delete(k);
+    }
+    return tex;
+  }
+
+  /* ------------------------------------------------ one stirred image */
+  const active = new Set();
+  class Flow {
+    constructor(host, opts) {
       this.host = host;
-      this.source = source;
-      this.o = Object.assign({ strength: 0.06, rgb: 1, lens: 1, swirl: 1.6, radius: 0.22, diss: 0.955, update: null }, opts);
-      const c = this.canvas = document.createElement("canvas");
-      c.className = "fluid-canvas";
-      const gl = this.gl = c.getContext("webgl", this.o.transparent ? { alpha: true, antialias: false, premultipliedAlpha: true } : { alpha: false, antialias: false, premultipliedAlpha: false });
-      if (!gl) throw new Error("no webgl");
-      host.appendChild(c);
-
-      gl.bindBuffer(gl.ARRAY_BUFFER, gl.createBuffer());
-      gl.bufferData(gl.ARRAY_BUFFER, new Float32Array([-1, -1, 3, -1, -1, 3]), gl.STATIC_DRAW);
-      gl.enableVertexAttribArray(0);
-      gl.vertexAttribPointer(0, 2, gl.FLOAT, false, 0, 0);
-
-      this.flowProg = compile(gl, VERT, FLOW);
-      this.dispProg = compile(gl, VERT, DISPLAY);
-
-      this.flow = [0, 1].map(() => {
-        const tex = texture(gl);
-        const neutral = new Uint8Array(FLOW_SIZE * FLOW_SIZE * 4).fill(128);
-        gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA, FLOW_SIZE, FLOW_SIZE, 0, gl.RGBA, gl.UNSIGNED_BYTE, neutral);
-        const fb = gl.createFramebuffer();
-        gl.bindFramebuffer(gl.FRAMEBUFFER, fb);
-        gl.framebufferTexture2D(gl.FRAMEBUFFER, gl.COLOR_ATTACHMENT0, gl.TEXTURE_2D, tex, 0);
-        return { tex, fb };
-      });
-      gl.bindFramebuffer(gl.FRAMEBUFFER, null);
-
-      this.map = texture(gl);
-      gl.pixelStorei(gl.UNPACK_FLIP_Y_WEBGL, true);
-      this.uploaded = false;
-
-      this.uv = null; this.vel = { x: 0, y: 0 }; this.lensAmt = 0;
-      this.visible = false;
-      new IntersectionObserver(([e]) => (this.visible = e.isIntersecting)).observe(host);
-      this.resize();
-      instances.push(this);
+      this.img = host.querySelector("img");
+      this.o = Object.assign(Object.create(CFG), opts);   // per-image overrides, the rest follows CFG live
+      this.ptr = null; this.last = null; this.moved = 0;
+      host.addEventListener("pointermove", e => this.move(e), { passive: true });
+      host.addEventListener("pointerleave", () => { this.ptr = null; this.last = null; });
     }
-
-    resize() {
-      const dpr = Math.min(devicePixelRatio || 1, 1.5);
-      this.w = this.host.offsetWidth; this.h = this.host.offsetHeight;
-      this.canvas.width = Math.max(1, Math.round(this.w * dpr));
-      this.canvas.height = Math.max(1, Math.round(this.h * dpr));
-      this.dpr = dpr;
-      if (this.o.onResize) this.o.onResize(this);
-      this.uploaded = false;
-    }
-
-    upload() {
-      const gl = this.gl, s = this.source;
-      const ready = s instanceof HTMLImageElement ? s.complete && s.naturalWidth : true;
-      if (!ready) return false;
-      gl.bindTexture(gl.TEXTURE_2D, this.map);
-      try {
-        gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA, gl.RGBA, gl.UNSIGNED_BYTE, s);
-      } catch (e) {            // e.g. a cross-origin image: give up quietly, keep the plain <img>
-        this.dead = true; this.canvas.remove(); this.host.classList.remove("is-gl");
-        return false;
-      }
-      const sw = s.naturalWidth || s.width, sh = s.naturalHeight || s.height;
-      const ea = this.w / this.h, ia = sw / sh;
-      this.cover = ea > ia ? [1, ia / ea] : [ea / ia, 1];
-      if (!this.uploaded) this.host.classList.add("is-gl");
-      this.uploaded = true;
-      return true;
-    }
-
-    frame() {
-      if (!this.visible || this.dead) return;
-      const gl = this.gl;
-      if (this.o.update && this.o.update(this)) this.uploaded = false;
-      if (!this.uploaded && !this.upload()) return;
-
-      // mouse in local UV (y up)
-      const r = this.host.getBoundingClientRect();
-      const nx = (mouse.x - r.left) / r.width, ny = 1 - (mouse.y - r.top) / r.height;
-      const inside = nx > -0.1 && nx < 1.1 && ny > -0.1 && ny < 1.1;
-      let tvx = 0, tvy = 0;
-      if (this.uv && inside) { tvx = (nx - this.uv.x) * 12; tvy = (ny - this.uv.y) * 12; }
-      this.uv = { x: nx, y: ny };
-      this.vel.x += (tvx - this.vel.x) * 0.25;
-      this.vel.y += (tvy - this.vel.y) * 0.25;
-      this.lensAmt += ((inside && nx >= 0 && nx <= 1 && ny >= 0 && ny <= 1 ? 1 : 0) - this.lensAmt) * 0.08;
-      const aspect = r.width / r.height;
-
-      // flow pass
-      const [a, b] = this.flow;
-      gl.bindFramebuffer(gl.FRAMEBUFFER, b.fb);
-      gl.viewport(0, 0, FLOW_SIZE, FLOW_SIZE);
-      gl.useProgram(this.flowProg.p);
-      const fu = this.flowProg.u;
-      gl.activeTexture(gl.TEXTURE0); gl.bindTexture(gl.TEXTURE_2D, a.tex);
-      gl.uniform1i(fu.tPrev, 0);
-      gl.uniform2f(fu.uMouse, nx, ny);
-      gl.uniform2f(fu.uVel, this.vel.x, this.vel.y);
-      gl.uniform1f(fu.uAspect, aspect);
-      gl.uniform1f(fu.uRadius, this.o.radius);
-      gl.uniform1f(fu.uDiss, this.o.diss);
-      gl.drawArrays(gl.TRIANGLES, 0, 3);
-      this.flow = [b, a];
-
-      // display pass
-      gl.bindFramebuffer(gl.FRAMEBUFFER, null);
-      gl.viewport(0, 0, this.canvas.width, this.canvas.height);
-      gl.useProgram(this.dispProg.p);
-      const du = this.dispProg.u;
-      gl.activeTexture(gl.TEXTURE0); gl.bindTexture(gl.TEXTURE_2D, this.map);
-      gl.uniform1i(du.tMap, 0);
-      gl.activeTexture(gl.TEXTURE1); gl.bindTexture(gl.TEXTURE_2D, b.tex);
-      gl.uniform1i(du.tFlow, 1);
-      gl.uniform2f(du.uCover, this.cover[0], this.cover[1]);
-      gl.uniform2f(du.uMouse, nx, ny);
-      gl.uniform1f(du.uAspect, aspect);
-      gl.uniform1f(du.uStrength, this.o.strength);
-      gl.uniform1f(du.uLens, this.o.lens * this.lensAmt);
-      gl.uniform1f(du.uRGB, this.o.rgb);
-      gl.uniform1f(du.uSwirl, this.o.swirl);
-      gl.uniform1f(du.uClear, this.o.transparent ? 1 : 0);
-      gl.drawArrays(gl.TRIANGLES, 0, 3);
+    move(e) {
+      if (this.dead || e.pointerType === "touch") return;
+      const img = this.img;
+      if (!img || !img.complete || !img.naturalWidth) return;
+      const r = img.getBoundingClientRect();
+      if (!r.width || !r.height) return;
+      this.ptr = { x: (e.clientX - r.left) / r.width, y: 1 - (e.clientY - r.top) / r.height, t: e.timeStamp, w: r.width, h: r.height };
+      this.moved = performance.now();
+      if (!active.has(this)) start(this);
     }
   }
 
-  let rt;
-  addEventListener("resize", () => { clearTimeout(rt); rt = setTimeout(() => instances.forEach(i => i.resize()), 150); });
-  (function loop() { instances.forEach(i => i.frame()); requestAnimationFrame(loop); })();
+  function layout(f) {
+    const img = f.img, bw = img.offsetWidth, bh = img.offsetHeight;
+    if (!bw || !bh) return false;
+    if (!f.cv) {
+      if (getComputedStyle(f.host).position === "static") f.host.style.position = "relative";
+      f.cv = document.createElement("canvas");
+      f.cv.className = "fluid-canvas";
+      f.cv.setAttribute("aria-hidden", "true");
+      img.insertAdjacentElement("afterend", f.cv);
+      f.ctx = f.cv.getContext("2d");
+    }
+    // mirror the <img> box exactly, including any transform it is animating with
+    const cs = getComputedStyle(img), st = f.cv.style;
+    st.left = img.offsetLeft + "px"; st.top = img.offsetTop + "px";
+    st.width = bw + "px"; st.height = bh + "px";
+    st.transform = cs.transform === "none" ? "" : cs.transform;
+    st.transformOrigin = cs.transformOrigin;
+    st.borderRadius = cs.borderRadius;
 
-  window.FluidLens = FluidLens;
+    let d = Math.min(devicePixelRatio || 1, 2);
+    if (bw * bh * d * d > f.o.maxPixels) d = Math.sqrt(f.o.maxPixels / (bw * bh));
+    const w = Math.max(1, Math.round(bw * d)), h = Math.max(1, Math.round(bh * d));
+    if (f.cv.width !== w || f.cv.height !== h) { f.cv.width = w; f.cv.height = h; }
+    f.rw = w; f.rh = h;
+
+    const nw = img.naturalWidth, nh = img.naturalHeight, fit = cs.objectFit;
+    if (fit === "cover" || fit === "contain") {
+      const k = fit === "cover" ? Math.max(bw / nw, bh / nh) : Math.min(bw / nw, bh / nh);
+      f.scale = [bw / (nw * k), bh / (nh * k)];
+      f.contain = fit === "contain";
+    } else { f.scale = [1, 1]; f.contain = false; }
+
+    const aspect = bw / bh, key = aspect.toFixed(2);
+    if (f.simKey !== key) { freeSim(f); allocSim(f, aspect); f.simKey = key; }
+    f.brushPx = Math.max(40, Math.min(96, Math.min(bw, bh) * 0.1));
+    return true;
+  }
+  function allocSim(f, aspect) {
+    const size = res => aspect >= 1 ? [Math.round(res * aspect), res] : [res, Math.round(res / aspect)];
+    const [vw, vh] = size(f.o.simRes), [dw, dh] = size(f.o.dispRes);
+    f.vel = double(vw, vh, FMT_RG, gl.LINEAR);
+    f.p = double(vw, vh, FMT_R, gl.NEAREST);
+    f.div = fbo(vw, vh, FMT_R, gl.NEAREST);
+    f.curl = fbo(vw, vh, FMT_R, gl.NEAREST);
+    f.disp = double(dw, dh, FMT_RG, gl.LINEAR);
+  }
+  function freeSim(f) {
+    for (const k of ["vel", "p", "div", "curl", "disp"]) if (f[k]) { f[k].free(); f[k] = null; }
+    f.simKey = null;
+  }
+
+  function start(f) {
+    if (lost || !layout(f)) return;
+    f.tex = imageTexture(f.img);
+    if (!f.tex) { f.dead = true; freeSim(f); return; }
+    f.last = null; f.shown = false;
+    active.add(f);
+  }
+  function stop(f) {
+    active.delete(f);
+    if (f.cv) f.cv.style.opacity = "0";
+    f.img.style.opacity = "";
+    f.shown = false; f.last = null;
+    freeSim(f);
+  }
+
+  function step(f, dt) {
+    const o = f.o, vel = f.vel;
+    let u;
+
+    // pointer: drag the fluid along the stretch it travelled since the last frame
+    const b = f.ptr;
+    if (b) {
+      const a = f.last;
+      if (a && b.t > a.t) {
+        const secs = Math.max((b.t - a.t) / 1000, 1 / 240);
+        let vx = (b.x - a.x) * b.w / secs, vy = (b.y - a.y) * b.h / secs;     // px/s
+        const sp = Math.hypot(vx, vy);
+        if (sp > o.maxSpeed) { vx *= o.maxSpeed / sp; vy *= o.maxSpeed / sp; }
+        if (sp > 2) {
+          const toTexels = vel.h / b.h, rad = f.brushPx / b.h;
+          u = use(PR.brush, vel.tx, vel.ty);
+          gl.uniform1i(u.uVel, vel.read.attach(0));
+          gl.uniform2f(u.uA, a.x, a.y);
+          gl.uniform2f(u.uB, b.x, b.y);
+          gl.uniform2f(u.uForce, vx * toTexels, vy * toTexels);
+          gl.uniform1f(u.uAspect, b.w / b.h);
+          gl.uniform1f(u.uRadius, rad * rad);
+          gl.uniform1f(u.uGrip, o.grip);
+          blit(vel.write); vel.swap();
+        }
+      }
+      if (!a || b.t > a.t) f.last = { x: b.x, y: b.y, t: b.t };
+    }
+
+    u = use(PR.curl, vel.tx, vel.ty);
+    gl.uniform1i(u.uVel, vel.read.attach(0));
+    blit(f.curl);
+
+    u = use(PR.vorticity, vel.tx, vel.ty);
+    gl.uniform1i(u.uVel, vel.read.attach(0));
+    gl.uniform1i(u.uCurl, f.curl.attach(1));
+    gl.uniform1f(u.uCurlAmt, o.curl);
+    gl.uniform1f(u.uDt, dt);
+    blit(vel.write); vel.swap();
+
+    u = use(PR.divergence, vel.tx, vel.ty);
+    gl.uniform1i(u.uVel, vel.read.attach(0));
+    blit(f.div);
+
+    u = use(PR.scale, vel.tx, vel.ty);
+    gl.uniform1i(u.uTex, f.p.read.attach(0));
+    gl.uniform1f(u.uValue, o.pressureDecay);
+    blit(f.p.write); f.p.swap();
+
+    u = use(PR.pressure, vel.tx, vel.ty);
+    gl.uniform1i(u.uDiv, f.div.attach(0));
+    for (let i = 0; i < o.pressureIter; i++) {
+      gl.uniform1i(u.uP, f.p.read.attach(1));
+      blit(f.p.write); f.p.swap();
+    }
+
+    u = use(PR.gradient, vel.tx, vel.ty);
+    gl.uniform1i(u.uP, f.p.read.attach(0));
+    gl.uniform1i(u.uVel, vel.read.attach(1));
+    blit(vel.write); vel.swap();
+
+    u = use(PR.advect, vel.tx, vel.ty);
+    gl.uniform2f(u.uVelTexel, vel.tx, vel.ty);
+    gl.uniform1i(u.uVel, vel.read.attach(0));
+    gl.uniform1i(u.uSrc, vel.read.attach(0));
+    gl.uniform1f(u.uDt, dt);
+    gl.uniform1f(u.uDecay, o.velDecay);
+    blit(vel.write); vel.swap();
+
+    u = use(PR.carry, f.disp.tx, f.disp.ty);
+    gl.uniform2f(u.uVelTexel, vel.tx, vel.ty);
+    gl.uniform1i(u.uVel, vel.read.attach(0));
+    gl.uniform1i(u.uDisp, f.disp.read.attach(1));
+    gl.uniform1f(u.uDt, dt);
+    gl.uniform1f(u.uKeep, Math.exp(-o.relax * dt));
+    gl.uniform1f(u.uMax, o.maxDisp);
+    blit(f.disp.write); f.disp.swap();
+  }
+
+  function render(f) {
+    const w = f.rw, h = f.rh;
+    if (glCanvas.width < w || glCanvas.height < h) {
+      glCanvas.width = Math.max(glCanvas.width, w);
+      glCanvas.height = Math.max(glCanvas.height, h);
+    }
+    const u = use(PR.display);
+    gl.activeTexture(gl.TEXTURE0);
+    gl.bindTexture(gl.TEXTURE_2D, f.tex);
+    gl.uniform1i(u.uImg, 0);
+    gl.uniform1i(u.uDisp, f.disp.read.attach(1));
+    gl.uniform2f(u.uScale, f.scale[0], f.scale[1]);
+    gl.uniform1f(u.uStrength, f.o.strength);
+    gl.uniform1f(u.uContain, f.contain ? 1 : 0);
+    blit(null, w, h);
+    // the frame sits in the bottom-left corner of the shared drawing buffer
+    f.ctx.clearRect(0, 0, w, h);
+    f.ctx.drawImage(glCanvas, 0, glCanvas.height - h, w, h, 0, 0, w, h);
+    if (!f.shown) { f.shown = true; f.cv.style.opacity = "1"; f.img.style.opacity = "0"; }
+  }
+
+  let lost = false;
+  glCanvas.addEventListener("webglcontextlost", e => { e.preventDefault(); lost = true; [...active].forEach(stop); });
+
+  let prev = performance.now();
+  (function frame(now) {
+    requestAnimationFrame(frame);
+    const dt = Math.min(Math.max((now - prev) / 1000, 1 / 240), 1 / 30);
+    prev = now;
+    if (!active.size || lost) return;
+    const t = performance.now();
+    for (const f of [...active]) {
+      const r = f.img.getBoundingClientRect();
+      const offscreen = r.bottom < 0 || r.top > innerHeight || r.right < 0 || r.left > innerWidth;
+      if (offscreen || t - f.moved > f.o.settleMs || !layout(f)) { stop(f); continue; }
+      step(f, dt);
+      render(f);
+    }
+  })(prev);
+
+  const flows = new WeakMap();
+  window.FluidFlow = {
+    cfg: CFG,
+    attach(host, opts = {}) {
+      if (!host || flows.has(host) || !host.querySelector("img")) return;
+      flows.set(host, new Flow(host, opts));
+    },
+  };
 })();

@@ -5,9 +5,15 @@ Static site generator for the JanyuTech redesign.
   img_map.json  – original image URL → local /assets/img file (see imgs.py)
 
 Run:  python3 build/build.py      (writes index.html + one folder per page into the site root)
+Needs Pillow (pip install Pillow): image sizes decide which pages get a banner and which cards show cutouts.
 """
-import json, os, re, html as H
+import json, os, re, sys, html as H
 from datetime import date
+
+try:
+    import PIL.Image  # noqa: F401  – without it every banner and cutout would silently disappear
+except ImportError:
+    sys.exit("build.py needs Pillow – run: pip install Pillow")
 
 HERE = os.path.dirname(os.path.abspath(__file__))
 SITE = os.path.dirname(HERE)
@@ -26,7 +32,7 @@ for _p in PAGES.values():
             if b["t"] == "gallery": b["imgs"] = [x for x in b["imgs"] if x["src"] not in GONE]
             if b["t"] == "card" and b.get("img") in GONE: b["img"] = ""
         _s["blocks"] = [b for b in _s["blocks"] if not (b["t"] == "slider" and not b["slides"]) and not (b["t"] == "gallery" and not b["imgs"])]
-VER = "9"
+VER = "10"
 
 # Links that are broken on the live site (anchor id typos) – point them at the real ids.
 LINK_FIX = {
@@ -649,13 +655,6 @@ def inner_page(p):
 
 
 # ---------------------------------------------------------------- home
-# Robots shown on the home-page blueprint stage (names/links as on the product pages)
-STAGE = [
-    {"key": "crawler-with-arm-all-terrain-1", "name": "Crawler with Robotic Arm All Terrain", "cat": "Defence Robots", "href": "/products/defence-robots/"},
-    {"key": "varah-dozer-a", "name": "VARAH Dozer-A", "cat": "Varaha Mining Robots", "href": "/products/varaha-mining-robots/"},
-    {"key": "varaha-igv-surveillance-robo-1", "name": "VARAHA - UGV Surveillance Robot", "cat": "Defence Robots", "href": "/products/defence-robots/"},
-    {"key": "ugv-varaha-throwbot-1", "name": "UGV - Varaha Throwbot", "cat": "Defence Robots", "href": "/products/defence-robots/"},
-]
 # First-scroll feature: the QRS quadruped from the Defence, Nuclear & Aerospace page
 def _dna_heading(anchor):
     blocks = [b for sct in PAGES["industries__dna"]["sections"] for b in sct["blocks"]]
@@ -689,10 +688,7 @@ def home_page():
     p = PAGES["home"]
     S = [s["blocks"] for s in p["sections"]]
     get = lambda s, t: [b for b in s if b["t"] == t]
-    seo_h2 = [b["text"] for b in get(S[0], "h")]
     hero_eyebrow = get(S[1], "eyebrow")[0]["text"]
-    hero_sub = [b["text"] for b in get(S[1], "h") if b["lvl"] == 3][0]
-    hero_btns = get(S[1], "btn")
     about = S[2]; about_h = get(about, "h"); about_lists = get(about, "list"); about_btn = get(about, "btn"); about_gal = get(about, "gallery")[0]["imgs"]
     ind = S[3]; ind_h = get(ind, "h"); ind_cards = get(ind, "card")
     biz = S[4]; biz_h = get(biz, "h")[0]["text"]; biz_btn = get(biz, "btn")[0]
@@ -723,13 +719,6 @@ def home_page():
           <span class="pitem__meta">{esc(c["btn"] or "View Product")} →</span>
         </a>
       </li>''')
-    stage_items = "".join(
-        f'<div class="stage__item{" is-active" if k == 0 else ""}" data-name="{esc(r["name"])}" data-href="{r["href"]}" data-cat="{esc(r["cat"])}">'
-        f'<img class="stage__bp" src="/assets/bp/{r["key"]}-bp.webp" alt="" {"" if k == 0 else 'loading="lazy"'} decoding="async">'
-        f'<img class="stage__photo" src="/assets/bp/{r["key"]}.webp" alt="{esc(r["name"])}" {"" if k == 0 else 'loading="lazy"'} decoding="async">'
-        f'<img class="stage__xray" src="/assets/bp/{r["key"]}.webp" data-photo="/assets/bp/{r["key"]}.webp" data-bp="/assets/bp/{r["key"]}-bp.webp" alt="" decoding="async"></div>'
-        for k, r in enumerate(STAGE))
-    stage_pager = "".join(f'<button class="stage__page{" is-active" if k == 0 else ""}" aria-label="Show {esc(r["name"])}"><span>{k+1:02d}</span><i></i></button>' for k, r in enumerate(STAGE))
     whys = "".join(f'<li class="reveal-up"><span>{k+1:02d}</span><h3>{esc(c["title"])}</h3></li>' for k, c in enumerate(why_cards))
     logos = "".join(f'<img src="{esc(img(i["src"]))}" alt="{esc(i["alt"].replace("_", " "))}" loading="lazy">' for i in cli_imgs)
     logos_dup = "".join(f'<img src="{esc(img(i["src"]))}" alt="" aria-hidden="true" loading="lazy">' for i in cli_imgs)
@@ -740,48 +729,13 @@ def home_page():
   <div class="loader__bar"><span></span></div>
 </div>
 
-<section class="hero hero--bp" data-hero>
-  <div class="hero__grid" data-depth="0.06" aria-hidden="true"></div>
-  <div class="branch branch--tl" data-depth="-0.55" data-branch="tl" aria-hidden="true"></div>
-  <div class="branch branch--br" data-depth="-1.1" data-branch="br" aria-hidden="true"></div>
-  <canvas class="petals" aria-hidden="true"></canvas>
-
-  <div class="hero__copy" data-depth="0.1">
-    <p class="eyebrow hero__eyebrow">{esc(hero_eyebrow)}</p>
-    <h1 class="hero__title" aria-label="JanyuTech">
-      <span class="line"><span class="split">Janyu</span></span>
-      <span class="line line--indent"><span class="split">Tech</span></span>
-    </h1>
-    <div class="hero__intro">
-      <p class="hero__sub">{esc(hero_sub)}</p>
-      <p>{esc(seo_h2[1] if len(seo_h2) > 1 else "")}</p>
-      {btns(hero_btns)}
-    </div>
-  </div>
-
-  <figure class="stage" data-stage>
-    <div class="stage__frame" data-depth="0.28">
-      {stage_items}
-      <span class="stage__scan" aria-hidden="true"></span>
-      <span class="stage__cross stage__cross--x" aria-hidden="true"></span>
-      <span class="stage__cross stage__cross--y" aria-hidden="true"></span>
-      <span class="stage__ring" aria-hidden="true"></span>
-      <i class="stage__corner stage__corner--tl"></i><i class="stage__corner stage__corner--tr"></i><i class="stage__corner stage__corner--bl"></i><i class="stage__corner stage__corner--br"></i>
-    </div>
-    <figcaption class="stage__hud" data-depth="0.42">
-      <div class="stage__meta"><span class="stage__fig">FIG. 01</span><span class="stage__mode">Blueprint</span><span class="stage__xy">X 0.000 · Y 0.000</span></div>
-      <div class="stage__label"><span class="stage__cat">{esc(STAGE[0]["cat"])}</span><a class="stage__name" href="{STAGE[0]["href"]}">{esc(STAGE[0]["name"])} <i>→</i></a></div>
-      <div class="stage__pager">{stage_pager}</div>
-    </figcaption>
-    <div class="badge" aria-hidden="true">
-      <svg viewBox="0 0 200 200">
-        <defs><path id="circ" d="M100,100 m-78,0 a78,78 0 1,1 156,0 a78,78 0 1,1 -156,0"/></defs>
-        <text><textPath href="#circ" textLength="486" lengthAdjust="spacing">ROBOTICS ✦ SAFETY ✦ INDUSTRY 4.0 ✦</textPath></text>
-      </svg>
-      <svg viewBox="0 0 100 100" class="badge__star"><path d="M50 0 C54 34 66 46 100 50 C66 54 54 66 50 100 C46 66 34 54 0 50 C34 46 46 34 50 0Z"/></svg>
-    </div>
-  </figure>
-  <div class="hero__scroll">{esc(seo_h2[0] if seo_h2 else "")} <span class="hero__scroll-line"></span></div>
+<section class="hero hero--night" data-hero>
+  <h1 class="sr-only">JanyuTech</h1>
+  <div class="hero__grid" aria-hidden="true"></div>
+  <canvas class="petals petals--back" aria-hidden="true"></canvas>
+  <div class="branch branch--tl" data-depth="22" data-branch="tl" aria-hidden="true"></div>
+  <div class="branch branch--br" data-depth="34" data-branch="br" aria-hidden="true"></div>
+  <canvas class="petals petals--front" aria-hidden="true"></canvas>
 </section>
 
 <section class="warp">
