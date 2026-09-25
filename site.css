@@ -349,43 +349,64 @@ a.card:hover .card__cta i { transform: translateX(5px); }
 }
 
 /* =========================================================
-   Home landing: a black canvas with a light grid, blossom
-   branches in two corners, and petals + leaves drifting down
-   (hero.js builds the branches and animates everything)
+   Home landing: an empty white room. hero.js draws the room, the
+   leaves and the branches, and floats the lettering inside it;
+   the stage stays pinned while the camera moves into the room.
    ========================================================= */
-.hero--night { display: block; min-height: 100vh; min-height: 100svh; padding: 0; background: #040507; isolation: isolate; }
-.hero--night::before {
-  content: ""; position: absolute; inset: 0; z-index: 0; pointer-events: none;
-  background: radial-gradient(ellipse 65% 55% at 50% 58%, rgba(29,106,229,.13), transparent 70%);
-}
-.hero--night .hero__grid {
-  position: absolute; inset: -40px; z-index: 0; pointer-events: none; opacity: 0; transition: opacity 1.8s ease;
-  background-image:
-    linear-gradient(rgba(255,255,255,.075) 1px, transparent 1px), linear-gradient(90deg, rgba(255,255,255,.075) 1px, transparent 1px),
-    linear-gradient(rgba(255,255,255,.032) 1px, transparent 1px), linear-gradient(90deg, rgba(255,255,255,.032) 1px, transparent 1px);
-  background-size: 120px 120px, 120px 120px, 24px 24px, 24px 24px;
-  background-position: center;
-  -webkit-mask-image: radial-gradient(ellipse 90% 85% at 50% 50%, #000 35%, rgba(0,0,0,.35) 100%);
-          mask-image: radial-gradient(ellipse 90% 85% at 50% 50%, #000 35%, rgba(0,0,0,.35) 100%);
-}
-.hero--night .petals { position: absolute; inset: 0; width: 100%; height: 100%; pointer-events: none; opacity: 0; transition: opacity 1.6s ease .3s; }
-.hero--night.is-live .hero__grid, .hero--night.is-live .petals { opacity: 1; }
-.petals--back { z-index: 1; }
-.petals--front { z-index: 4; }
+.hero--room { display: block; height: 170vh; height: 170svh; min-height: 0; padding: 0; overflow: visible; background: #eef1f5; }
+.room__stage { position: sticky; top: 0; height: 100vh; height: 100svh; overflow: hidden; isolation: isolate; background: #eef1f5; }
+.room__walls, .room__leaves { position: absolute; inset: 0; width: 100%; height: 100%; display: block; pointer-events: none; }
+.room__walls { z-index: 0; }
+.room__leaves { z-index: 1; opacity: 0; transition: opacity 1.4s ease .4s; }
+.room__leaves--front { z-index: 3; }
+.room__stage.is-live .room__leaves { opacity: 1; }
 
-.branch { position: absolute; pointer-events: none; will-change: transform; }
+.room__copy {                               /* the title's middle sits on the vanishing point (hero.js: VP) */
+  position: absolute; left: 0; right: 0; top: 41%; z-index: 2; transform: translateY(-50%);
+  padding: 0 var(--gutter); text-align: center; pointer-events: none;
+}
+.room__title { font-family: var(--display); font-weight: 900; font-size: clamp(44px, 8vw, 148px); line-height: .92; letter-spacing: .005em; text-transform: uppercase; color: var(--ink); white-space: nowrap; }
+.room__word { display: inline-block; }
+.room__word--tech { color: var(--blue); }
+.room__ch { display: inline-block; will-change: transform, opacity; }
+.room__quote {
+  position: absolute; left: 0; right: 0; top: calc(100% + clamp(14px, 2.8vh, 30px)); width: min(30ch, 84vw); margin: 0 auto;
+  font-size: clamp(15px, 1.45vw, 22px); font-weight: 500; line-height: 1.35; color: #3b4352; will-change: transform, opacity;
+}
+@media (min-width: 900px) { .room__quote { width: auto; } }
+@media (max-aspect-ratio: 4/5) {           /* portrait: the two words stacked */
+  .room__title { font-size: min(17.5vw, 11.5vh); line-height: .95; }
+  .room__word { display: block; }
+}
+
+.room__scroll { position: absolute; left: 50%; bottom: clamp(16px, 3.6vh, 34px); z-index: 5; transform: translateX(-50%); opacity: calc(1 - var(--gone, 0)); pointer-events: none; }
+.room__scroll-in { display: flex; flex-direction: column; align-items: center; gap: 12px; color: var(--ink); }
+.room__scroll-t { display: flex; font-size: 11px; font-weight: 600; letter-spacing: .3em; text-transform: uppercase; margin-right: -.3em; }
+.room__scroll-t .rl { display: inline-block; height: 1.3em; line-height: 1.3em; overflow: hidden; }
+.room__scroll-t i { display: block; font-style: normal; animation: roomRoll 3.4s var(--ease) infinite; animation-delay: calc(var(--i) * 55ms); }
+.room__scroll-t i::after { content: attr(data-c); display: block; }
+@keyframes roomRoll { 0%, 58% { transform: translateY(0); } 80%, 100% { transform: translateY(-50%); } }
+.room__scroll-line { width: 1px; height: 46px; background: linear-gradient(var(--ink), rgba(11,11,12,.15)); transform-origin: top; animation: roomDrip 2.4s var(--ease) infinite; }
+@keyframes roomDrip { 0% { transform: scaleY(0); transform-origin: top; } 45% { transform: scaleY(1); transform-origin: top; } 46% { transform: scaleY(1); transform-origin: bottom; } 100% { transform: scaleY(0); transform-origin: bottom; } }
+
+/* branches hang into the top corners of the opening */
+.branch { position: absolute; z-index: 4; pointer-events: none; will-change: transform, opacity; }
 .branch svg { display: block; width: 100%; height: auto; overflow: visible; }
-.branch--tl { left: -1vw; top: calc(var(--header-h) - 26px); width: min(40vw, 620px); z-index: 2; }
-.branch--br { right: -1.5vw; bottom: -2vh; width: min(38vw, 580px); z-index: 3; }
-.branch .br-stroke { fill: none; stroke: #7f95c2; stroke-linecap: round; }
-.branch .br-leaf { fill: #2d63d4; opacity: .85; transition: opacity .6s; }
-.branch .bl-petal { stroke: #bcd6ff; stroke-width: .5; stroke-opacity: .35; transition: opacity .9s; }
-.branch .bl-core { fill: #0d2a66; }
-.branch .bl-stamen { fill: #eaf2ff; }
-.branch .bl-bud { fill: #5b93f5; stroke: #bcd6ff; stroke-width: .5; stroke-opacity: .4; }
+.branch--tl { left: -1vw; top: calc(var(--header-h) - 34px); width: min(33vw, 500px); }
+.branch--tr { right: -1vw; top: calc(var(--header-h) - 34px); width: min(29vw, 450px); }
+.branch .br-stroke { fill: none; stroke: #56627a; stroke-opacity: .7; stroke-linecap: round; }
+.branch .br-leaf { fill: #3f74dc; opacity: .78; transition: opacity .6s; }
+.branch .bl-petal { stroke: #fff; stroke-width: .6; stroke-opacity: .7; transition: opacity .9s; }
+.branch .bl-core { fill: #12337f; }
+.branch .bl-stamen { fill: #fff; }
+.branch .bl-bud { fill: #6d9ef4; }
 @media (max-width: 900px) {
-  .branch--tl { width: min(66vw, 460px); }
-  .branch--br { width: min(62vw, 420px); }
+  .branch--tl { width: min(50vw, 380px); }
+  .branch--tr { width: min(44vw, 340px); }
+}
+@media (prefers-reduced-motion: reduce) {
+  .hero--room { height: 100vh; height: 100svh; }
+  .room__scroll-t i, .room__scroll-line { animation: none; }
 }
 
 /* corner brackets (used by the first-scroll feature) */

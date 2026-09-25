@@ -32,7 +32,7 @@ for _p in PAGES.values():
             if b["t"] == "gallery": b["imgs"] = [x for x in b["imgs"] if x["src"] not in GONE]
             if b["t"] == "card" and b.get("img") in GONE: b["img"] = ""
         _s["blocks"] = [b for b in _s["blocks"] if not (b["t"] == "slider" and not b["slides"]) and not (b["t"] == "gallery" and not b["imgs"])]
-VER = "10"
+VER = "11"
 
 # Links that are broken on the live site (anchor id typos) – point them at the real ids.
 LINK_FIX = {
@@ -689,6 +689,9 @@ def home_page():
     S = [s["blocks"] for s in p["sections"]]
     get = lambda s, t: [b for b in s if b["t"] == t]
     hero_eyebrow = get(S[1], "eyebrow")[0]["text"]
+    hero_lead = get(S[1], "h")[1]["text"]
+    seo = [b["text"] for b in get(S[0], "h")]                  # the old site's search headline, kept for readers and search
+    letters = lambda w, cls: f'<span class="room__word{cls}" aria-hidden="true">' + "".join(f'<span class="room__ch">{c}</span>' for c in w) + "</span>"
     about = S[2]; about_h = get(about, "h"); about_lists = get(about, "list"); about_btn = get(about, "btn"); about_gal = get(about, "gallery")[0]["imgs"]
     ind = S[3]; ind_h = get(ind, "h"); ind_cards = get(ind, "card")
     biz = S[4]; biz_h = get(biz, "h")[0]["text"]; biz_btn = get(biz, "btn")[0]
@@ -729,13 +732,23 @@ def home_page():
   <div class="loader__bar"><span></span></div>
 </div>
 
-<section class="hero hero--night" data-hero>
-  <h1 class="sr-only">JanyuTech</h1>
-  <div class="hero__grid" aria-hidden="true"></div>
-  <canvas class="petals petals--back" aria-hidden="true"></canvas>
-  <div class="branch branch--tl" data-depth="22" data-branch="tl" aria-hidden="true"></div>
-  <div class="branch branch--br" data-depth="34" data-branch="br" aria-hidden="true"></div>
-  <canvas class="petals petals--front" aria-hidden="true"></canvas>
+<section class="hero hero--room" data-hero>
+  <div class="room__stage">
+    <canvas class="room__walls" aria-hidden="true"></canvas>
+    <canvas class="room__leaves room__leaves--back" aria-hidden="true"></canvas>
+    <div class="room__copy">
+      <h1 class="room__title"><span class="sr-only">Janyu Tech</span>{letters("JANYU", "")} {letters("TECH", " room__word--tech")}</h1>
+      <p class="room__quote">{esc(hero_lead)}</p>
+      <div class="sr-only">{"".join(f"<{'h2' if k == 0 else 'p'}>{esc(t)}</{'h2' if k == 0 else 'p'}>" for k, t in enumerate(seo))}</div>
+    </div>
+    <canvas class="room__leaves room__leaves--front" aria-hidden="true"></canvas>
+    <div class="branch branch--tl" data-branch="tl" aria-hidden="true"></div>
+    <div class="branch branch--tr" data-branch="tr" aria-hidden="true"></div>
+    <div class="room__scroll" aria-hidden="true"><div class="room__scroll-in">
+      <span class="room__scroll-t">{"".join(f'<span class="rl" style="--i:{k}"><i data-c="{c}">{c}</i></span>' for k, c in enumerate("Scroll"))}</span>
+      <span class="room__scroll-line"></span>
+    </div></div>
+  </div>
 </section>
 
 <section class="warp">

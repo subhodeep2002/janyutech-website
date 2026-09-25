@@ -13,8 +13,8 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Unbounded:wght@500;700;900&family=Inter+Tight:ital,wght@0,400;0,500;0,600;0,800;1,800&display=swap" rel="stylesheet">
-<link rel="stylesheet" href="./styles.css?v=10">
-<link rel="stylesheet" href="./site.css?v=10">
+<link rel="stylesheet" href="./styles.css?v=11">
+<link rel="stylesheet" href="./site.css?v=11">
 </head>
 <body class="home" id="top">
 <div class="cursor" aria-hidden="true"><span class="cursor__label">View</span></div>
@@ -40,13 +40,23 @@
   <div class="loader__bar"><span></span></div>
 </div>
 
-<section class="hero hero--night" data-hero>
-  <h1 class="sr-only">JanyuTech</h1>
-  <div class="hero__grid" aria-hidden="true"></div>
-  <canvas class="petals petals--back" aria-hidden="true"></canvas>
-  <div class="branch branch--tl" data-depth="22" data-branch="tl" aria-hidden="true"></div>
-  <div class="branch branch--br" data-depth="34" data-branch="br" aria-hidden="true"></div>
-  <canvas class="petals petals--front" aria-hidden="true"></canvas>
+<section class="hero hero--room" data-hero>
+  <div class="room__stage">
+    <canvas class="room__walls" aria-hidden="true"></canvas>
+    <canvas class="room__leaves room__leaves--back" aria-hidden="true"></canvas>
+    <div class="room__copy">
+      <h1 class="room__title"><span class="sr-only">Janyu Tech</span><span class="room__word" aria-hidden="true"><span class="room__ch">J</span><span class="room__ch">A</span><span class="room__ch">N</span><span class="room__ch">Y</span><span class="room__ch">U</span></span> <span class="room__word room__word--tech" aria-hidden="true"><span class="room__ch">T</span><span class="room__ch">E</span><span class="room__ch">C</span><span class="room__ch">H</span></span></h1>
+      <p class="room__quote">Leading the Way in Human Risk Mitigation Robotics</p>
+      <div class="sr-only"><h2>Janyu Tech - Best Robotics Solutions Provider in India</h2><p>Janyu Tech, an Indian OEM, provides software solutions &amp; Robotics as a Service (RaaS) for defence, nuclear, aerospace, cement &amp; construction &amp; mining industries</p></div>
+    </div>
+    <canvas class="room__leaves room__leaves--front" aria-hidden="true"></canvas>
+    <div class="branch branch--tl" data-branch="tl" aria-hidden="true"></div>
+    <div class="branch branch--tr" data-branch="tr" aria-hidden="true"></div>
+    <div class="room__scroll" aria-hidden="true"><div class="room__scroll-in">
+      <span class="room__scroll-t"><span class="rl" style="--i:0"><i data-c="S">S</i></span><span class="rl" style="--i:1"><i data-c="c">c</i></span><span class="rl" style="--i:2"><i data-c="r">r</i></span><span class="rl" style="--i:3"><i data-c="o">o</i></span><span class="rl" style="--i:4"><i data-c="l">l</i></span><span class="rl" style="--i:5"><i data-c="l">l</i></span></span>
+      <span class="room__scroll-line"></span>
+    </div></div>
+  </div>
 </section>
 
 <section class="warp">
@@ -286,8 +296,8 @@
 <script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.5/gsap.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.5/ScrollTrigger.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/lenis@1.1.13/dist/lenis.min.js"></script>
-<script src="./fluid.js?v=10"></script>
-<script src="./hero.js?v=10"></script>
-<script src="./main.js?v=10"></script>
+<script src="./fluid.js?v=11"></script>
+<script src="./hero.js?v=11"></script>
+<script src="./main.js?v=11"></script>
 </body>
 </html>

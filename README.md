@@ -4,7 +4,7 @@
 
 A static rebuild of every page of janyutech.com (55 pages), with the original content and a new design:
 smooth scrolling, letter-by-letter title reveals, a fluid-flow image hover effect, page transitions, a mega-menu, sliders, a lightbox, tabs and more.
-The home page opens on a black landing screen with a light grid, blossom branches swaying in a gusting wind, and petals and leaves drifting down.
+The home page opens inside an empty white room, its ceiling, walls and floor ruled with a grid. JANYU TECH floats in the middle with the quote beneath, leaves and petals drift in from two blossom branches and settle on the floor, and scrolling carries the camera into the room.
 
 ## Folder layout
 
@@ -15,7 +15,7 @@ The home page opens on a black landing screen with a light grid, blossom branche
 | `site.css` | Header, menus, footer and every inner-page component |
 | `main.js` | All interaction and animation (runs on every page, switches on what each page has) |
 | `fluid.js` | The image hover effect: a small WebGL fluid simulation (one shared context) that makes the picture flow around the cursor and settle back |
-| `hero.js` | Home landing: grid, blossom branches on damped springs in a breeze-and-gust wind, petals and leaves falling on three depth layers, pointer parallax and brushing |
+| `hero.js` | Home landing: the grid room (a small perspective projection drawn on a canvas), the title and quote placed inside it, leaves and petals that settle on the floor and fly up when the pointer sweeps across it, the two blossom branches, pointer parallax and the camera move on scroll |
 | `assets/bp/` | Robot photos and their matching blueprint drawings (made by `build/blueprint.py`) |
 | `assets/img/` | Every site image, converted to WebP |
 | `assets/docs/` | The PDFs the site links to (brochure, internship, course details, Saturday Talk) |
@@ -73,5 +73,5 @@ Then open http://localhost:5178.
 
 - **Contact form:** there is no server, so **Submit** opens the visitor's email app with the message addressed to sales@janyutech.com. To receive submissions directly instead, point the form at a service such as Formspree or your own endpoint (`form[data-mailto]` in `main.js`).
 - **Image hover effect:** runs only on desktop browsers with a mouse, and only on images served from the same domain. Phones, touch screens and visitors who turn on "reduce motion" get the plain images. Its settings (swirl, strength, how fast it settles) are at the top of `fluid.js`.
-- **Landing animation:** visitors who turn on "reduce motion" get a still scene (branches at rest, petals where they are).
+- **Landing animation:** the landing stays pinned for a short scroll while the camera moves into the room. Visitors who turn on "reduce motion" get a still room instead (leaves where they lie, no camera move). The room's proportions and the camera are set at the top of `hero.js`.
 - **Links fixed during the rebuild:** a few menu and card links were broken on the old site (wrong page, anchor typos or an old URL). They now point to the right sections. The fixes are listed in `LINK_FIX` in `build/build.py`.
