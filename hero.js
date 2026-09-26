@@ -2,10 +2,11 @@
  * Home landing: an empty white room seen from its open end, in 3D (three.js).
  * Ceiling, walls, floor and back wall are ruled with a fine grid, a few vines
  * creep over the walls, and JANYU TECH floats in the middle with the quote.
- *  – a pendant lamp hangs from the ceiling and lights the room: Dark, White or
- *    Warm (the switch, or click the lamp). It flickers now and then like a
- *    real one – a tube's stutter, a filament's waver, a failing bulb – and
- *    everything, petals and leaves too, is lit and shadowed by it
+ *  – a tube light hangs from the ceiling and lights the room: Dark, White or
+ *    Warm, chosen on a half-protractor dial on the right edge (or by clicking
+ *    the tube). It flickers now and then like a real one – a stutter, a hum,
+ *    a tired tube blinking – and everything, petals and leaves too, is lit
+ *    and shadowed by it
  *  – the robot (Janyu Tech's tracked cleaner) follows the pointer over the
  *    floor: it turns towards it, drives in smooth arcs, rolls its wheels, dips
  *    and leans a little, and its brush sweeps the leaves it meets
@@ -55,7 +56,7 @@ function room() {
   // not a shaft). The camera's eye is EYE above the floor, and VP is how far down the screen
   // the vanishing point sits (a lens shift keeps the verticals upright). The lettering floats ZT in.
   const HR = 9, D = 14, ZN = 0.4, EYE = 5.4, ZT = 8.4, ZB = 3.2, DOLLY = 8.9, VP = 0.41;
-  const LAMP_Z = -9.6, CORD = 1.15;                                // the pendant hangs from the ceiling's middle
+  const LAMP_Z = -9.6;                                             // the tube light hangs over the middle of the room
   const camera = new THREE.PerspectiveCamera();
   const cam = { z: 0, vz: 0 };                                     // the dolly into the room
   let W = 1, H = 1, f = 1, cx = 0, cy = 0, xL = -8, xR = 8;
@@ -69,98 +70,157 @@ function room() {
     camera.projectionMatrixInverse.copy(camera.projectionMatrix).invert();
   }
 
-  /* ------------------------------------------------ light: the pendant, and the room around it */
+  /* ------------------------------------------------ light: a tube light on the ceiling */
   const ambient = new THREE.AmbientLight("#ffffff", 1);
   const hemi = new THREE.HemisphereLight("#ffffff", "#dfe5ee", 1);
   const fill = new THREE.DirectionalLight("#ffffff", 1);           // daylight through the opening (no shadows)
   fill.position.set(0.5, 7, 6); fill.target.position.set(0, 1, -9);
-  const lamp = new THREE.SpotLight("#ffffff", 50, 0, 1.0, 0.9, 2);
+  const lamp = new THREE.SpotLight("#ffffff", 50, 0, 1.2, 1, 2);    // the tube's light on the room, and its shadows
   lamp.castShadow = true;
   lamp.shadow.mapSize.set(fine ? 2048 : 1024, fine ? 2048 : 1024);
-  lamp.shadow.camera.near = 0.4; lamp.shadow.camera.far = 17;
+  lamp.shadow.camera.near = 0.3; lamp.shadow.camera.far = 17;
   lamp.shadow.bias = -0.0005; lamp.shadow.normalBias = 0.025; lamp.shadow.radius = 3;
-  scene.add(ambient, hemi, fill, fill.target, lamp, lamp.target);
+  const ends = [0, 1].map(() => new THREE.PointLight("#ffffff", 0, 0, 2));   // the rest of the tube's length
+  scene.add(ambient, hemi, fill, fill.target, lamp, lamp.target, ...ends);
 
-  // the fixture: a canopy on the ceiling, a cord, a dark metal dome and a glowing bulb
-  const rig = new THREE.Group(), swing = new THREE.Group();
-  const shadePts = [[0.07, 0.02], [0.1, 0], [0.2, -0.07], [0.33, -0.18], [0.46, -0.32], [0.55, -0.44], [0.57, -0.47]].map(([r, y]) => new THREE.Vector2(r, y));
-  const shadeGeo = new THREE.LatheGeometry(shadePts, 48);
-  const lampShade = new THREE.Mesh(shadeGeo, new THREE.MeshStandardMaterial({ color: "#1f242c", metalness: 0.55, roughness: 0.38 }));
-  const glowMat = new THREE.MeshBasicMaterial({ color: "#ffffff", side: THREE.BackSide, toneMapped: true, fog: false });
-  const inner = new THREE.Mesh(shadeGeo, glowMat); inner.scale.setScalar(0.985);
-  const bulbMat = new THREE.MeshBasicMaterial({ color: "#ffffff", toneMapped: true, fog: false });
-  const bulb = new THREE.Mesh(new THREE.SphereGeometry(0.12, 24, 16), bulbMat); bulb.position.y = -0.34;
-  const cord = new THREE.Mesh(new THREE.CylinderGeometry(0.013, 0.013, CORD, 8), new THREE.MeshStandardMaterial({ color: "#1b1f26", roughness: 0.6 }));
-  cord.position.y = -CORD / 2;
-  const canopy = new THREE.Mesh(new THREE.CylinderGeometry(0.2, 0.22, 0.05, 32), new THREE.MeshStandardMaterial({ color: "#1f242c", metalness: 0.5, roughness: 0.4 }));
-  canopy.position.y = -0.025;
-  const head = new THREE.Group(); head.position.y = -CORD; head.add(lampShade, inner, bulb);
-  swing.add(cord, head); rig.add(canopy, swing);
-  scene.add(rig);
-  const pendulum = { ax: 0, az: 0, vx: 0, vz: 0 };
+  // the fixture: a slim aluminium channel hung on two wires, the tube glowing under it, a cap at each end
+  const TUBE_Y = HR - 0.62;
+  const fixture = new THREE.Group();
+  const channel = new THREE.Mesh(new THREE.BoxGeometry(1, 0.07, 0.2), new THREE.MeshStandardMaterial({ color: "#b8bfc9", metalness: 0.45, roughness: 0.38 }));
+  channel.position.y = 0.09;
+  const tubeMat = new THREE.ShaderMaterial({
+    uniforms: { uColor: { value: new THREE.Color("#ffffff") }, uPower: { value: 1 }, uDying: { value: 0 }, uTime: { value: 0 } },
+    vertexShader: `varying float vS; varying vec3 vN, vV;
+      void main() { vS = position.y + 0.5; vec4 mv = modelViewMatrix * vec4(position, 1.0); vN = normalize(normalMatrix * normal); vV = normalize(-mv.xyz); gl_Position = projectionMatrix * mv; }`,
+    fragmentShader: `uniform vec3 uColor; uniform float uPower, uDying, uTime; varying float vS; varying vec3 vN, vV;
+      void main() {
+        float ends = mix(1.0, smoothstep(0.0, 0.14, vS) * smoothstep(1.0, 0.86, vS), uDying * 0.75);   // a tired tube darkens at its ends
+        float crawl = 1.0 - uDying * 0.32 * (0.5 + 0.5 * sin(vS * 19.0 - uTime * 0.0021));           // and light crawls along it
+        float core = 0.74 + 0.26 * pow(abs(dot(normalize(vN), normalize(vV))), 0.6);
+        gl_FragColor = vec4(uColor * (0.16 + 0.84 * uPower) * ends * crawl * core * 1.15, 1.0);
+      }`,
+    fog: false,
+  });
+  const tube = new THREE.Mesh(new THREE.CylinderGeometry(0.05, 0.05, 1, 24), tubeMat);
+  tube.rotation.z = Math.PI / 2;
+  const capGeo = new THREE.CylinderGeometry(0.062, 0.062, 0.1, 16), capMat = new THREE.MeshStandardMaterial({ color: "#8f98a4", metalness: 0.5, roughness: 0.45 });
+  const caps = [0, 1].map(() => { const c = new THREE.Mesh(capGeo, capMat); c.rotation.z = Math.PI / 2; return c; });
+  const wireGeo = new THREE.CylinderGeometry(0.006, 0.006, 1, 6), wireMat = new THREE.MeshStandardMaterial({ color: "#5d6470", roughness: 0.6 });
+  const wires = [0, 1].map(() => new THREE.Mesh(wireGeo, wireMat));
+  const glow = (w, h) => {                                        // a soft oval of light, for the tube's halo and the ceiling
+    const c = document.createElement("canvas"), g = c.getContext("2d");
+    c.width = w; c.height = h;
+    g.scale(w / h, 1);
+    const gr = g.createRadialGradient(h / 2, h / 2, 0, h / 2, h / 2, h / 2);
+    gr.addColorStop(0, "rgba(255,255,255,1)"); gr.addColorStop(0.35, "rgba(255,255,255,.42)"); gr.addColorStop(1, "rgba(255,255,255,0)");
+    g.fillStyle = gr; g.fillRect(0, 0, h, h);
+    return new THREE.CanvasTexture(c);
+  };
+  const additive = map => new THREE.MeshBasicMaterial({ map, transparent: true, depthWrite: false, blending: THREE.AdditiveBlending, toneMapped: false, fog: false });
+  const halo = new THREE.Mesh(new THREE.PlaneGeometry(1, 1), additive(glow(512, 64)));
+  const ceilGlow = new THREE.Mesh(new THREE.PlaneGeometry(1, 1), additive(glow(512, 128)));
+  halo.renderOrder = ceilGlow.renderOrder = 4;
+  ceilGlow.rotation.x = Math.PI / 2;
+  fixture.add(channel, tube, ...caps, ...wires, halo);
+  scene.add(fixture, ceilGlow);
 
-  // the lamp's beam made visible by dust in the air, and the dust itself
-  const BEAM_H = HR - CORD - 0.45;
-  const beamGeo = new THREE.CylinderGeometry(0.5, 4.4, BEAM_H, 64, 1, true).translate(0, -BEAM_H / 2, 0);
+  // the light falling from the tube, made visible by dust in the air, and the dust itself
   const beamMat = new THREE.ShaderMaterial({
-    uniforms: { uColor: { value: new THREE.Color() }, uOpacity: { value: 0 } },
-    vertexShader: `varying float vH; varying vec3 vN, vV;
-      void main() { vH = -position.y / ${BEAM_H.toFixed(2)}; vec4 mv = modelViewMatrix * vec4(position, 1.0); vN = normalize(normalMatrix * normal); vV = normalize(-mv.xyz); gl_Position = projectionMatrix * mv; }`,
+    uniforms: { uColor: { value: new THREE.Color() }, uOpacity: { value: 0 }, uH: { value: 8 } },
+    vertexShader: `uniform float uH; varying float vH; varying vec3 vN, vV;
+      void main() { vH = -position.y / uH; vec4 mv = modelViewMatrix * vec4(position, 1.0); vN = normalize(normalMatrix * normal); vV = normalize(-mv.xyz); gl_Position = projectionMatrix * mv; }`,
     fragmentShader: `uniform vec3 uColor; uniform float uOpacity; varying float vH; varying vec3 vN, vV;
-      void main() { float rim = pow(abs(dot(normalize(vN), normalize(vV))), 1.6); float a = uOpacity * rim * pow(1.0 - vH, 1.3) * smoothstep(0.0, 0.08, vH); gl_FragColor = vec4(uColor * a, a); }`,
+      void main() { float rim = pow(abs(dot(normalize(vN), normalize(vV))), 1.6); float a = uOpacity * rim * pow(1.0 - vH, 1.3) * smoothstep(0.0, 0.06, vH); gl_FragColor = vec4(uColor * a, a); }`,
     transparent: true, depthWrite: false, blending: THREE.AdditiveBlending, side: THREE.DoubleSide, fog: false,
   });
-  const beam = new THREE.Mesh(beamGeo, beamMat);
+  const beam = new THREE.Mesh(new THREE.BufferGeometry(), beamMat);
   beam.renderOrder = 4;
   scene.add(beam);
-  const MOTES = 150, motePos = new Float32Array(MOTES * 3), moteV = [];
-  for (let i = 0; i < MOTES; i++) moteV.push({ ph: rand(0, TAU), sp: rand(0.05, 0.16), r: Math.sqrt(Math.random()), a: rand(0, TAU), h: Math.random() });
+  const MOTES = 170, motePos = new Float32Array(MOTES * 3), moteV = [];
+  for (let i = 0; i < MOTES; i++) moteV.push({ ph: rand(0, TAU), sp: rand(0.05, 0.16), s: rand(-1, 1), d: rand(-1, 1), h: Math.random() });
   const moteGeo = new THREE.BufferGeometry(); moteGeo.setAttribute("position", new THREE.BufferAttribute(motePos, 3));
-  const dot = document.createElement("canvas"); dot.width = dot.height = 32;
-  { const g = dot.getContext("2d"), gr = g.createRadialGradient(16, 16, 0, 16, 16, 16); gr.addColorStop(0, "rgba(255,255,255,1)"); gr.addColorStop(1, "rgba(255,255,255,0)"); g.fillStyle = gr; g.fillRect(0, 0, 32, 32); }
-  const moteMat = new THREE.PointsMaterial({ map: new THREE.CanvasTexture(dot), size: 0.05, transparent: true, depthWrite: false, blending: THREE.AdditiveBlending, opacity: 0, fog: false });
+  const moteMat = new THREE.PointsMaterial({ map: glow(32, 32), size: 0.05, transparent: true, depthWrite: false, blending: THREE.AdditiveBlending, opacity: 0, fog: false });
   const motes = new THREE.Points(moteGeo, moteMat);
   motes.frustumCulled = false; motes.renderOrder = 4;
   scene.add(motes);
+  let TUBE_L = 5, beamBox = null;
+  function placeFixture() {
+    TUBE_L = Math.min(5.2, (xR - xL) * 0.55);
+    fixture.position.set(0, TUBE_Y, LAMP_Z);
+    channel.scale.x = TUBE_L + 0.14;
+    tube.scale.y = TUBE_L;
+    caps.forEach((c, i) => c.position.set((i ? 1 : -1) * (TUBE_L / 2 + 0.03), 0, 0));
+    const wh = HR - TUBE_Y - 0.12;
+    wires.forEach((w, i) => { w.scale.y = wh; w.position.set((i ? 1 : -1) * (TUBE_L / 2 - 0.45), 0.12 + wh / 2, 0); });
+    halo.scale.set(TUBE_L + 1.7, 1.15, 1); halo.position.set(0, -0.01, 0.13);
+    ceilGlow.scale.set(TUBE_L * 1.9, 3.4, 1); ceilGlow.position.set(0, HR - 0.012, LAMP_Z);
+    lamp.position.set(0, TUBE_Y - 0.08, LAMP_Z); lamp.target.position.set(0, 0, LAMP_Z + 0.3);
+    ends.forEach((l, i) => l.position.set((i ? 1 : -1) * TUBE_L * 0.36, TUBE_Y - 0.15, LAMP_Z));
+    // the lit air: the four sides of a frustum from the tube down to the floor
+    const top = TUBE_Y - 0.06, tw = TUBE_L / 2, td = 0.12, bw = tw + 2.8, bd = 2.7;
+    beamBox = { top, tw, td, bw, bd };
+    const P = [[-tw, 0, -td], [tw, 0, -td], [tw, 0, td], [-tw, 0, td], [-bw, -top, -bd], [bw, -top, -bd], [bw, -top, bd], [-bw, -top, bd]];
+    const pos = [];
+    for (const [a, b, c, d] of [[0, 1, 5, 4], [1, 2, 6, 5], [2, 3, 7, 6], [3, 0, 4, 7]]) pos.push(...P[a], ...P[b], ...P[c], ...P[a], ...P[c], ...P[d]);
+    beam.geometry.dispose();
+    beam.geometry = new THREE.BufferGeometry().setAttribute("position", new THREE.Float32BufferAttribute(pos, 3));
+    beam.geometry.computeVertexNormals();
+    beam.position.set(0, top, LAMP_Z);
+    beamMat.uniforms.uH.value = top;
+  }
+  function moteStep(t, dt) {                                       // dust turning slowly in the light
+    const B = beamBox;
+    for (let i = 0; i < MOTES; i++) {
+      const m = moteV[i];
+      m.h = (m.h + m.sp * dt * 0.07) % 1;
+      const k = m.h, w = B.tw + (B.bw - B.tw) * k, dd = B.td + (B.bd - B.td) * k;
+      motePos[i * 3] = m.s * w * 0.9 + Math.sin(t * 0.0004 + m.ph) * 0.18;
+      motePos[i * 3 + 1] = B.top * (1 - k) + Math.sin(t * 0.0007 + m.ph) * 0.1;
+      motePos[i * 3 + 2] = LAMP_Z + m.d * dd * 0.9 + Math.cos(t * 0.0005 + m.ph) * 0.14;
+    }
+    moteGeo.attributes.position.needsUpdate = true;
+  }
 
-  // the three moods. Lamp intensities are in candela; everything else follows the lamp's colour
+  // the three moods, in dial order. Lamp intensities are in candela; everything else follows the tube
   const MOODS = {
-    white: { amb: ["#ffffff", 1.4], hemi: ["#ffffff", "#f1f4f8", 0.85], fill: 1.0, lamp: ["#fff6ea", 42], glow: ["#fff8ef", 5],
+    dark:  { amb: ["#8ea3c9", 0.04], hemi: ["#223049", "#04060a", 0.22], fill: 0, lamp: ["#dfe8ff", 100], ends: 7, tube: "#e6eeff", halo: 0.6, ceil: 0.45, dying: 1,
+             beam: 0.15, motes: 0.8, grid: 0.5, lift: 0, fog: ["#03050a", 0.028], wall: "#eef1f5", env: 0.22, exp: 1.12,
+             ink: "#f1f4f8", tech: "#4d8df5", quote: "#a9b4c6", kind: "fail" },
+    white: { amb: ["#ffffff", 1.4], hemi: ["#ffffff", "#f1f4f8", 0.85], fill: 1.0, lamp: ["#f5f8ff", 36], ends: 4, tube: "#ffffff", halo: 0.1, ceil: 0.1, dying: 0,
              beam: 0, motes: 0, grid: 0, lift: 0.3, fog: ["#ffffff", 0], wall: "#f6f8fb", env: 0.95, exp: 1,
              ink: "#0b0b0c", tech: "#1d6ae5", quote: "#3b4352", kind: "tube" },
-    warm:  { amb: ["#ffd9ad", 0.3], hemi: ["#ffcf97", "#5a3c27", 0.5], fill: 0.1, lamp: ["#ffab5a", 150], glow: ["#ffb566", 9],
-             beam: 0.075, motes: 0.45, grid: 0, lift: 0.04, fog: ["#38220f", 0.016], wall: "#f8f0e6", env: 0.55, exp: 1.05,
-             ink: "#1c130c", tech: "#1d6ae5", quote: "#4a3a2c", kind: "flame" },
-    dark:  { amb: ["#8ea3c9", 0.04], hemi: ["#223049", "#04060a", 0.22], fill: 0, lamp: ["#e2ebff", 115], glow: ["#eef4ff", 10],
-             beam: 0.17, motes: 0.8, grid: 0.5, lift: 0, fog: ["#03050a", 0.028], wall: "#eef1f5", env: 0.22, exp: 1.12,
-             ink: "#f1f4f8", tech: "#4d8df5", quote: "#a9b4c6", kind: "fail" },
+    warm:  { amb: ["#ffd9ad", 0.3], hemi: ["#ffcf97", "#5a3c27", 0.5], fill: 0.1, lamp: ["#ffb466", 135], ends: 12, tube: "#ffd6a0", halo: 0.5, ceil: 0.55, dying: 0,
+             beam: 0.07, motes: 0.45, grid: 0, lift: 0.04, fog: ["#38220f", 0.016], wall: "#f8f0e6", env: 0.55, exp: 1.05,
+             ink: "#1c130c", tech: "#1d6ae5", quote: "#4a3a2c", kind: "hum" },
   };
+  const ORDER = ["dark", "white", "warm"];
   const C = h => new THREE.Color(h);
   const resolve = m => ({
     amb: C(m.amb[0]), ambI: m.amb[1], hs: C(m.hemi[0]), hg: C(m.hemi[1]), hemiI: m.hemi[2], fill: m.fill,
-    lamp: C(m.lamp[0]), lampI: m.lamp[1], glow: C(m.glow[0]), glowI: m.glow[1], beam: m.beam, motes: m.motes, grid: m.grid, lift: m.lift,
-    fog: C(m.fog[0]), fogD: m.fog[1], wall: C(m.wall), env: m.env, exp: m.exp,
+    lamp: C(m.lamp[0]), lampI: m.lamp[1], endsI: m.ends, tube: C(m.tube), halo: m.halo, ceil: m.ceil, dying: m.dying,
+    beam: m.beam, motes: m.motes, grid: m.grid, lift: m.lift, fog: C(m.fog[0]), fogD: m.fog[1], wall: C(m.wall), env: m.env, exp: m.exp,
     ink: srgb(m.ink), tech: srgb(m.tech), quote: srgb(m.quote), kind: m.kind,
   });
-  const cur = resolve(MOODS.white), L = { from: resolve(MOODS.white), to: resolve(MOODS.white), mix: 1, power: 1, name: "" };
+  const RS = ORDER.map(k => resolve(MOODS[k])), cur = resolve(MOODS.white), L = { power: 1 };
   const INK = { value: cur.ink.clone() }, TECH = { value: cur.tech.clone() }, QUOTE = { value: cur.quote.clone() };
   const WALL = { value: cur.wall.clone() }, GLOW = { value: 0 }, LIFT = { value: 0 };
+  // the dial's position: 0 dark, 1 white, 2 warm, and anything between while it turns
+  const dial = { u: 1, spin: 0, envU: -9, envAt: -1e9, settled: "", drag: null };
 
-  // a real lamp is never quite steady: a tube stutters, a filament wavers, a tired bulb fails
+  // a real tube is never quite steady: it stutters, it hums, and a tired one blinks and fails
   const FL = { next: 2500, seq: [], buzz: [0, 0] };
   function flicker(t, kind) {
     if (reduce) return 1;
-    let m = kind === "flame"
-      ? 1 + 0.035 * Math.sin(t * 0.0071) + 0.025 * Math.sin(t * 0.0133 + 1.3) + 0.018 * Math.sin(t * 0.031 + 0.4)
-      : 1 + 0.005 * Math.sin(t * 0.047) + 0.004 * Math.sin(t * 0.113 + 2);
+    let m = 1 + 0.005 * Math.sin(t * 0.047) + 0.004 * Math.sin(t * 0.113 + 2);
+    if (kind === "hum") m += 0.012 * Math.sin(t * 0.0093) + 0.008 * Math.sin(t * 0.0231 + 1);
     if (t > FL.next) {
       const s = [];
       if (kind === "tube") {
-        FL.next = t + rand(7000, 15000);
+        FL.next = t + rand(8000, 16000);
         for (let i = 0, a = t, n = 2 + ((Math.random() * 3) | 0); i < n; i++) { const d = rand(30, 80); s.push([a, a + d, rand(0.3, 0.7)]); a += d + rand(40, 140); }
-      } else if (kind === "flame") {
-        FL.next = t + rand(2500, 6000);
-        s.push([t, t + rand(90, 200), rand(0.78, 0.9)]);
+      } else if (kind === "hum") {
+        FL.next = t + rand(9000, 18000);
+        s.push([t, t + rand(40, 90), rand(0.55, 0.8)]);
       } else {
         FL.next = t + rand(5500, 11000);
         for (let i = 0, a = t, n = 2 + ((Math.random() * 5) | 0); i < n; i++) { const d = rand(40, 140); s.push([a, a + d, rand(0.05, 0.45)]); a += d + rand(30, 160); }
@@ -177,9 +237,9 @@ function room() {
     const s = new THREE.Scene(), M = (c, k = 1) => new THREE.MeshBasicMaterial({ color: new THREE.Color(c).multiplyScalar(k), side: THREE.BackSide });
     const box = new THREE.Mesh(new THREE.BoxGeometry(16, 9, 14), M(m.wall, 0.55 * m.ambI + 0.25 * m.hemiI + 0.12)); box.position.set(0, 4.5, -3);
     const floor = new THREE.Mesh(new THREE.PlaneGeometry(16, 14), M(m.wall, 0.5 * m.ambI + 0.3 * m.hemiI + 0.1)); floor.rotation.x = Math.PI / 2; floor.position.set(0, 0.01, -3);
-    const bulbDisc = new THREE.Mesh(new THREE.CircleGeometry(0.8, 24), M(m.lamp, m.lampI / 12)); bulbDisc.rotation.x = -Math.PI / 2; bulbDisc.position.set(0, 7.6, -1.5);
+    const strip = new THREE.Mesh(new THREE.PlaneGeometry(5, 0.35), M(m.tube, m.lampI / 10)); strip.rotation.x = -Math.PI / 2; strip.position.set(0, 7.8, -1.5);
     const opening = new THREE.Mesh(new THREE.PlaneGeometry(16, 9), M("#ffffff", m.fill * 1.6)); opening.position.set(0, 4.5, 4);
-    s.add(box, floor, bulbDisc, opening);
+    s.add(box, floor, strip, opening);
     const rt = pmrem.fromScene(s, 0.03);
     scene.environment = rt.texture;
     if (envRT) envRT.dispose();
@@ -187,17 +247,18 @@ function room() {
     s.traverse(o => { if (o.isMesh) { o.geometry.dispose(); o.material.dispose(); } });
   }
   function applyLight(t) {
-    const a = L.from, b = L.to, k = smooth(L.mix), fl = flicker(t, b.kind) * L.power;
-    cur.amb.copy(a.amb).lerp(b.amb, k); cur.hs.copy(a.hs).lerp(b.hs, k); cur.hg.copy(a.hg).lerp(b.hg, k);
-    cur.lamp.copy(a.lamp).lerp(b.lamp, k); cur.glow.copy(a.glow).lerp(b.glow, k); cur.fog.copy(a.fog).lerp(b.fog, k); cur.wall.copy(a.wall).lerp(b.wall, k);
-    for (const key of ["ambI", "hemiI", "fill", "lampI", "glowI", "beam", "motes", "grid", "lift", "fogD", "env", "exp"]) cur[key] = lerp(a[key], b[key], k);
+    const u = clamp(dial.u, 0, 2), i = Math.min(1, Math.floor(u)), k = u - i, a = RS[i], b = RS[i + 1];
+    for (const key of ["amb", "hs", "hg", "lamp", "tube", "fog", "wall"]) cur[key].copy(a[key]).lerp(b[key], k);
+    for (const key of ["ambI", "hemiI", "fill", "lampI", "endsI", "halo", "ceil", "dying", "beam", "motes", "grid", "lift", "fogD", "env", "exp"]) cur[key] = lerp(a[key], b[key], k);
     cur.ink.lerpVectors(a.ink, b.ink, k); cur.tech.lerpVectors(a.tech, b.tech, k); cur.quote.lerpVectors(a.quote, b.quote, k);
+    const fl = flicker(t, RS[Math.round(u)].kind) * L.power;
     ambient.color.copy(cur.amb); ambient.intensity = cur.ambI * (0.9 + 0.1 * fl);
     hemi.color.copy(cur.hs); hemi.groundColor.copy(cur.hg); hemi.intensity = cur.hemiI * (0.9 + 0.1 * fl);
     fill.intensity = cur.fill;
     lamp.color.copy(cur.lamp); lamp.intensity = cur.lampI * fl;
-    bulbMat.color.copy(cur.glow).multiplyScalar(cur.glowI * fl);
-    glowMat.color.copy(cur.glow).multiplyScalar(0.25 + cur.glowI * 0.12 * fl);
+    for (const e of ends) { e.color.copy(cur.lamp); e.intensity = cur.endsI * fl; }
+    tubeMat.uniforms.uColor.value.copy(cur.tube); tubeMat.uniforms.uPower.value = clamp(fl, 0, 1.2); tubeMat.uniforms.uDying.value = cur.dying; tubeMat.uniforms.uTime.value = t;
+    halo.material.color.copy(cur.tube).multiplyScalar(cur.halo * fl); ceilGlow.material.color.copy(cur.lamp).multiplyScalar(cur.ceil * fl);
     beamMat.uniforms.uColor.value.copy(cur.lamp); beamMat.uniforms.uOpacity.value = cur.beam * fl;
     moteMat.color.copy(cur.lamp); moteMat.opacity = cur.motes * Math.min(1, fl);
     beam.visible = cur.beam > 0.002; motes.visible = cur.motes > 0.01;
@@ -207,31 +268,114 @@ function room() {
     WALL.value.copy(cur.wall); GLOW.value = cur.grid * (0.8 + 0.2 * fl); LIFT.value = cur.lift * (0.9 + 0.1 * fl);
     INK.value.copy(cur.ink); TECH.value.copy(cur.tech); QUOTE.value.copy(cur.quote);
   }
-  const switches = $$(".room__light [data-mood]", stage);
   let saved = null;
   try { saved = localStorage.getItem("jt-light"); } catch (e) { /* private mode */ }
-  function setMood(name, instant) {
-    if (!MOODS[name]) return;
-    const same = name === L.name && L.mix >= 1;
-    L.name = name;
+  // the dial settles on a mood: the tube re-strikes (a quick double blink), and the choice is kept
+  function settle(i, instant) {
+    i = clamp(Math.round(i), 0, 2);
+    const name = ORDER[i];
+    if (instant || reduce || !window.gsap) dial.u = i;
+    else { gsap.killTweensOf(dial, "u"); gsap.to(dial, { u: i, duration: 0.85, ease: "back.out(1.7)" }); }
+    if (name === dial.settled) return;
+    const first = !dial.settled;
+    dial.settled = name;
     stage.dataset.light = name;
-    switches.forEach(b => b.setAttribute("aria-pressed", String(b.dataset.mood === name)));
+    if (dialEl) { dialEl.setAttribute("aria-valuenow", String(i)); dialEl.setAttribute("aria-valuetext", name[0].toUpperCase() + name.slice(1) + " light"); }
     try { localStorage.setItem("jt-light", name); } catch (e) { /* private mode */ }
-    if (same) return;
-    const to = resolve(MOODS[name]);
-    L.from = { ...cur, amb: cur.amb.clone(), hs: cur.hs.clone(), hg: cur.hg.clone(), lamp: cur.lamp.clone(), glow: cur.glow.clone(), fog: cur.fog.clone(), wall: cur.wall.clone(), ink: cur.ink.clone(), tech: cur.tech.clone(), quote: cur.quote.clone() };
-    L.to = to;
-    if (instant || reduce || !window.gsap) { L.mix = 1; L.power = 1; setEnv(to); applyLight(0); if (!running) still(); return; }
-    // the switch: a stutter as the old light dies, the new one strikes and comes up
+    if (first || instant || reduce || !window.gsap) return;
     gsap.killTweensOf(L);
-    L.mix = 0;
-    gsap.timeline()
-      .to(L, { power: 0.2, duration: 0.05 }).to(L, { power: 0.85, duration: 0.05 }).to(L, { power: 0.08, duration: 0.12 })
-      .call(() => setEnv(to))
-      .to(L, { mix: 1, duration: 1.1, ease: "power2.inOut" }, "<")
-      .to(L, { power: 0.75, duration: 0.05 }, "<0.15").to(L, { power: 0.25, duration: 0.06 }).to(L, { power: 1, duration: 0.4, ease: "power2.out" });
+    gsap.timeline().to(L, { power: 0.35, duration: 0.05 }).to(L, { power: 0.95, duration: 0.05 }).to(L, { power: 0.5, duration: 0.07 }).to(L, { power: 1, duration: 0.3, ease: "power2.out" });
   }
-  switches.forEach(b => b.addEventListener("click", () => setMood(b.dataset.mood)));
+  const setMood = (name, instant) => settle(ORDER.indexOf(name), instant);
+
+  /* ------------------------------------------------ the dial: half a protractor on the right edge */
+  // rolled by dragging it round, the wheel, a tap on a mood or the arrow keys. The light blends as it
+  // turns and it springs to the nearest mood. Its scale magnifies where it passes the mark.
+  const dialEl = $(".room__dial", stage), DT = [], DL = [], DEG = Math.PI / 180;
+  let dialScale = null, dialRot = null;
+  if (dialEl) {
+    const S = (tag, attrs, parent) => { const e = document.createElementNS("http://www.w3.org/2000/svg", tag); for (const k in attrs) e.setAttribute(k, attrs[k]); if (parent) parent.appendChild(e); return e; };
+    const svg = S("svg", { viewBox: "0 0 120 240", "aria-hidden": "true" });
+    S("path", { class: "room__dial-plate", d: "M120 0 A120 120 0 0 0 120 240 Z" }, svg);
+    S("path", { class: "room__dial-rim", d: "M120 5 A115 115 0 0 0 120 235" }, svg);
+    S("path", { class: "room__dial-rim", d: "M120 44 A76 76 0 0 0 120 196" }, svg);
+    dialScale = S("g", { class: "room__dial-scale" }, svg);
+    for (let a = -177; a <= 180; a += 3) {                         // a tick every 3°, longer every 15° and 30°
+      const major = a % 30 === 0, mid = a % 15 === 0;
+      DT.push({ a, base: major ? 10 : mid ? 7 : 4, el: S("line", { class: major ? "is-major" : mid ? "is-mid" : "" }, dialScale) });
+      if (major) {
+        const r = 96, x = 120 - r * Math.cos(a * DEG), y = 120 - r * Math.sin(a * DEG);
+        S("text", { class: "room__dial-num", x: x.toFixed(2), y: y.toFixed(2), transform: `rotate(${a - 90} ${x.toFixed(2)} ${y.toFixed(2)})` }, dialScale).textContent = String((180 - a + 360) % 360);
+      }
+    }
+    ORDER.forEach((m, i) => {
+      const g = S("g", { class: "room__dial-label", "data-mood": m }, svg);
+      S("circle", { class: "room__dial-dot", r: 3.4 }, g);
+      S("text", { x: 7.5, y: 3.4 }, g).textContent = m.toUpperCase();
+      DL.push({ g, a: 60 - 60 * i });
+    });
+    S("path", { class: "room__dial-mark", d: "M3 113 L12.5 120 L3 127 Z" }, svg);
+    dialEl.appendChild(svg);
+
+    const centre = () => { const r = dialEl.getBoundingClientRect(); return [r.right, r.top + r.height / 2]; };
+    const angleAt = (x, y) => { const [ax, ay] = centre(); return Math.atan2(ay - y, ax - x) / DEG; };
+    const rubber = x => 0.3 * (1 - Math.exp(-x / 0.3));           // pulling past the ends meets resistance
+    dialEl.addEventListener("pointerdown", e => {
+      try { dialEl.setPointerCapture(e.pointerId); } catch (err) { /* not a live pointer */ }
+      if (window.gsap) gsap.killTweensOf(dial, "u");
+      dial.drag = { a0: angleAt(e.clientX, e.clientY), u0: dial.u, x: e.clientX, y: e.clientY, moved: 0 };
+    });
+    dialEl.addEventListener("pointermove", e => {
+      if (!dial.drag) return;
+      const d = dial.drag;
+      d.moved = Math.max(d.moved, Math.hypot(e.clientX - d.x, e.clientY - d.y));
+      let u = d.u0 - (angleAt(e.clientX, e.clientY) - d.a0) / 60;
+      if (u < 0) u = -rubber(-u); else if (u > 2) u = 2 + rubber(u - 2);
+      dial.u = u;
+    });
+    const release = e => {
+      const d = dial.drag;
+      if (!d) return;
+      dial.drag = null;
+      if (d.moved > 5) return settle(dial.u);
+      const lb = e.target.closest && e.target.closest(".room__dial-label");    // a tap: that mood, or a step towards the side tapped
+      settle(lb ? ORDER.indexOf(lb.dataset.mood) : Math.round(dial.u) + (e.clientY < centre()[1] ? -1 : 1));
+    };
+    dialEl.addEventListener("pointerup", release);
+    dialEl.addEventListener("pointercancel", release);
+    let wheelT = 0;
+    dialEl.addEventListener("wheel", e => {
+      e.preventDefault();
+      if (window.gsap) gsap.killTweensOf(dial, "u");
+      dial.u = clamp(dial.u + e.deltaY * 0.0032, -0.25, 2.25);
+      clearTimeout(wheelT); wheelT = setTimeout(() => settle(dial.u), 170);
+    }, { passive: false });
+    dialEl.addEventListener("keydown", e => {
+      const step = { ArrowUp: -1, ArrowLeft: -1, PageUp: -1, ArrowDown: 1, ArrowRight: 1, PageDown: 1 }[e.key];
+      if (step) { e.preventDefault(); settle(Math.round(dial.u) + step); }
+      else if (e.key === "Home" || e.key === "End") { e.preventDefault(); settle(e.key === "Home" ? 0 : 2); }
+    });
+  }
+  function drawDial() {
+    if (!dialScale) return;
+    const rot = 60 * dial.u - 60 + dial.spin;                       // degrees, clockwise
+    if (rot === dialRot) return;
+    dialRot = rot;
+    dialScale.setAttribute("transform", `rotate(${rot.toFixed(3)} 120 120)`);
+    for (const T of DT) {
+      const th = ((T.a + rot + 540) % 360) - 180, w = Math.exp(-((th / 15) ** 2));
+      const r2 = 114, r1 = r2 - T.base * (1 + 0.9 * w), c = Math.cos(T.a * DEG), s = Math.sin(T.a * DEG);
+      T.el.setAttribute("x1", (120 - r1 * c).toFixed(2)); T.el.setAttribute("y1", (120 - r1 * s).toFixed(2));
+      T.el.setAttribute("x2", (120 - r2 * c).toFixed(2)); T.el.setAttribute("y2", (120 - r2 * s).toFixed(2));
+      T.el.style.opacity = (0.3 + 0.7 * w).toFixed(3);
+    }
+    for (const Lb of DL) {
+      const th = Lb.a + rot, w = Math.exp(-((th / 24) ** 2)), r = 60;
+      const x = 120 - r * Math.cos(th * DEG), y = 120 - r * Math.sin(th * DEG);
+      Lb.g.setAttribute("transform", `translate(${(x - 14).toFixed(2)} ${y.toFixed(2)}) scale(${(0.82 + 0.34 * w).toFixed(3)})`);
+      Lb.g.style.opacity = (clamp(1 - Math.abs(th) / 100, 0, 1) * (0.4 + 0.6 * w)).toFixed(3);
+    }
+  }
 
   /* ------------------------------------------------ the room: five ruled surfaces, lit */
   const ROOM = new THREE.Vector4(), LINE = { value: new THREE.Color("#345ca8") }, EDGE = { value: new THREE.Color("#244078") };
@@ -279,9 +423,7 @@ function room() {
     ceil.scale.set(wr, len, 1); ceil.rotation.set(Math.PI / 2, 0, 0); ceil.position.set(0, HR, zc);
     left.scale.set(len, HR, 1); left.rotation.set(0, Math.PI / 2, 0); left.position.set(xL, HR / 2, zc);
     right.scale.set(len, HR, 1); right.rotation.set(0, -Math.PI / 2, 0); right.position.set(xR, HR / 2, zc);
-    rig.position.set(0, HR, LAMP_Z);
-    lamp.position.set(0, HR - CORD - 0.3, LAMP_Z); lamp.target.position.set(0, 0, LAMP_Z + 0.4);
-    beam.position.set(0, HR - CORD - 0.42, LAMP_Z);
+    placeFixture();
     placeVines();
   }
 
@@ -632,19 +774,17 @@ function room() {
     const ts = ((dx < 0 ? xL : xR) - o.x) / dx, zs = o.z - ts, ys = o.y + dy * ts;
     return ys > 0 && ys < HR ? [dx < 0 ? xL + 1 : xR - 1, zs, false] : null;
   }
-  // the lamp answers a click: next mood, and it swings
+  // the tube answers a click: the dial rolls on to the next mood
   const ray = new THREE.Raycaster(), ndc = new THREE.Vector2();
   const overLamp = (X, Y) => {
     const r = stage.getBoundingClientRect();
     ndc.set((X - r.left) / r.width * 2 - 1, -((Y - r.top) / r.height) * 2 + 1);
     ray.setFromCamera(ndc, camera);
-    return ray.intersectObjects([lampShade, bulb, cord], false).length > 0;
+    return ray.intersectObjects([tube, channel, ...caps], false).length > 0;
   };
   stage.addEventListener("click", e => {
     if (e.target.closest("a, button") || !overLamp(e.clientX, e.clientY)) return;
-    const order = ["white", "warm", "dark"];
-    setMood(order[(order.indexOf(L.name) + 1) % order.length]);
-    pendulum.vz += rand(0.5, 0.8) * (Math.random() < 0.5 ? -1 : 1); pendulum.vx += rand(-0.3, 0.3);
+    settle((Math.round(dial.u) + 1) % 3);
   });
   let hoverCheck = 0;
   stage.addEventListener("pointermove", e => {
@@ -956,18 +1096,6 @@ function room() {
     leafMesh.count = n;
     leafMesh.instanceMatrix.needsUpdate = true; aCell.needsUpdate = true; aAlpha.needsUpdate = true;
   }
-  function moteStep(t, dt) {                                       // dust turning slowly in the lamp's beam
-    const top = HR - CORD - 0.45;
-    for (let i = 0; i < MOTES; i++) {
-      const m = moteV[i];
-      m.h = (m.h + m.sp * dt * 0.08) % 1; m.a += dt * 0.12 * (0.5 + m.r);
-      const y = top - m.h * top, rad = (0.4 + (1 - y / top) * 3.6) * m.r * 0.92;
-      motePos[i * 3] = Math.cos(m.a) * rad + Math.sin(t * 0.0004 + m.ph) * 0.15;
-      motePos[i * 3 + 1] = y + Math.sin(t * 0.0007 + m.ph) * 0.1;
-      motePos[i * 3 + 2] = LAMP_Z + Math.sin(m.a) * rad;
-    }
-    moteGeo.attributes.position.needsUpdate = true;
-  }
 
   /* ------------------------------------------------ the frame */
   function frame(t, dt) {
@@ -988,11 +1116,8 @@ function room() {
 
     wind(t);
     applyLight(t);
-    // the pendant sways a touch in the draught, and swings when clicked
-    pendulum.vz += (-pendulum.az * 9 - pendulum.vz * 0.9 + WIND.g * 0.02 * Math.sin(t * 0.002)) * dt;
-    pendulum.vx += (-pendulum.ax * 9 - pendulum.vx * 0.9) * dt;
-    pendulum.az += pendulum.vz * dt; pendulum.ax += pendulum.vx * dt;
-    swing.rotation.set(pendulum.ax, 0, pendulum.az);
+    envCheck(t);
+    drawDial();
     if (motes.visible) moteStep(t, dt);
 
     // the branches hang in the opening: they slide with the camera and leave the frame as it moves in
@@ -1080,7 +1205,12 @@ function room() {
     placeRoom();
   }
   let running = false;
-  const still = () => { applyLight(0); placeFloaters(0); placeBot(0); writeLeaves(); renderer.render(scene, camera); };
+  // the reflections follow the light, a few times a second at most while the dial turns
+  function envCheck(t) {
+    const u = clamp(dial.u, 0, 2);
+    if (Math.abs(u - dial.envU) > 0.02 && t - dial.envAt > 240) { setEnv(cur); dial.envU = u; dial.envAt = t; }
+  }
+  const still = () => { applyLight(0); envCheck(performance.now()); drawDial(); placeFloaters(0); placeBot(0); writeLeaves(); renderer.render(scene, camera); };
   measure();
   prewarm();
   setMood(MOODS[saved] ? saved : "white", true);
@@ -1092,7 +1222,7 @@ function room() {
   addEventListener("resize", () => { clearTimeout(rt); rt = setTimeout(() => { measure(); if (fontsReady) buildFloaters(); if (!running) still(); }, 150); });
   let visible = true;
   new IntersectionObserver(([e]) => (visible = e.isIntersecting)).observe(stage);
-  if (/[?&]roomdebug/.test(location.search)) window.__room = { bot, parts, L, setMood, lamp };
+  if (/[?&]roomdebug/.test(location.search)) window.__room = { bot, parts, L, dial, settle, setMood, lamp };
 
   if (reduce) {                                                   // a still room: everything where it stands
     LEAF_U.uFade.value = 1;
@@ -1121,6 +1251,7 @@ function room() {
       gsap.fromTo(Ls, { intro: 1, op: 0, blur: 4 }, { intro: 0, op: 1, blur: 0, duration: 1.7, ease: "expo.out", stagger: 0.07, delay: 0.25 });
       gsap.fromTo(Q, { intro: 0.35, op: 0, blur: 3 }, { intro: 0, op: 1, blur: 0, duration: 1.4, ease: "expo.out", delay: 1.1 });
       if (cueIn) gsap.fromTo(cueIn, { y: 16, autoAlpha: 0 }, { y: 0, autoAlpha: 1, duration: 1, ease: "expo.out", delay: 1.7 });
+      gsap.fromTo(dial, { spin: -220 }, { spin: 0, duration: 2, ease: "power4.out", delay: 1.25 });   // the dial rolls in
     } else {
       strokes.forEach(p => (p.style.strokeDashoffset = 0));
       blossoms.forEach(b => (b.pop = 1));

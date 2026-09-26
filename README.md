@@ -4,7 +4,7 @@
 
 A static rebuild of every page of janyutech.com (55 pages), with the original content and a new design:
 smooth scrolling, letter-by-letter title reveals, a fluid-flow image hover effect, page transitions, a mega-menu, sliders, a lightbox, tabs and more.
-The home page opens inside an empty room in 3D, its ceiling, walls and floor ruled with a grid and a pendant lamp hanging from the ceiling. The lamp can be switched between Dark, White and Warm light and flickers now and then like a real one. JANYU TECH floats in the middle with the quote beneath, Janyu Tech's tracked cleaning robot drives over the floor after the pointer, leaves and petals drift in from two blossom branches and settle, and scrolling carries the camera into the room.
+The home page opens inside an empty room in 3D, its ceiling, walls and floor ruled with a grid and a tube light hanging from the ceiling. A half-protractor dial on the right edge rolls the light between Dark, White and Warm, and the tube flickers now and then like a real one. JANYU TECH floats in the middle with the quote beneath, Janyu Tech's tracked cleaning robot drives over the floor after the pointer, leaves and petals drift in from two blossom branches and settle, and scrolling carries the camera into the room.
 
 ## Folder layout
 
@@ -15,7 +15,7 @@ The home page opens inside an empty room in 3D, its ceiling, walls and floor rul
 | `site.css` | Header, menus, footer and every inner-page component |
 | `main.js` | All interaction and animation (runs on every page, switches on what each page has) |
 | `fluid.js` | The image hover effect: a small WebGL fluid simulation (one shared context) that makes the picture flow around the cursor and settle back |
-| `hero.js` | Home landing, a three.js scene (loaded as ES modules from jsDelivr): the grid room and its lamp (the three moods and their flicker), the robot that follows the pointer, leaves and petals with their shadows, the lettering, the two blossom branches, pointer parallax and the camera move on scroll |
+| `hero.js` | Home landing, a three.js scene (loaded as ES modules from jsDelivr): the grid room and its tube light (the three moods, their flicker and the dial that picks them), the robot that follows the pointer, leaves and petals with their shadows, the lettering, the two blossom branches, pointer parallax and the camera move on scroll |
 | `assets/models/` | The robot for the landing, a web copy of `janyu-tech-bot.glb` made by `build/optimize_bot.mjs` |
 | `assets/bp/` | Robot photos and their matching blueprint drawings (made by `build/blueprint.py`) |
 | `assets/img/` | Every site image, converted to WebP |
