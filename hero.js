@@ -1,7 +1,8 @@
 /*
- * Home landing: an empty white room seen from its open end, in 3D (three.js).
- * Ceiling, walls, floor and back wall are ruled with a fine grid, a few vines
- * creep over the walls, and JANYU TECH floats in the middle with the quote.
+ * Home landing: a room seen from its open end, in 3D (three.js): Janyu Tech's
+ * production house (workshop.js fits it out – the arm cell, the repair bay, the
+ * lab, the office, people at work). Ceiling, walls and floor are ruled with a
+ * fine grid, and JANYU TECH floats in the middle with the quote.
  *  – a tube light hangs from the ceiling and lights the room: Dark, White or
  *    Warm, chosen on the right edge (or by clicking the tube). It
  *    flickers now and then like a real one – a stutter, a hum, a tired tube
@@ -22,6 +23,7 @@
 import * as THREE from "three";
 import { GLTFLoader } from "three/addons/loaders/GLTFLoader.js";
 import { MeshoptDecoder } from "three/addons/libs/meshopt_decoder.module.js";
+import { mergeGeometries } from "three/addons/utils/BufferGeometryUtils.js";
 
 const hero = document.querySelector("[data-hero]");
 const stage = hero && hero.querySelector(".room__stage");
@@ -188,13 +190,13 @@ function room() {
   const MOODS = {
     dark:  { amb: ["#8ea3c9", 0.04], hemi: ["#223049", "#04060a", 0.22], fill: 0, lamp: ["#dfe8ff", 100], ends: 7, tube: "#e6eeff", halo: 0.6, ceil: 0.45, dying: 1,
              beam: 0.15, motes: 0.8, grid: 0.5, lift: 0, fog: ["#03050a", 0.028], wall: "#eef1f5", env: 0.22, exp: 1.12,
-             ink: "#f1f4f8", tech: "#4d8df5", quote: "#a9b4c6", kind: "fail" },
+             ink: "#f1f4f8", tech: "#4d8df5", quote: "#a9b4c6", aura: "#060910", kind: "fail" },
     white: { amb: ["#ffffff", 1.4], hemi: ["#ffffff", "#f1f4f8", 0.85], fill: 1.0, lamp: ["#f5f8ff", 36], ends: 4, tube: "#ffffff", halo: 0.1, ceil: 0.1, dying: 0,
              beam: 0, motes: 0, grid: 0, lift: 0.3, fog: ["#ffffff", 0], wall: "#f6f8fb", env: 0.95, exp: 1,
-             ink: "#0b0b0c", tech: "#1d6ae5", quote: "#3b4352", kind: "tube" },
+             ink: "#0b0b0c", tech: "#1d6ae5", quote: "#3b4352", aura: "#f3f6fa", kind: "tube" },
     warm:  { amb: ["#ffd9ad", 0.3], hemi: ["#ffcf97", "#5a3c27", 0.5], fill: 0.1, lamp: ["#ffb466", 135], ends: 12, tube: "#ffd6a0", halo: 0.5, ceil: 0.55, dying: 0,
              beam: 0.07, motes: 0.45, grid: 0, lift: 0.04, fog: ["#38220f", 0.016], wall: "#f8f0e6", env: 0.55, exp: 1.05,
-             ink: "#1c130c", tech: "#1d6ae5", quote: "#4a3a2c", kind: "hum" },
+             ink: "#1c130c", tech: "#1d6ae5", quote: "#4a3a2c", aura: "#f6e8d6", kind: "hum" },
   };
   const ORDER = ["dark", "white", "warm"];
   const C = h => new THREE.Color(h);
@@ -202,10 +204,10 @@ function room() {
     amb: C(m.amb[0]), ambI: m.amb[1], hs: C(m.hemi[0]), hg: C(m.hemi[1]), hemiI: m.hemi[2], fill: m.fill,
     lamp: C(m.lamp[0]), lampI: m.lamp[1], endsI: m.ends, tube: C(m.tube), halo: m.halo, ceil: m.ceil, dying: m.dying,
     beam: m.beam, motes: m.motes, grid: m.grid, lift: m.lift, fog: C(m.fog[0]), fogD: m.fog[1], wall: C(m.wall), env: m.env, exp: m.exp,
-    ink: srgb(m.ink), tech: srgb(m.tech), quote: srgb(m.quote), kind: m.kind,
+    ink: srgb(m.ink), tech: srgb(m.tech), quote: srgb(m.quote), aura: srgb(m.aura), kind: m.kind,
   });
   const RS = ORDER.map(k => resolve(MOODS[k])), cur = resolve(MOODS.white), L = { power: 1 };
-  const INK = { value: cur.ink.clone() }, TECH = { value: cur.tech.clone() }, QUOTE = { value: cur.quote.clone() };
+  const INK = { value: cur.ink.clone() }, TECH = { value: cur.tech.clone() }, QUOTE = { value: cur.quote.clone() }, AURA = { value: cur.aura.clone() };
   const WALL = { value: cur.wall.clone() }, GLOW = { value: 0 }, LIFT = { value: 0 };
   // the light's position: 0 dark, 1 white, 2 warm, and anything between while it changes
   const mood = { u: 1, envU: -9, envAt: -1e9, settled: "" };
@@ -253,7 +255,7 @@ function room() {
     const u = clamp(mood.u, 0, 2), i = Math.min(1, Math.floor(u)), k = u - i, a = RS[i], b = RS[i + 1];
     for (const key of ["amb", "hs", "hg", "lamp", "tube", "fog", "wall"]) cur[key].copy(a[key]).lerp(b[key], k);
     for (const key of ["ambI", "hemiI", "fill", "lampI", "endsI", "halo", "ceil", "dying", "beam", "motes", "grid", "lift", "fogD", "env", "exp"]) cur[key] = lerp(a[key], b[key], k);
-    cur.ink.lerpVectors(a.ink, b.ink, k); cur.tech.lerpVectors(a.tech, b.tech, k); cur.quote.lerpVectors(a.quote, b.quote, k);
+    cur.ink.lerpVectors(a.ink, b.ink, k); cur.tech.lerpVectors(a.tech, b.tech, k); cur.quote.lerpVectors(a.quote, b.quote, k); cur.aura.lerpVectors(a.aura, b.aura, k);
     const fl = flicker(t, RS[Math.round(u)].kind) * L.power;
     ambient.color.copy(cur.amb); ambient.intensity = cur.ambI * (0.9 + 0.1 * fl);
     hemi.color.copy(cur.hs); hemi.groundColor.copy(cur.hg); hemi.intensity = cur.hemiI * (0.9 + 0.1 * fl);
@@ -269,7 +271,7 @@ function room() {
     scene.environmentIntensity = cur.env;
     renderer.toneMappingExposure = cur.exp;
     WALL.value.copy(cur.wall); GLOW.value = cur.grid * (0.8 + 0.2 * fl); LIFT.value = cur.lift * (0.9 + 0.1 * fl);
-    INK.value.copy(cur.ink); TECH.value.copy(cur.tech); QUOTE.value.copy(cur.quote);
+    INK.value.copy(cur.ink); TECH.value.copy(cur.tech); QUOTE.value.copy(cur.quote); AURA.value.copy(cur.aura);
   }
   let saved = null;
   try { saved = localStorage.getItem("jt-light"); } catch (e) { /* private mode */ }
@@ -454,77 +456,7 @@ function room() {
     left.scale.set(len, HR, 1); left.rotation.set(0, Math.PI / 2, 0); left.position.set(xL, HR / 2, zc);
     right.scale.set(len, HR, 1); right.rotation.set(0, -Math.PI / 2, 0); right.position.set(xR, HR / 2, zc);
     placeFixture();
-    placeVines();
-  }
-
-  /* ------------------------------------------------ vines creeping over the walls */
-  function vine(seed, root, dir, reach) {                            // a canvas: a few tendrils with leaves, the odd flower
-    const S = 1024, c = document.createElement("canvas"), g = c.getContext("2d");
-    c.width = c.height = S;
-    let s = seed;
-    const R = () => ((s = (s * 16807) % 2147483647) / 2147483647);
-    g.lineCap = "round"; g.lineJoin = "round";
-    const leafAt = (x, y, a, sz) => {
-      g.save(); g.translate(x, y); g.rotate(a);
-      g.beginPath(); g.moveTo(0, 0); g.bezierCurveTo(sz * 0.3, -sz * 0.42, sz * 0.8, -sz * 0.36, sz * 1.1, 0); g.bezierCurveTo(sz * 0.8, sz * 0.36, sz * 0.3, sz * 0.42, 0, 0);
-      const gr = g.createLinearGradient(0, 0, sz, 0); gr.addColorStop(0, "rgba(31,79,190,.72)"); gr.addColorStop(1, "rgba(110,156,240,.66)");
-      g.fillStyle = gr; g.fill();
-      g.strokeStyle = "rgba(225,236,255,.45)"; g.lineWidth = 1.2; g.beginPath(); g.moveTo(sz * 0.1, 0); g.lineTo(sz * 0.95, 0); g.stroke();
-      g.restore();
-    };
-    const bloom = (x, y, sz) => {
-      g.save(); g.translate(x, y);
-      for (let i = 0; i < 5; i++) {
-        g.rotate(TAU / 5); g.beginPath(); g.ellipse(0, -sz * 0.55, sz * 0.32, sz * 0.55, 0, 0, TAU);
-        g.fillStyle = "rgba(92,142,238,.7)"; g.fill();
-      }
-      g.beginPath(); g.arc(0, 0, sz * 0.22, 0, TAU); g.fillStyle = "rgba(18,51,127,.8)"; g.fill();
-      g.restore();
-    };
-    const stem = (x, y, a, len, wid, depth) => {
-      const pts = [[x, y, a]];
-      for (let i = 0, n = Math.ceil(len / 12); i < n; i++) {
-        a += (R() - 0.5) * 0.32 + Math.sin(i * 0.28 + seed) * 0.045;
-        x += Math.cos(a) * 12; y += Math.sin(a) * 12;
-        pts.push([x, y, a]);
-      }
-      for (let i = 1; i < pts.length; i++) {
-        g.lineWidth = Math.max(0.8, wid * (1 - (i / pts.length) * 0.8));
-        g.strokeStyle = "rgba(86,98,122,.5)";
-        g.beginPath(); g.moveTo(pts[i - 1][0], pts[i - 1][1]); g.lineTo(pts[i][0], pts[i][1]); g.stroke();
-      }
-      for (let i = 3; i < pts.length; i += 3) {
-        if (R() < 0.3) continue;
-        const [px, py, pa] = pts[i], side = i % 2 ? 1 : -1;
-        leafAt(px, py, pa + side * (0.75 + R() * 0.5), (15 + R() * 10) * (1 - (i / pts.length) * 0.45));
-      }
-      if (depth > 0) for (let i = 5; i < pts.length - 3; i += 6 + ((R() * 5) | 0)) {
-        if (R() < 0.4) continue;
-        const [px, py, pa] = pts[i];
-        stem(px, py, pa + (R() < 0.5 ? -1 : 1) * (0.55 + R() * 0.6), len * (0.3 + R() * 0.25), wid * 0.6, depth - 1);
-      }
-      if (R() < 0.55) bloom(x, y, 9 + R() * 5);
-    };
-    stem(root[0] * S, root[1] * S, dir, reach * S, 5.5, 2);
-    const tex = new THREE.CanvasTexture(c);
-    tex.colorSpace = THREE.SRGBColorSpace; tex.anisotropy = 8;
-    return tex;
-  }
-  const VINES = [
-    { tex: vine(17, [0.86, 1.0], -Math.PI / 2 - 0.55, 1.05), size: 6.2 },   // left wall, climbing from the far corner
-    { tex: vine(41, [0.2, 0.0], Math.PI / 2 + 0.25, 0.8), size: 5.2 },     // right wall, hanging from the ceiling
-    { tex: vine(73, [0.0, 0.04], 0.45, 0.62), size: 3.6 },                // the back wall's top-left corner
-  ].map(v => {
-    const m = new THREE.Mesh(new THREE.PlaneGeometry(1, 1), new THREE.MeshLambertMaterial({ map: v.tex, transparent: true, depthWrite: false }));
-    m.scale.set(v.size, v.size, 1); m.renderOrder = 2; m.receiveShadow = true;
-    scene.add(m);
-    return m;
-  });
-  function placeVines() {
-    const [l, r, b] = VINES;
-    l.rotation.set(0, Math.PI / 2, 0); l.position.set(xL + 0.015, 3.1, -9.8);
-    r.rotation.set(0, -Math.PI / 2, 0); r.position.set(xR - 0.015, HR - 2.6, -8.2);
-    b.rotation.set(0, 0, 0); b.position.set(xL + 1.8, HR - 1.8, -D + 0.015);
+    if (ws) ws.layout(xL, xR);
   }
 
   /* ------------------------------------------------ petal and leaf sprites, in one atlas */
@@ -638,11 +570,17 @@ function room() {
   scene.add(leafMesh);
 
   /* ------------------------------------------------ the lettering, as planes in the room */
-  const letterMat = (tex, color) => new THREE.ShaderMaterial({
-    uniforms: { map: { value: tex }, uColor: color, uOpacity: { value: 0 }, uBlur: { value: 0 } },
+  // each is drawn white over a soft red halo (see buildFloaters): the letters take their colour, the halo
+  // the room's, so they read over the work going on behind them
+  const letterMat = (tex, color, halo) => new THREE.ShaderMaterial({
+    uniforms: { map: { value: tex }, uColor: color, uHalo: AURA, uHaloK: { value: halo }, uOpacity: { value: 0 }, uBlur: { value: 0 } },
     vertexShader: `varying vec2 vUv; void main() { vUv = uv; gl_Position = projectionMatrix * modelViewMatrix * vec4(position, 1.0); }`,
-    fragmentShader: `uniform sampler2D map; uniform vec3 uColor; uniform float uOpacity, uBlur; varying vec2 vUv;
-      void main() { float a = texture2D(map, vUv, uBlur).a * uOpacity; gl_FragColor = vec4(uColor * a, a); }`,
+    fragmentShader: `uniform sampler2D map; uniform vec3 uColor, uHalo; uniform float uHaloK, uOpacity, uBlur; varying vec2 vUv;
+      void main() {
+        vec4 c = texture2D(map, vUv, uBlur);
+        float ink = c.a > 0.001 ? clamp(c.g / c.a, 0.0, 1.0) : 0.0, a = c.a * ink * uOpacity, h = c.a * (1.0 - ink) * uHaloK * uOpacity;
+        gl_FragColor = vec4(uColor * a + uHalo * h, a + h);
+      }`,
     transparent: true, depthWrite: false, premultipliedAlpha: true,
   });
   const floaters = [
@@ -654,27 +592,31 @@ function room() {
   function buildFloaters() {
     const sr = stage.getBoundingClientRect(), k = Math.min(3, (devicePixelRatio || 1) * 2);
     for (const F of floaters) {
-      const r = F.el.getBoundingClientRect(), cs = getComputedStyle(F.el), pad = 0.14 * parseFloat(cs.fontSize);
+      const r = F.el.getBoundingClientRect(), cs = getComputedStyle(F.el), fs = parseFloat(cs.fontSize), pad = Math.max(0.14 * fs, 18), glow = F.letter ? 0.1 * fs : 12;
       const c = document.createElement("canvas"), g = c.getContext("2d");
       c.width = Math.ceil((r.width + pad * 2) * k); c.height = Math.ceil((r.height + pad * 2) * k);
       g.scale(k, k);
       g.font = `${cs.fontWeight} ${cs.fontSize} ${cs.fontFamily}`;
-      g.fillStyle = "#fff";
       g.textBaseline = "alphabetic";
+      const text = (str, x, y) => {                               // the halo (red, blurred, twice over), then the letters (white)
+        g.fillStyle = g.shadowColor = "#f00"; g.shadowBlur = glow * k;
+        g.fillText(str, x, y); g.fillText(str, x, y);
+        g.shadowBlur = 0; g.fillStyle = "#fff"; g.fillText(str, x, y);
+      };
       if (F.letter) {
         const m = g.measureText(F.el.textContent), lh = r.height;
-        g.fillText(F.el.textContent, pad, pad + (lh - (m.fontBoundingBoxAscent + m.fontBoundingBoxDescent)) / 2 + m.fontBoundingBoxAscent);
+        text(F.el.textContent, pad, pad + (lh - (m.fontBoundingBoxAscent + m.fontBoundingBoxDescent)) / 2 + m.fontBoundingBoxAscent);
       } else {                                                    // the quote, broken into lines exactly as the page breaks it
-        const range = document.createRange(), text = F.el.firstChild, lines = [];
+        const range = document.createRange(), node = F.el.firstChild, lines = [];
         for (const w of F.el.textContent.matchAll(/\S+/g)) {
-          range.setStart(text, w.index); range.setEnd(text, w.index + w[0].length);
+          range.setStart(node, w.index); range.setEnd(node, w.index + w[0].length);
           const b = range.getBoundingClientRect(), line = lines.find(l => Math.abs(l.top - b.top) < 2);
           if (line) line.words.push(w[0]); else lines.push({ top: b.top, left: b.left, words: [w[0]] });
         }
         const lh = parseFloat(cs.lineHeight) || parseFloat(cs.fontSize) * 1.35;
         for (const l of lines) {
           const m = g.measureText(l.words.join(" "));
-          g.fillText(l.words.join(" "), pad + l.left - r.left, pad + l.top - r.top + (lh - (m.fontBoundingBoxAscent + m.fontBoundingBoxDescent)) / 2 + m.fontBoundingBoxAscent);
+          text(l.words.join(" "), pad + l.left - r.left, pad + l.top - r.top + (lh - (m.fontBoundingBoxAscent + m.fontBoundingBoxDescent)) / 2 + m.fontBoundingBoxAscent);
         }
       }
       const tex = new THREE.CanvasTexture(c);
@@ -684,7 +626,7 @@ function room() {
       F.xw = (F.ex - W / 2) * F.z0 / f;                            // where it sits in the room with the camera at rest
       F.yw = EYE + (VP * H - F.ey) * F.z0 / f;
       if (F.mesh) { F.mesh.material.uniforms.map.value.dispose(); F.mesh.material.uniforms.map.value = tex; F.mesh.geometry.dispose(); }
-      else { F.mesh = new THREE.Mesh(undefined, letterMat(tex, F.color)); F.mesh.renderOrder = 3; scene.add(F.mesh); }
+      else { F.mesh = new THREE.Mesh(undefined, letterMat(tex, F.color, F.letter ? 0.22 : 0.92)); F.mesh.renderOrder = 3; scene.add(F.mesh); }
       F.mesh.geometry = new THREE.PlaneGeometry((r.width + pad * 2) * F.z0 / f, (r.height + pad * 2) * F.z0 / f);
     }
     placeFloaters(0);
@@ -715,6 +657,8 @@ function room() {
     { key: "rover", name: "Defence rover", sub: "Four-wheel scout", file: "defence-rover", scale: 1.8, yaw: Math.PI, hl: 0.66, hw: 0.335, track: 0.3, vmax: 2.6, wmax: 2.1, acc: 3.2, turn: 5 },
     { key: "quadruped", name: "Quadruped", sub: "Four-legged walker", file: "quadruped-robot", scale: 1.45, yaw: Math.PI, hl: 0.55, hw: 0.5, vmax: 1.4, wmax: 1.3, acc: 2.2, turn: 3.6 },
   ];
+  let ws = null;                                                   // the workshop, once it has loaded
+  const SMALL = matchMedia("(max-width: 640px)").matches ? 0.75 : 1;   // a phone's room is narrow: smaller robots
   const bot = { R: null, x: -1.6, z: -8.4, th: -0.6, v: 0, w: 0, vx: 0, vz: 0, gx: -1.6, gz: -8.4, tx: -1.6, tz: -8.4, acc: 0, pitch: 0, pv: 0, roll: 0, rv: 0 };
   // a soft dark patch under each robot (or each foot), so it sits on the floor whatever the light
   const contact = document.createElement("canvas"); contact.width = contact.height = 128;
@@ -750,6 +694,7 @@ function room() {
   function rig(R, model) {
     R.scanY = { value: 99 }; R.scanOn = { value: 0 };
     R.clip = new THREE.Plane(new THREE.Vector3(0, -1, 0), 99);     // keeps what's below the scan line
+    R.scale *= SMALL; R.vmax *= SMALL;
     model.scale.setScalar(R.scale);
     model.rotation.y = R.yaw;
     model.traverse(o => {
@@ -774,8 +719,9 @@ function room() {
     R.top = new THREE.Box3().setFromObject(model).max.y + 0.04;
     const sideOf = o => Math.sign(g.worldToLocal(o.getWorldPosition(_v)).z) || 1;
     model.traverse(o => {
-      if (/^Wheel_(Left|Right)_(Drive|Idler|Roller_\d)$/.test(o.name)) {
-        // the cleaner's: each turns on its own centre (compression can move a node's origin)
+      if (/^Wheel_(Left|Right)_(Drive|Idler)$/.test(o.name)) {
+        // the cleaner's sprockets: each turns on its own centre (compression can move a node's origin); its
+        // little track rollers, hidden behind the track, stand still and are merged with the body
         const inv = new THREE.Matrix4().copy(o.matrixWorld).invert(), box = new THREE.Box3();
         o.traverse(m => { if (m.isMesh) { m.geometry.computeBoundingBox(); box.union(m.geometry.boundingBox.clone().applyMatrix4(new THREE.Matrix4().multiplyMatrices(inv, m.matrixWorld))); } });
         const c = box.getCenter(new THREE.Vector3()), size = box.getSize(new THREE.Vector3()), pivot = new THREE.Group();
@@ -792,11 +738,48 @@ function room() {
     const ant = model.getObjectByName("Antenna");
     if (ant) R.ant = { node: ant, p: 0, pv: 0, r: 0, rv: 0 };
     if (model.getObjectByName("Hip_FL")) rigLegs(R, model);
+    const moving = new Set([...R.wheels.map(w => w.pivot), ant, ...(R.legs || []).flatMap(Lg => [Lg.hip, Lg.knee])]);
+    mergeStatic(R.tilt || model, o => moving.has(o));
     if (R.legs) {
       R.feet = R.legs.map(() => { const b = blob(0.4 * R.scale, 0.4 * R.scale, 0.5); g.add(b); return b; });
       g.add(blob(R.HL * 2.4, R.HW * 2.3, 0.14));
     } else g.add(blob(R.HL * 2.5, R.HW * 2.9, 0.5));
     return R;
+  }
+  // one mesh a material for the parts of a model that don't move by themselves (a glTF mesh is a mesh a
+  // material already, so a model of many parts is a great many draw calls, twice over with its shadow)
+  function mergeStatic(root, moving = () => false) {
+    root.updateMatrixWorld(true);
+    const inv = new THREE.Matrix4().copy(root.matrixWorld).invert(), sets = new Map();
+    root.traverse(o => {
+      if (!o.isMesh || o.isSkinnedMesh) return;
+      for (let p = o.parent; p && p !== root; p = p.parent) if (moving(p)) return;   // it rides something that moves
+      if (!sets.has(o.material)) sets.set(o.material, []);
+      sets.get(o.material).push(o);
+    });
+    for (const [material, meshes] of sets) {
+      if (meshes.length < 2) continue;
+      const geos = meshes.map(o => {                              // unpacked to floats, and placed relative to root
+        const g = new THREE.BufferGeometry(), src = o.geometry;
+        for (const name of ["position", "normal", "uv"]) {
+          const a = src.attributes[name];
+          if (!a) continue;
+          const f = new Float32Array(a.count * a.itemSize), get = [a.getX, a.getY, a.getZ, a.getW];
+          for (let i = 0; i < a.count; i++) for (let k = 0; k < a.itemSize; k++) f[i * a.itemSize + k] = get[k].call(a, i);
+          g.setAttribute(name, new THREE.BufferAttribute(f, a.itemSize));
+        }
+        g.setIndex(src.index ? [...src.index.array] : [...Array(src.attributes.position.count).keys()]);
+        return g.applyMatrix4(new THREE.Matrix4().multiplyMatrices(inv, o.matrixWorld));
+      });
+      const names = ["position", "normal", "uv"].filter(n => geos.every(g => g.attributes[n]));
+      for (const g of geos) for (const n of Object.keys(g.attributes)) if (!names.includes(n)) g.deleteAttribute(n);
+      const merged = mergeGeometries(geos);
+      if (!merged) continue;
+      const m = new THREE.Mesh(merged, material);
+      m.castShadow = m.receiveShadow = true;
+      root.add(m);
+      for (const o of meshes) { o.removeFromParent(); o.geometry.dispose(); }
+    }
   }
   // a leg: the hip rolls it out sideways, then two bones in its plane – the thigh swings on the hip
   // actuator, the shin on the knee. It's all worked out in BodyTilt's frame (model units), so the body
@@ -885,6 +868,14 @@ function room() {
       A.node.rotation.z = R.sgn * A.p; A.node.rotation.x = R.sgn * A.r;
     }
   }
+  // where the robot's middle may go: the workshop's test zone (or the room), less its size, and not so near
+  // the camera that it drives out of view
+  function floorZone() {
+    const B = bot.R, mx = (B ? B.HL : 0.7) + 0.2, mz = (B ? (B.HL + B.HW) / 2 : 0.7) + 0.2, Z = ws && ws.zone;
+    const near = -(cam.z + f * EYE / (H - cy) + 0.3 + mz * 0.5);
+    const x0 = (Z ? Z.x0 : xL) + mx, x1 = (Z ? Z.x1 : xR) - mx, z0 = (Z ? Z.z0 : -D) + mz, z1 = Math.min((Z ? Z.z1 : -3) - mz, near);
+    return { x0: Math.min(x0, (x0 + x1) / 2), x1: Math.max(x1, (x0 + x1) / 2), z0: Math.min(z0, z1), z1 };
+  }
   // follow the goal in smooth arcs: turn towards it, drive while roughly facing it, ease off as it arrives.
   // Speeds and turn rates ease towards what's wanted, so there is never a jolt.
   function drive(dt) {
@@ -902,7 +893,7 @@ function room() {
     bot.w += (wWant - bot.w) * (1 - Math.exp(-dt * R.turn));
     bot.th = wrapAngle(bot.th + bot.w * dt);
     const fx = Math.cos(bot.th), fz = -Math.sin(bot.th);
-    const m = (bot.R ? bot.R.HL : 0.7) + 0.25, nx = clamp(bot.x + fx * bot.v * dt, xL + m, xR - m), nz = clamp(bot.z + fz * bot.v * dt, -D + m, -3);
+    const Z = floorZone(), nx = clamp(bot.x + fx * bot.v * dt, Z.x0, Z.x1), nz = clamp(bot.z + fz * bot.v * dt, Z.z0, Z.z1);
     bot.vx = (nx - bot.x) / dt; bot.vz = (nz - bot.z) / dt;
     bot.x = nx; bot.z = nz;
     // the body dips as it brakes and lifts as it pulls away, and leans out of a turn (critically damped)
@@ -1455,13 +1446,14 @@ function room() {
     if (fp) { floorVel.fx = fp[0]; floorVel.fz = fp[1]; }
     floorVel.speed = Math.hypot(floorVel.x, floorVel.z);
     if (hit && Pt.moved) {                                         // only the pointer moves it; it stays put otherwise
-      const m = (bot.R ? bot.R.HL : 0.7) + 0.3, near = -(cam.z + f * EYE / (H - cy) + 0.5 + m);   // not so near that it drives out of view
-      bot.gx = clamp(hit[0], xL + m, xR - m); bot.gz = clamp(Math.min(hit[1], near), -D + m, -3);
+      const Z = floorZone();
+      bot.gx = clamp(hit[0], Z.x0, Z.x1); bot.gz = clamp(hit[1], Z.z0, Z.z1);
       Pt.moved = false;
     }
     drive(dt);
     for (const R of BOTS) if (R.group && R.group.visible) animateBot(R, dt);
     drawScan();
+    if (ws) ws.update(t, dt);
     step(t, dt, fp);
     placeFloaters(t);
     writeLeaves();
@@ -1480,7 +1472,7 @@ function room() {
     setProjection();
     camera.position.set(0, EYE, -cam.z); camera.updateMatrixWorld();
     for (const br of branches) { br.left = br.host.offsetLeft; br.top = br.host.offsetTop; br.scale = br.host.offsetWidth / br.vb.w; }
-    settledCap = Math.round(fine ? clamp(W * H / 6800, 90, 200) : clamp(W * H / 7500, 50, 100));
+    settledCap = Math.round(fine ? clamp(W * H / 11000, 60, 130) : clamp(W * H / 12000, 35, 70));
     airTarget = Math.round(fine ? clamp(W * H / 40000, 14, 36) : clamp(W * H / 48000, 8, 18));
     heroTop = hero.offsetTop; span = hero.offsetHeight - stage.offsetHeight;
     placeRoom();
@@ -1496,20 +1488,27 @@ function room() {
     applyLight(0); envCheck(performance.now()); placeFloaters(0); writeLeaves();
     for (const Rl of rails) drawRail(Rl, 0);
     for (const R of BOTS) if (R.group && R.group.visible) animateBot(R, 0);
+    if (ws) ws.update(performance.now(), 0);
     renderer.render(scene, camera);
   };
   measure();
   prewarm();
   setMood(MOODS[saved] ? saved : "white", true);
   let fontsReady = false;
-  Promise.all([document.fonts.load(`900 100px "Unbounded"`), document.fonts.load(`500 20px "Inter Tight"`)]).catch(() => {}).then(() => {
+  Promise.all([document.fonts.load(`900 100px "Unbounded"`), document.fonts.load(`500 20px "Inter Tight"`), document.fonts.load(`700 20px "Inter Tight"`)]).catch(() => {}).then(() => {
     fontsReady = true; buildFloaters(); if (!running) still();
+    // the production house: its own module, the same version as this one
+    import("./workshop.js" + new URL(import.meta.url).search).then(({ workshop }) => {
+      ws = workshop({ scene, loader, reduce, bot, merge: mergeStatic, onLoad: () => { if (!running) still(); } });
+      ws.layout(xL, xR);
+      if (!running) still();
+    }).catch(err => console.error(err));
   });
   let rt;
   addEventListener("resize", () => { clearTimeout(rt); rt = setTimeout(() => { measure(); if (fontsReady) buildFloaters(); if (!running) still(); }, 150); });
   let visible = true;
   new IntersectionObserver(([e]) => (visible = e.isIntersecting)).observe(stage);
-  if (/[?&]roomdebug/.test(location.search)) window.__room = { bot, parts, L, mood, rails, BOTS, showBot, setMood, lamp, camera };
+  if (/[?&]roomdebug/.test(location.search)) window.__room = { bot, parts, L, mood, rails, BOTS, showBot, setMood, lamp, camera, renderer, get ws() { return ws; } };
 
   if (reduce) {                                                   // a still room: everything where it stands
     LEAF_U.uFade.value = 1;
