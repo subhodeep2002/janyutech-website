@@ -363,61 +363,65 @@ a.card:hover .card__cta i { transform: translateX(5px); }
 .room__stage[data-light="dark"] .room__vignette::after { opacity: 1; }
 .room__stage[data-light="warm"] .room__vignette::after { opacity: .35; }
 
-/* the dials: half discs stuck to the screen's edges, the robot on the left and the light on the right.
-   hero.js draws them (sized to the screen) and opens them out on a spring when the pointer comes over */
-.room__stage { --dial-glass: #fff; --dial-ink: #0b0b0c; --dial-soft: #5b6475; --dial-line: rgba(11,11,12,.2); --dial-accent: #1d6ae5; --dial-halo: rgba(29,106,229,.22); --dial-plate-0: #ffffff; --dial-plate-1: #d9e0ea; }
-.room__stage[data-light="dark"] { --dial-glass: #0f1520; --dial-ink: #eef2f8; --dial-soft: #9aa7bb; --dial-line: rgba(238,242,248,.24); --dial-accent: #6aa2ff; --dial-halo: rgba(106,162,255,.3); --dial-plate-0: #dfe6f0; --dial-plate-1: #8d99ab; }
-.room__stage[data-light="warm"] { --dial-glass: #fff8ef; --dial-ink: #1c130c; --dial-soft: #6e5a48; --dial-line: rgba(28,19,12,.2); --dial-plate-0: #fffaf3; --dial-plate-1: #e6d6c3; }
-.room__dial {
-  position: absolute; top: 50%; z-index: 6; transform: translateY(-50%); pointer-events: none; outline: none;
-  user-select: none; -webkit-user-select: none; -webkit-tap-highlight-color: transparent;
+/* the rails: a slim column of ticks on each edge, the robot on the left and the light on the right.
+   hero.js places the ticks, swells them into a heap under the pointer and shows a card for the choice there */
+.room__stage { --rail-ink: #0b0b0c; --rail-soft: #5b6475; --rail-accent: #1d6ae5; --card-bg: rgba(255,255,255,.8); --card-line: rgba(11,11,12,.08); --card-shadow: 0 20px 44px -20px rgba(16,24,40,.4); --plate: radial-gradient(120% 100% at 50% 20%, #ffffff, #dde3ec); }
+.room__stage[data-light="dark"] { --rail-ink: #eef2f8; --rail-soft: #9aa7bb; --rail-accent: #6aa2ff; --card-bg: rgba(16,20,30,.78); --card-line: rgba(238,242,248,.12); --card-shadow: 0 20px 44px -20px rgba(0,0,0,.7); --plate: radial-gradient(120% 100% at 50% 20%, #e3e9f2, #97a3b5); }
+.room__stage[data-light="warm"] { --rail-ink: #1c130c; --rail-soft: #6e5a48; --card-bg: rgba(255,249,241,.82); --card-line: rgba(28,19,12,.1); --plate: radial-gradient(120% 100% at 50% 20%, #fffaf3, #e8d8c4); }
+.room__rail {
+  position: absolute; top: 50%; z-index: 6; width: 78px; transform: translateY(-50%); -webkit-tap-highlight-color: transparent;
   opacity: 0; visibility: hidden; transition: opacity .8s ease, visibility 0s .8s;
 }
-.room__dial--light { right: 0; }
-.room__dial--bot { left: 0; }
-.room__stage.is-3d.is-live .room__dial { opacity: 1; visibility: visible; transition-delay: .9s, .9s; }
-.room__dial svg { display: block; overflow: visible; }
-.dial__hit { fill: transparent; pointer-events: all; cursor: grab; touch-action: none; }
-.room__dial.is-dragging .dial__hit, .room__dial.is-dragging .dial__item { cursor: grabbing; }
-.dial__glass { stop-color: var(--dial-glass); transition: stop-color 1s ease; }
-.dial__disc { filter: drop-shadow(0 14px 30px rgba(16,24,40,.16)); }
-.dial__disc, .dial__orbit, .dial__comet, .dial__ticks, .dial__rim, .dial__arc, .dial__mark, .dial__needle, .dial__hub, .dial__title, .dial__ripple, .dial__label { pointer-events: none; }
-.dial__rim { fill: none; stroke: var(--dial-line); stroke-width: 1.4; transition: stroke .6s; }
-.dial__orbit { fill: none; stroke: var(--dial-line); stroke-width: 1.2; stroke-dasharray: 1.5 7; stroke-linecap: round; transform-box: fill-box; transform-origin: center; animation: dialOrbit 40s linear infinite; }
-.room__dial--bot .dial__orbit { animation-direction: reverse; }
-.dial__comet { fill: none; stroke: var(--dial-accent); stroke-width: 2.5; stroke-linecap: round; stroke-dasharray: 26 4000; opacity: 0; transform-box: fill-box; transform-origin: center; animation: dialCometR 7s cubic-bezier(.45,0,.25,1) infinite 3s; }
-.room__dial--bot .dial__comet { animation-name: dialCometL; animation-delay: 6.5s; }
-.dial__ink { stop-color: var(--dial-ink); }
-.dial__ticks { fill: none; stroke-width: 1.1; stroke-linecap: round; }
-.dial__ticks--major { stroke-width: 1.8; }
-.dial__arc { fill: none; stroke: var(--dial-accent); stroke-width: 3.5; stroke-linecap: round; }
-.dial__mark { fill: var(--dial-accent); }
-.dial__needle { fill: none; stroke: var(--dial-accent); stroke-width: 2; stroke-linecap: round; }
-.dial__hub { fill: var(--dial-accent); }
-.dial__title { font: 700 9.5px/1 var(--sans); letter-spacing: .28em; fill: var(--dial-soft); }
-.dial__item { cursor: pointer; pointer-events: all; }
-.dial__bubble { stroke: none; }
-.dial__ring { fill: none; stroke: var(--dial-line); stroke-width: 1.2; vector-effect: non-scaling-stroke; }
-.dial__item.is-on .dial__ring { stroke: var(--dial-accent); stroke-width: 2; }
-.dial__halo { fill: var(--dial-halo); opacity: 0; transform-box: fill-box; transform-origin: center; }
-.dial__item.is-on .dial__halo { animation: dialBreath 2.8s ease-in-out infinite; }
-.dial__fixture { fill: #98a1ae; }
-.dial__tube { stroke: rgba(11,11,12,.18); stroke-width: .8; vector-effect: non-scaling-stroke; }
-.dial__plate-0 { stop-color: var(--dial-plate-0); transition: stop-color 1s ease; }
-.dial__plate-1 { stop-color: var(--dial-plate-1); transition: stop-color 1s ease; }
-.dial__name { font: 700 11px/1 var(--sans); letter-spacing: .16em; fill: var(--dial-ink); text-anchor: middle; }
-.dial__sub { font: 500 10.5px/1 var(--sans); fill: var(--dial-soft); text-anchor: middle; }
-.dial__item.is-on .dial__name { fill: var(--dial-accent); }
-.dial__name, .dial__sub { paint-order: stroke; stroke: var(--dial-glass); stroke-width: 3.5px; stroke-linejoin: round; stroke-opacity: .8; transition: stroke 1s ease; }
-.dial__ripple { fill: none; stroke: var(--dial-accent); stroke-width: 2; opacity: 0; transform-box: fill-box; transform-origin: center; }
-.room__dial:focus-visible .dial__rim { stroke: var(--dial-accent); stroke-width: 2.2; }
-@keyframes dialOrbit { to { transform: rotate(360deg); } }
-@keyframes dialBreath { 0%, 100% { transform: scale(1); opacity: .5; } 50% { transform: scale(1.14); opacity: 1; } }
-/* now and then a glint runs down the rim, top to bottom (the dash starts at a circle's 3 o'clock) */
-@keyframes dialCometR { 0% { transform: rotate(262deg); opacity: 0; } 8% { opacity: 1; } 40% { opacity: .9; } 52%, 100% { transform: rotate(84deg); opacity: 0; } }
-@keyframes dialCometL { 0% { transform: rotate(-98deg); opacity: 0; } 8% { opacity: 1; } 40% { opacity: .9; } 52%, 100% { transform: rotate(80deg); opacity: 0; } }
-@media (max-width: 640px) { .room__dial { top: 72%; } }
-@media (prefers-reduced-motion: reduce) { .dial__orbit, .dial__comet, .dial__item.is-on .dial__halo { animation: none; } .dial__item.is-on .dial__halo { opacity: .6; } }
+.room__rail--bot { left: 0; }
+.room__rail--light { right: 0; }
+.room__stage.is-3d.is-live .room__rail { opacity: 1; visibility: visible; transition-delay: .9s, .9s; }
+.rail__label { position: absolute; bottom: calc(100% + 16px); font: 700 10px/1 var(--sans); letter-spacing: .26em; text-transform: uppercase; color: var(--rail-soft); white-space: nowrap; transition: color .3s; }
+.room__rail--bot .rail__label { left: 24px; }
+.room__rail--light .rail__label { right: 24px; margin-right: -.26em; }
+.room__rail.is-open .rail__label { color: var(--rail-ink); }
+.rail__ticks { position: absolute; inset: 0; pointer-events: none; }
+.rail__ticks i { position: absolute; top: 0; width: 46px; height: 2px; border-radius: 1px; background: var(--rail-ink); will-change: transform, opacity; transition: background .6s; }
+.room__rail--bot .rail__ticks i { left: 24px; transform-origin: left center; }
+.room__rail--light .rail__ticks i { right: 24px; transform-origin: right center; }
+.rail__ticks i.is-on { height: 3px; margin-top: -.5px; background: var(--rail-accent); }
+.rail__hit { position: absolute; left: 0; width: 100%; margin: 0; padding: 0; border: 0; border-radius: 10px; background: none; cursor: pointer; }
+.rail__hit:focus-visible { outline: 2px solid var(--rail-accent); outline-offset: -2px; }
+.rail__card {
+  position: absolute; top: 0; display: flex; align-items: center; gap: 12px; width: max-content; max-width: min(300px, 62vw); padding: 10px 18px 10px 10px;
+  border: 1px solid var(--card-line); border-radius: 16px; background: var(--card-bg); box-shadow: var(--card-shadow);
+  -webkit-backdrop-filter: blur(16px) saturate(1.4); backdrop-filter: blur(16px) saturate(1.4);
+  pointer-events: none; opacity: 0; transition: opacity .2s ease, transform .35s var(--ease), background .6s;
+}
+.room__rail--bot .rail__card { left: 88px; transform: translate(-10px, -50%) scale(.96); transform-origin: left center; }
+.room__rail--light .rail__card { right: 88px; flex-direction: row-reverse; padding: 10px 10px 10px 18px; text-align: right; transform: translate(10px, -50%) scale(.96); transform-origin: right center; }
+.room__rail.is-open .rail__card { opacity: 1; transform: translate(0, -50%) scale(1); }
+.rail__pic { position: relative; flex: none; width: 60px; height: 60px; overflow: hidden; border-radius: 11px; background: var(--plate); }
+.rail__pic img { display: block; width: 100%; height: 100%; object-fit: contain; }
+.rail__text { display: flex; flex-direction: column; min-width: 0; }
+.room__rail--light .rail__text { align-items: flex-end; }
+.rail__name { font: 700 15px/1.2 var(--sans); color: var(--rail-ink); }
+.rail__sub { margin-top: 2px; font: 500 13px/1.3 var(--sans); color: var(--rail-soft); }
+.rail__state { display: inline-flex; align-items: center; gap: 6px; margin-top: 7px; font: 700 10px/1 var(--sans); letter-spacing: .14em; text-transform: uppercase; color: var(--rail-soft); }
+.rail__state.is-on { color: var(--rail-accent); }
+.rail__state.is-on::before { content: ""; width: 6px; height: 6px; border-radius: 50%; background: currentColor; }
+/* the light's cards: a swatch of the room lit that way, the tube and its light falling */
+.rail__pic[data-k="dark"] { --tube: #c3d2f0; --beam: rgba(127,157,224,.55); background: radial-gradient(120% 100% at 50% 15%, #26344f, #05070c); }
+.rail__pic[data-k="white"] { --tube: #ffffff; --beam: rgba(170,195,235,.5); background: radial-gradient(120% 100% at 50% 15%, #ffffff, #dde4ee); }
+.rail__pic[data-k="warm"] { --tube: #fff5e6; --beam: rgba(255,240,216,.8); background: radial-gradient(120% 100% at 50% 15%, #ffdcae, #e8872c); }
+.rail__tube { position: absolute; left: 22%; right: 22%; top: 24%; height: 5px; border-radius: 3px; background: var(--tube); box-shadow: 0 0 0 1px rgba(11,11,12,.12), 0 0 12px 2px var(--beam); }
+.rail__beam { position: absolute; left: 6%; right: 6%; top: 30%; bottom: 0; background: linear-gradient(var(--beam), transparent 85%); clip-path: polygon(22% 0, 78% 0, 100% 100%, 0 100%); }
+@media (max-width: 640px) {
+  .room__rail { top: 71%; width: 58px; }
+  .rail__ticks i { width: 34px; }
+  .room__rail--bot .rail__ticks i, .room__rail--bot .rail__label { left: 14px; }
+  .room__rail--light .rail__ticks i, .room__rail--light .rail__label { right: 14px; }
+  .room__rail--bot .rail__card { left: 62px; }
+  .room__rail--light .rail__card { right: 62px; }
+  .rail__pic { width: 48px; height: 48px; }
+  .rail__name { font-size: 14px; }
+  .rail__sub { font-size: 12px; }
+}
+@media (prefers-reduced-motion: reduce) { .rail__card { transition: none; } }
 .room__stage .branch { transition: filter 1.2s ease; }
 .room__stage[data-light="warm"] .branch { filter: sepia(.35) saturate(1.2) brightness(.93); }
 .room__stage[data-light="dark"] .branch { filter: brightness(.34) saturate(.75); }

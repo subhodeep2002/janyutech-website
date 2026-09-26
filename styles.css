@@ -53,6 +53,7 @@ button { font: inherit; color: inherit; background: none; border: 0; cursor: poi
 .cursor-dot { width: 6px; height: 6px; margin: -3px 0 0 -3px; background: #fff; mix-blend-mode: difference; }
 .cursor__label { font-size: 11px; font-weight: 600; letter-spacing: .08em; text-transform: uppercase; color: var(--ink); opacity: 0; transition: opacity .2s; }
 .cursor.is-hover { width: 70px; height: 70px; margin: -35px 0 0 -35px; background: #fff; }
+.cursor.is-small { width: 14px; height: 14px; margin: -7px 0 0 -7px; }
 .cursor.is-view { width: 96px; height: 96px; margin: -48px 0 0 -48px; background: #fff; mix-blend-mode: normal; border-color: transparent; }
 .cursor.is-view .cursor__label { opacity: 1; }
 @media (hover: none), (pointer: coarse) { .cursor, .cursor-dot { display: none; } }

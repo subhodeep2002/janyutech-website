@@ -32,7 +32,7 @@ for _p in PAGES.values():
             if b["t"] == "gallery": b["imgs"] = [x for x in b["imgs"] if x["src"] not in GONE]
             if b["t"] == "card" and b.get("img") in GONE: b["img"] = ""
         _s["blocks"] = [b for b in _s["blocks"] if not (b["t"] == "slider" and not b["slides"]) and not (b["t"] == "gallery" and not b["imgs"])]
-VER = "15"
+VER = "16"
 
 # Links that are broken on the live site (anchor id typos) – point them at the real ids.
 LINK_FIX = {
@@ -752,8 +752,8 @@ def home_page():
     </div>
     <div class="branch branch--tl" data-branch="tl" aria-hidden="true"></div>
     <div class="branch branch--tr" data-branch="tr" aria-hidden="true"></div>
-    <div class="room__dial room__dial--bot" role="slider" tabindex="0" aria-label="Robot" aria-orientation="vertical" aria-valuemin="0" aria-valuemax="2" aria-valuenow="0" aria-valuetext="Janyu cleaner"></div>
-    <div class="room__dial room__dial--light" role="slider" tabindex="0" aria-label="Room light" aria-orientation="vertical" aria-valuemin="0" aria-valuemax="2" aria-valuenow="1" aria-valuetext="White light"></div>
+    <div class="room__rail room__rail--bot" role="radiogroup" aria-label="Robot"></div>
+    <div class="room__rail room__rail--light" role="radiogroup" aria-label="Room light"></div>
     <div class="room__scroll" aria-hidden="true"><div class="room__scroll-in">
       <span class="room__scroll-t">{"".join(f'<span class="rl" style="--i:{k}"><i data-c="{c}">{c}</i></span>' for k, c in enumerate("Scroll"))}</span>
       <span class="room__scroll-line"></span>

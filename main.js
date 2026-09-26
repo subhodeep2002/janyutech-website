@@ -384,7 +384,9 @@
     if (hImg) { hImg.style.left = h.x + 24 + "px"; hImg.style.top = h.y - 110 + "px"; hImg.style.rotate = tilt + "deg"; }
   });
   document.addEventListener("mouseover", e => {
-    cursor.classList.toggle("is-hover", !!e.target.closest("a, button, [data-lightbox], [data-yt]"));
+    const rail = e.target.closest(".room__rail");                  // the landing's tick rails: the ring shrinks away so the ticks show
+    cursor.classList.toggle("is-hover", !rail && !!e.target.closest("a, button, [data-lightbox], [data-yt]"));
+    cursor.classList.toggle("is-small", !!rail);
     const view = e.target.closest(".gallery__item, .photo a, a.card, .video__frame, .warp__frame");
     cursor.classList.toggle("is-view", !!view && !e.target.closest(".pitem"));
     if (view) $(".cursor__label", cursor).textContent = view.matches(".video__frame") ? "Play" : "View";

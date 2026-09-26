@@ -3,15 +3,15 @@
  * Ceiling, walls, floor and back wall are ruled with a fine grid, a few vines
  * creep over the walls, and JANYU TECH floats in the middle with the quote.
  *  – a tube light hangs from the ceiling and lights the room: Dark, White or
- *    Warm, chosen on the dial on the right edge (or by clicking the tube). It
+ *    Warm, chosen on the right edge (or by clicking the tube). It
  *    flickers now and then like a real one – a stutter, a hum, a tired tube
  *    blinking – and everything, petals and leaves too, is lit and shadowed by it
- *  – a robot follows the pointer over the floor, one of three chosen on the dial
- *    on the left edge: Janyu Tech's tracked cleaner (its brush sweeps the leaves
+ *  – a robot follows the pointer over the floor, one of three chosen on the
+ *    left edge: Janyu Tech's tracked cleaner (its brush sweeps the leaves
  *    it meets), a four-wheeled rover or a quadruped that trots. A new one is
- *    printed where the last one stood, by a scan line
- *  – the two dials are half discs on the screen's edges: a glass knob at rest,
- *    opening out on a spring into a wide, clear wheel of choices on hover
+ *    printed where the last one stood, by a scan line, and hops in
+ *  – both are chosen on a slim column of ticks on each edge: the ticks swell
+ *    into a heap under the pointer, and a card shows the choice there
  *  – leaves and petals blow in from the two branches, tumble down and settle;
  *    sweeping the pointer across the floor kicks them back into the air
  *  – camera: pointer parallax; scrolling (the stage is pinned for a moment)
@@ -184,7 +184,7 @@ function room() {
     moteGeo.attributes.position.needsUpdate = true;
   }
 
-  // the three moods, in dial order. Lamp intensities are in candela; everything else follows the tube
+  // the three moods, in the rail's order. Lamp intensities are in candela; everything else follows the tube
   const MOODS = {
     dark:  { amb: ["#8ea3c9", 0.04], hemi: ["#223049", "#04060a", 0.22], fill: 0, lamp: ["#dfe8ff", 100], ends: 7, tube: "#e6eeff", halo: 0.6, ceil: 0.45, dying: 1,
              beam: 0.15, motes: 0.8, grid: 0.5, lift: 0, fog: ["#03050a", 0.028], wall: "#eef1f5", env: 0.22, exp: 1.12,
@@ -207,8 +207,8 @@ function room() {
   const RS = ORDER.map(k => resolve(MOODS[k])), cur = resolve(MOODS.white), L = { power: 1 };
   const INK = { value: cur.ink.clone() }, TECH = { value: cur.tech.clone() }, QUOTE = { value: cur.quote.clone() };
   const WALL = { value: cur.wall.clone() }, GLOW = { value: 0 }, LIFT = { value: 0 };
-  // the light dial's position: 0 dark, 1 white, 2 warm, and anything between while it turns
-  const dial = { u: 1, spin: 0, envU: -9, envAt: -1e9, settled: "" };
+  // the light's position: 0 dark, 1 white, 2 warm, and anything between while it changes
+  const mood = { u: 1, envU: -9, envAt: -1e9, settled: "" };
 
   // a real tube is never quite steady: it stutters, it hums, and a tired one blinks and fails
   const FL = { next: 2500, seq: [], buzz: [0, 0] };
@@ -250,7 +250,7 @@ function room() {
     s.traverse(o => { if (o.isMesh) { o.geometry.dispose(); o.material.dispose(); } });
   }
   function applyLight(t) {
-    const u = clamp(dial.u, 0, 2), i = Math.min(1, Math.floor(u)), k = u - i, a = RS[i], b = RS[i + 1];
+    const u = clamp(mood.u, 0, 2), i = Math.min(1, Math.floor(u)), k = u - i, a = RS[i], b = RS[i + 1];
     for (const key of ["amb", "hs", "hg", "lamp", "tube", "fog", "wall"]) cur[key].copy(a[key]).lerp(b[key], k);
     for (const key of ["ambI", "hemiI", "fill", "lampI", "endsI", "halo", "ceil", "dying", "beam", "motes", "grid", "lift", "fogD", "env", "exp"]) cur[key] = lerp(a[key], b[key], k);
     cur.ink.lerpVectors(a.ink, b.ink, k); cur.tech.lerpVectors(a.tech, b.tech, k); cur.quote.lerpVectors(a.quote, b.quote, k);
@@ -273,12 +273,12 @@ function room() {
   }
   let saved = null;
   try { saved = localStorage.getItem("jt-light"); } catch (e) { /* private mode */ }
-  // the light dial settles on a mood: the tube re-strikes (a quick double blink), and the choice is kept
+  // the light settles on a mood: the tube re-strikes (a quick double blink), and the choice is kept
   function lightSettled(i, instant) {
     const name = ORDER[i];
-    if (name === dial.settled) return;
-    const first = !dial.settled;
-    dial.settled = name;
+    if (name === mood.settled) return;
+    const first = !mood.settled;
+    mood.settled = name;
     stage.dataset.light = name;
     try { localStorage.setItem("jt-light", name); } catch (e) { /* private mode */ }
     if (first || instant || reduce || !window.gsap) return;
@@ -286,233 +286,126 @@ function room() {
     gsap.timeline().to(L, { power: 0.35, duration: 0.05 }).to(L, { power: 0.95, duration: 0.05 }).to(L, { power: 0.5, duration: 0.07 }).to(L, { power: 1, duration: 0.3, ease: "power2.out" });
   }
 
-  /* ------------------------------------------------ the dials: two half discs on the screen's edges */
-  // The light dial is stuck to the right edge, the robot dial to the left. At rest each is a small
-  // glass knob showing what's chosen, the other choices peeking round its rim. Brought under the
-  // pointer (or focused) it opens out on a spring into a wide, clear wheel – the room still shows
-  // through it – that fans every choice out along its rim, named, with a needle on the chosen one.
-  // Drag the needle round, wheel it, tap a choice or use the arrow keys: it springs onto the nearest
-  // choice, and closed again the wheel rolls that choice under the mark. On a touch screen the first
-  // tap opens it.
-  const SVG_NS = "http://www.w3.org/2000/svg", DEG = Math.PI / 180;
-  const S = (tag, attrs, parent) => { const e = document.createElementNS(SVG_NS, tag); for (const k in attrs) e.setAttribute(k, attrs[k]); if (parent) parent.appendChild(e); return e; };
-  const dials = [];
-  let poked = false;                                               // a still room (reduced motion) redraws only when a dial changes
+  /* ------------------------------------------------ the rails: a column of ticks on each edge */
+  // The robot is chosen on the left edge and the light on the right, each on a slim column of ticks, a
+  // group of them for every choice. Bring the pointer near and the ticks under it swell into a heap that
+  // follows it up and down, while a card beside the column shows the choice there: click to take it. The
+  // chosen one keeps a longer, coloured tick, and choosing sends a ripple along the column. It's a radio
+  // group to the keyboard (tab to it, arrows choose), and on a touch screen a tap chooses.
+  const PER = 9;                                                   // ticks to a choice
+  const rails = [];
+  let poked = false;                                               // a still room (reduced motion) redraws only when a rail changes
   const poke = () => { if (!poked) { poked = true; requestAnimationFrame(() => { poked = false; if (!running) still(); }); } };
-  function makeDial(el, st, opt) {
-    const n = opt.items.length, d = opt.side === "left" ? 1 : -1, id = "dial-" + opt.side;   // d: which way is into the screen
-    const D = { el, st, n, d, o: 0, ov: 0, pop: reduce ? 1 : 0, hover: false, focus: false, tap: false, drag: null, hot: -1, hv: opt.items.map(() => 0), sel: -1, R0: 80, R1: 240, box: 300, key: "", ind: 0, closeT: 0, tapT: 0, wheelT: 0 };
-    D.th1 = Math.min(58, 124 / Math.max(1, n - 1));                // opened, the choices span ±62° at most
-    const svg = S("svg", { "aria-hidden": "true", focusable: "false" }), defs = S("defs", {}, svg);
-    D.glass = S("radialGradient", { id: id + "-glass", gradientUnits: "userSpaceOnUse" }, defs);
-    D.stops = [0, 0.6, 1].map(o => S("stop", { offset: o, class: "dial__glass" }, D.glass));
-    D.fade = S("linearGradient", { id: id + "-fade", gradientUnits: "userSpaceOnUse", x1: 0, x2: 0 }, defs);   // the scale fades out towards its ends
-    [0, 0.5, 1].forEach(o => S("stop", { offset: o, class: "dial__ink", "stop-opacity": o === 0.5 ? 1 : 0 }, D.fade));
-    S("circle", { r: 1 }, S("clipPath", { id: id + "-unit" }, defs));
-    D.hit = S("path", { class: "dial__hit" }, svg);
-    D.disc = S("path", { class: "dial__disc", fill: `url(#${id}-glass)` }, svg);
-    D.orbit = S("circle", { class: "dial__orbit" }, svg);
-    D.comet = S("circle", { class: "dial__comet" }, svg);
-    D.minor = S("path", { class: "dial__ticks", stroke: `url(#${id}-fade)` }, svg);
-    D.major = S("path", { class: "dial__ticks dial__ticks--major", stroke: `url(#${id}-fade)` }, svg);
-    D.rim = S("path", { class: "dial__rim" }, svg);
-    D.arc = S("path", { class: "dial__arc" }, svg);
-    D.mark = S("path", { class: "dial__mark" }, svg);
-    D.needle = S("path", { class: "dial__needle" }, svg);
-    D.hub = S("circle", { class: "dial__hub" }, svg);
-    D.title = S("text", { class: "dial__title", "text-anchor": d > 0 ? "start" : "end" }, svg);
-    D.title.textContent = opt.title;
-    D.ripple = S("circle", { class: "dial__ripple", r: 1 }, svg);
-    const layer = S("g", {}, svg);
-    D.items = opt.items.map((it, i) => {
-      const g = S("g", { class: "dial__item", "data-i": i, "data-k": it.key }, layer), face = S("g", {}, g);
-      S("circle", { class: "dial__halo", r: 1.3 }, face);
-      S("circle", { class: "dial__bubble", r: 1, fill: it.fill(defs, id) }, face);
-      it.face(face, defs, id);
-      S("circle", { class: "dial__ring", r: 1 }, face);
-      const label = S("g", { class: "dial__label" }, g);
-      S("text", { class: "dial__name" }, label).textContent = it.name.toUpperCase();
-      S("text", { class: "dial__sub", y: 14 }, label).textContent = it.sub;
-      return { g, face, label };
+  function makeRail(el, st, opt) {
+    const n = opt.items.length, R = { el, st, opt, n, sel: -1, hot: 0, shown: -1, hover: false, focus: false, tap: false, h: 0, y: 0, ty: 0, cy: 0, pop: reduce ? 1 : 0, rip: null, key: "", ticks: [] };
+    const label = document.createElement("span"), col = document.createElement("div"), card = document.createElement("div");
+    label.className = "rail__label"; label.textContent = opt.title;
+    col.className = "rail__ticks";
+    for (let i = 0; i < n * PER; i++) R.ticks.push({ el: col.appendChild(document.createElement("i")), c: (i / PER) | 0, major: i % PER === PER >> 1, y: 0 });
+    card.className = "rail__card";
+    card.innerHTML = '<span class="rail__pic"></span><span class="rail__text"><b class="rail__name"></b><span class="rail__sub"></span><span class="rail__state"></span></span>';
+    for (const e of [label, col, card]) e.setAttribute("aria-hidden", "true");
+    R.hits = opt.items.map(it => {
+      const b = document.createElement("button");
+      b.type = "button"; b.className = "rail__hit"; b.tabIndex = -1;
+      b.setAttribute("role", "radio"); b.setAttribute("aria-checked", "false"); b.setAttribute("aria-label", `${it.name}, ${it.sub}`);
+      return b;
     });
-    el.appendChild(svg);
-    D.svg = svg;
+    el.append(label, col, ...R.hits, card);
+    Object.assign(R, { col, card, pic: card.querySelector(".rail__pic"), name: card.querySelector(".rail__name"), sub: card.querySelector(".rail__sub"), state: card.querySelector(".rail__state") });
 
-    const centre = () => { const b = el.getBoundingClientRect(); return [d > 0 ? b.left : b.right, b.top + b.height / 2]; };
-    const angleAt = (x, y) => { const [cx, cy] = centre(); return Math.atan2(y - cy, d * (x - cx)) / DEG; };
-    const spacing = () => lerp(74, D.th1, clamp(D.o, 0, 1));
-    const rubber = x => 0.3 * (1 - Math.exp(-x / 0.3));             // pulling past the ends meets resistance
-    const hold = () => { if (window.gsap) gsap.killTweensOf(st, "u"); };
+    const mid = i => R.ticks[i * PER + (PER >> 1)].y;                 // a choice's own tick
+    const nearest = y => { let b = 0; for (let i = 1; i < n; i++) if (Math.abs(mid(i) - y) < Math.abs(mid(b) - y)) b = i; return b; };
+    const track = e => { R.ty = e.clientY - col.getBoundingClientRect().top; R.hot = nearest(R.ty); };
+    const on = (target, type, fn) => target.addEventListener(type, e => { fn(e); poke(); });
     const opened = () => opt.onOpen && opt.onOpen();
-    const on = (type, fn, o) => el.addEventListener(type, e => { fn(e); poke(); }, o);
-    on("pointerenter", e => { if (e.pointerType !== "mouse") return; clearTimeout(D.closeT); D.hover = true; opened(); });
-    on("pointerleave", e => { if (e.pointerType !== "mouse") return; clearTimeout(D.closeT); D.closeT = setTimeout(() => { D.hover = false; poke(); }, 200); });
-    on("focus", () => { if (el.matches(":focus-visible")) { D.focus = true; opened(); } });
-    on("blur", () => (D.focus = false));
-    on("pointerover", e => { const it = e.target.closest(".dial__item"); D.hot = it ? +it.dataset.i : -1; });
-    on("pointerout", e => { const to = e.relatedTarget; if (!to || !to.closest || !to.closest(".dial__item")) D.hot = -1; });
-    on("pointerdown", e => {
-      if (e.button > 0) return;
-      try { e.target.setPointerCapture(e.pointerId); } catch (err) { /* not a live pointer */ }
-      hold();
-      D.drag = { a0: angleAt(e.clientX, e.clientY), u0: st.u, x: e.clientX, y: e.clientY, moved: 0, touch: e.pointerType !== "mouse", open: D.o > 0.5, item: e.target.closest(".dial__item") };
-      opened();
-    });
-    on("pointermove", e => {
-      const g = D.drag;
-      if (!g) return;
-      g.moved = Math.max(g.moved, Math.hypot(e.clientX - g.x, e.clientY - g.y));
-      if (g.moved < 6) return;
-      el.classList.add("is-dragging");
-      let u = g.u0 + (angleAt(e.clientX, e.clientY) - g.a0) / spacing();   // the needle follows the pointer round
-      if (u < 0) u = -rubber(-u); else if (u > n - 1) u = n - 1 + rubber(u - n + 1);
-      st.u = u;
-    });
-    const release = e => {
-      const g = D.drag;
-      if (!g) return;
-      D.drag = null;
-      el.classList.remove("is-dragging");
-      if (g.touch) { D.tap = true; clearTimeout(D.tapT); D.tapT = setTimeout(() => { D.tap = false; poke(); }, 3800); }
-      if (g.moved >= 6 || e.type === "pointercancel") return go(st.u);
-      if (g.touch && !g.open) return;                               // on a touch screen the first tap only opens it
-      if (g.item) return go(+g.item.dataset.i);
-      go(Math.round(st.u) + (angleAt(e.clientX, e.clientY) < D.ind ? -1 : 1));   // a tap on the wheel: a step towards that side
-    };
-    on("pointerup", release);
-    on("pointercancel", release);
-    document.addEventListener("pointerdown", e => { if (D.tap && !el.contains(e.target)) { D.tap = false; poke(); } }, { passive: true });
-    on("wheel", e => {
-      e.preventDefault(); e.stopPropagation();                      // it turns the dial, not the page
-      hold();
-      st.u = clamp(st.u + (e.deltaMode === 1 ? 16 : 1) * e.deltaY * 0.0032, -0.25, n - 0.75);
-      clearTimeout(D.wheelT); D.wheelT = setTimeout(() => go(st.u), 170);
-    }, { passive: false });
-    on("keydown", e => {
-      const step = { ArrowUp: -1, ArrowLeft: -1, PageUp: -1, ArrowDown: 1, ArrowRight: 1, PageDown: 1 }[e.key];
-      if (step) { e.preventDefault(); go(Math.round(st.u) + step); }
-      else if (e.key === "Home" || e.key === "End") { e.preventDefault(); go(e.key === "Home" ? 0 : n - 1); }
+    on(el, "pointerenter", e => { if (e.pointerType === "mouse") { R.hover = true; track(e); opened(); } });
+    on(el, "pointermove", e => { if (e.pointerType === "mouse") track(e); });
+    on(el, "pointerleave", e => { if (e.pointerType === "mouse") R.hover = false; });
+    R.hits.forEach((b, i) => {
+      on(b, "click", () => go(i));
+      on(b, "pointerdown", e => {                                 // a tap: the card shows for a moment
+        if (e.pointerType === "mouse") return;
+        track(e); R.tap = true; opened();
+        clearTimeout(R.tapT); R.tapT = setTimeout(() => { R.tap = false; poke(); }, 2200);
+      });
+      on(b, "focus", () => { if (b.matches(":focus-visible")) { R.focus = true; R.hot = i; R.ty = mid(i); opened(); } });
+      on(b, "blur", () => (R.focus = false));
+      on(b, "keydown", e => {
+        const step = { ArrowUp: -1, ArrowLeft: -1, ArrowDown: 1, ArrowRight: 1 }[e.key];
+        if (!step && e.key !== "Home" && e.key !== "End") return;
+        e.preventDefault();
+        const j = step ? (i + step + n) % n : e.key === "Home" ? 0 : n - 1;
+        R.hits[j].focus(); go(j);
+      });
     });
     function go(i, instant) {
-      i = clamp(Math.round(i), 0, n - 1);
-      hold();
-      if (instant || reduce || !window.gsap) st.u = i;
-      else gsap.to(st, { u: i, duration: 0.85, ease: "back.out(1.7)" });
-      el.setAttribute("aria-valuenow", String(i));
-      el.setAttribute("aria-valuetext", opt.items[i].aria);
-      if (i !== D.sel) {
-        D.items.forEach((it, k) => it.g.classList.toggle("is-on", k === i));
-        if (D.sel >= 0 && !instant && !reduce && D.ripple.animate) D.ripple.animate([{ transform: "scale(1)", opacity: 0.75 }, { transform: "scale(2.2)", opacity: 0 }], { duration: 900, easing: "cubic-bezier(.2,.7,.2,1)" });
-        D.sel = i;
+      i = clamp(i, 0, n - 1);
+      if (i !== R.sel) {
+        R.hits.forEach((b, k) => { b.setAttribute("aria-checked", String(k === i)); b.tabIndex = k === i ? 0 : -1; });
+        R.ticks.forEach(T => T.el.classList.toggle("is-on", T.major && T.c === i));
+        if (R.sel >= 0 && !instant && !reduce) R.rip = { t: 0, y: mid(i) };
+        R.sel = i;
+        R.shown = -1;
       }
+      if (instant || reduce || !window.gsap) st.u = i;
+      else { gsap.killTweensOf(st, "u"); gsap.to(st, { u: i, duration: 0.9, ease: "power3.out" }); }
       opt.onSettle(i, instant);
     }
-    D.go = go;
-    dials.push(D);
-    return D;
+    R.go = go;
+    rails.push(R);
+    return R;
   }
-  // its size follows the screen: a knob of R0 at rest, opening out to R1 – about half the screen's height
-  function layoutDial(D) {
-    const narrow = W < 640;
-    D.R0 = narrow ? clamp(H * 0.075, 50, 64) : clamp(H * 0.1, 62, 100);
-    D.R1 = Math.max(D.R0 * 1.6, Math.min(H * 0.285, W * (narrow ? 0.46 : 0.3), 300));
-    D.box = Math.ceil(D.R1 * 1.14 + 24);
-    D.svg.setAttribute("width", D.box); D.svg.setAttribute("height", D.box * 2);
-    D.svg.setAttribute("viewBox", `0 0 ${D.box} ${D.box * 2}`);
-    D.key = "";
+  // the ticks sit a little tighter on a phone
+  function layoutRail(R) {
+    const gap = W < 640 ? 7 : 9, group = gap * 2.2, span = PER * gap + group;
+    R.ticks.forEach((T, i) => (T.y = T.c * span + (i % PER) * gap));
+    const h = R.ticks[R.ticks.length - 1].y + 2;
+    R.el.style.height = h + "px";
+    R.hits.forEach((b, i) => { b.style.top = (i * span - group / 2 - (i ? 0 : 10)) + "px"; b.style.height = (span + (i ? 0 : 10) + (i === R.n - 1 ? 10 : 0)) + "px"; });
+    R.key = "";
   }
-  function drawDial(D, dt) {
-    const st = D.st, d = D.d;
-    const want = D.hover || D.focus || D.tap || D.drag ? 1 : 0;
-    if (reduce) D.o = want;
-    else { D.ov += ((want - D.o) * 160 - D.ov * 15) * dt; D.o += D.ov * dt; }   // a spring, so it overshoots a touch
-    let easing = false;
-    for (let i = 0; i < D.n; i++) { const t = D.hot === i ? 1 : 0; D.hv[i] = reduce ? t : D.hv[i] + (t - D.hv[i]) * Math.min(1, dt * 12); if (Math.abs(t - D.hv[i]) > 0.002) easing = true; }
-    const key = `${D.o.toFixed(4)} ${st.u.toFixed(4)} ${st.spin.toFixed(3)} ${D.pop.toFixed(4)} ${D.box} ${easing ? D.hv.join() : D.hot}`;
-    if (key === D.key) return;
-    D.key = key;
-    const o = D.o, oc = clamp(o, 0, 1), box = D.box, R = Math.max(1, lerp(D.R0, D.R1, o) * D.pop);
-    const Ox = d > 0 ? 0 : box, Oy = box, sw = d > 0 ? 1 : 0;
-    // closed, the wheel is rolled so the choice sits on the mark; opened, it rolls to show them all and
-    // the needle points at the choice instead
-    const th = lerp(74, D.th1, oc), uv = lerp(st.u, (D.n - 1) / 2, oc), rot = -uv * th + st.spin, ind = (st.u - uv) * th;
-    D.ind = ind;
-    const X = (r, a) => (Ox + d * r * Math.cos(a * DEG)).toFixed(1), Y = (r, a) => (Oy + r * Math.sin(a * DEG)).toFixed(1);
-    const half = r => `M${Ox} ${(Oy - r).toFixed(1)}A${r.toFixed(1)} ${r.toFixed(1)} 0 0 ${sw} ${Ox} ${(Oy + r).toFixed(1)}`;
-    D.disc.setAttribute("d", half(R) + "Z");
-    D.hit.setAttribute("d", half(R + 10) + "Z");
-    D.rim.setAttribute("d", half(R - 0.6));
-    D.glass.setAttribute("cx", Ox); D.glass.setAttribute("cy", Oy); D.glass.setAttribute("r", R.toFixed(1));
-    [lerp(0.9, 0.02, oc), lerp(0.9, 0.06, oc), lerp(0.94, 0.3, oc)].forEach((a, i) => D.stops[i].setAttribute("stop-opacity", a.toFixed(3)));   // opened, it's nearly clear
-    D.fade.setAttribute("y1", (Oy - R).toFixed(1)); D.fade.setAttribute("y2", (Oy + R).toFixed(1));
-    for (const c of [D.orbit, D.comet, D.hub]) { c.setAttribute("cx", Ox); c.setAttribute("cy", Oy); }
-    D.orbit.setAttribute("r", (R * 0.82).toFixed(1)); D.comet.setAttribute("r", (R - 0.6).toFixed(1)); D.hub.setAttribute("r", (5 + 4 * oc).toFixed(1));
-    // the scale: a tick every 4°, longer every 20°, magnified where it passes the needle; it rolls with the wheel
-    let minor = "", major = "";
-    const r2 = R - 4, k = lerp(0.8, 1.25, oc) * D.pop;
-    for (let t = -180; t < 180; t += 4) {
-      const a = (((t + rot) % 360) + 540) % 360 - 180;
-      if (Math.abs(a) > 88) continue;
-      const big = t % 20 === 0, len = (big ? 8 : 4) * (1 + 1.2 * Math.exp(-(((a - ind) / 16) ** 2))) * k;
-      const seg = `M${X(r2 - len, a)} ${Y(r2 - len, a)}L${X(r2, a)} ${Y(r2, a)}`;
-      if (big) major += seg; else minor += seg;
-    }
-    D.minor.setAttribute("d", minor); D.major.setAttribute("d", major);
-    const s = th * 0.3, ra = R - 0.6, dm = 5.5 / (R + 12) / DEG;
-    D.arc.setAttribute("d", `M${X(ra, ind - s)} ${Y(ra, ind - s)}A${ra.toFixed(1)} ${ra.toFixed(1)} 0 0 ${sw} ${X(ra, ind + s)} ${Y(ra, ind + s)}`);
-    D.mark.setAttribute("d", `M${X(R + 3, ind)} ${Y(R + 3, ind)}L${X(R + 12, ind - dm)} ${Y(R + 12, ind - dm)}L${X(R + 12, ind + dm)} ${Y(R + 12, ind + dm)}Z`);
-    D.title.setAttribute("x", (Ox + d * 14).toFixed(1)); D.title.setAttribute("y", (Oy - R * lerp(0.73, 0.93, oc) + 3).toFixed(1));
-    D.title.style.opacity = (clamp(D.pop * 2 - 1, 0, 1) * lerp(1, clamp((D.R1 - 200) / 40, 0, 1), oc)).toFixed(3);   // a small wheel opened has no room for it
-    // the choices ride round on an arc, the one at the needle biggest; opened, each is named
-    const ri = lerp(0.47, 0.6, oc) * R;
-    let rsel = 0;
-    D.items.forEach((it, i) => {
-      const a = (i - uv) * th + st.spin, w = Math.exp(-(((a - ind) / (th * 0.55)) ** 2));
-      const vis = clamp((100 - Math.abs(a)) / 16, 0, 1) * clamp(D.pop * 1.6 - 0.4, 0, 1);
-      it.g.style.visibility = vis > 0.01 ? "" : "hidden";
-      if (vis <= 0.01) return;
-      const rb = Math.max(0.01, lerp(lerp(0.13, 0.34, w) * D.R0, lerp(0.14, 0.185, w) * D.R1, o) * D.pop * (1 + 0.14 * D.hv[i]));
-      const x = Ox + d * ri * Math.cos(a * DEG), y = Oy + ri * Math.sin(a * DEG);
-      if (i === D.sel) { rsel = rb; D.ripple.setAttribute("cx", x.toFixed(1)); D.ripple.setAttribute("cy", y.toFixed(1)); D.ripple.setAttribute("r", rb.toFixed(1)); }
-      it.face.setAttribute("transform", `translate(${x.toFixed(2)} ${y.toFixed(2)}) scale(${rb.toFixed(3)})`);
-      it.g.style.opacity = (vis * lerp(0.45 + 0.55 * w, 0.78 + 0.22 * w, oc)).toFixed(3);
-      const lo = clamp((o - 0.5 - 0.1 * Math.abs(i - st.u)) / 0.3, 0, 1);   // the names come in after it opens, nearest first
-      const ly = a < -th * 0.5 ? y - rb - 30 - (1 - lo) * 8 : y + rb + 16 + (1 - lo) * 8;   // above the ones up the arc, clear of the needle
-      it.label.setAttribute("transform", `translate(${x.toFixed(2)} ${ly.toFixed(2)})`);
-      it.label.style.opacity = lo.toFixed(3);
+  function drawRail(R, dt) {
+    const want = R.hover || R.focus || R.tap ? 1 : 0, ease = k => 1 - Math.exp(-dt * k);
+    if (reduce) { R.h = want; R.y = R.ty; }
+    else { R.h += (want - R.h) * ease(9); R.y += (R.ty - R.y) * ease(18); }
+    if (R.rip && (R.rip.t += dt) > 0.9) R.rip = null;
+    const cy = R.ticks[R.hot * PER + (PER >> 1)].y;
+    R.cy = reduce || R.h < 0.05 ? cy : R.cy + (cy - R.cy) * ease(16);   // the card glides to the choice under the pointer
+    const key = `${R.h.toFixed(3)} ${R.y.toFixed(1)} ${R.cy.toFixed(1)} ${R.pop.toFixed(3)} ${R.rip ? R.rip.t : ""} ${R.sel} ${R.hot}`;
+    if (key === R.key) return;
+    R.key = key;
+    const ys = R.sel >= 0 ? R.ticks[R.sel * PER + (PER >> 1)].y : -1e3, N = R.ticks.length;
+    R.ticks.forEach((T, i) => {
+      let k = Math.max(R.h * Math.exp(-(((T.y - R.y) / 28) ** 2)), 0.55 * Math.exp(-(((T.y - ys) / 11) ** 2)));   // the heap under the pointer, and the chosen one's own
+      if (R.rip) { const d = Math.abs(T.y - R.rip.y) - R.rip.t * 280; k = Math.max(k, 0.75 * (1 - R.rip.t / 0.9) * Math.exp(-((d / 14) ** 2))); }
+      const f = smooth(clamp(R.pop * 1.8 - (i / N) * 0.8, 0, 1)), base = T.major ? 0.36 : 0.22;   // (the column draws itself in, top to bottom)
+      T.el.style.transform = `translateY(${T.y}px) scaleX(${((base + (1 - base) * k) * f).toFixed(3)})`;
+      T.el.style.opacity = ((0.3 + 0.7 * k) * f).toFixed(3);
     });
-    const nl = Math.max(0, ri - (rsel || 0.18 * R) - 6);             // the needle, from the hub to just short of the choice
-    D.needle.setAttribute("d", `M${Ox} ${Oy}L${X(nl, ind)} ${Y(nl, ind)}`);
-    D.needle.style.opacity = D.hub.style.opacity = oc.toFixed(3);
+    R.el.classList.toggle("is-open", R.h > 0.5);
+    R.card.style.top = R.cy.toFixed(1) + "px";
+    if (R.shown !== R.hot) {                                        // what the card shows: the choice, and whether it's the one out now
+      const it = R.opt.items[R.hot], on = R.hot === R.sel;
+      R.shown = R.hot;
+      it.pic(R.pic);
+      R.name.textContent = it.name; R.sub.textContent = it.sub;
+      R.state.textContent = on ? R.opt.current : fine ? "Click to switch" : "Tap to switch";
+      R.state.classList.toggle("is-on", on);
+    }
   }
 
-  // the light's choices: each a swatch of the room lit that way – the tube in its channel, its light falling
-  const SWATCH = {
-    dark:  { bg: ["#233049", "#05070c"], tube: "#c3d2f0", beam: "#7f9de0", a: 0.5 },
-    white: { bg: ["#ffffff", "#dfe5ee"], tube: "#ffffff", beam: "#c5d5ef", a: 0.55 },
-    warm:  { bg: ["#ffdcae", "#e8872c"], tube: "#fff5e6", beam: "#fff0d8", a: 0.75 },
-  };
-  const lightItem = (k, sub) => {
-    const F = SWATCH[k], name = k[0].toUpperCase() + k.slice(1);
-    return {
-      key: k, name, sub, aria: name + " light",
-      fill: (defs, id) => { const gr = S("radialGradient", { id: `${id}-${k}`, cx: 0.5, cy: 0.25, r: 0.85 }, defs); S("stop", { offset: 0, "stop-color": F.bg[0] }, gr); S("stop", { offset: 1, "stop-color": F.bg[1] }, gr); return `url(#${id}-${k})`; },
-      face: (g, defs, id) => {
-        const bm = S("linearGradient", { id: `${id}-${k}-beam`, x1: 0, y1: 0, x2: 0, y2: 1 }, defs);
-        S("stop", { offset: 0, "stop-color": F.beam, "stop-opacity": F.a }, bm); S("stop", { offset: 1, "stop-color": F.beam, "stop-opacity": 0 }, bm);
-        S("path", { d: "M-0.5 -0.12L0.5 -0.12L0.9 0.8L-0.9 0.8Z", fill: `url(#${id}-${k}-beam)`, "clip-path": `url(#${id}-unit)` }, g);
-        S("rect", { class: "dial__fixture", x: -0.6, y: -0.33, width: 1.2, height: 0.11, rx: 0.03 }, g);
-        S("rect", { class: "dial__tube", x: -0.54, y: -0.21, width: 1.08, height: 0.11, rx: 0.055, fill: F.tube }, g);
-      },
-    };
-  };
-  const lightEl = $(".room__dial--light", stage);
-  const lightDial = lightEl && makeDial(lightEl, dial, {
-    side: "right", title: "LIGHT",
-    items: [lightItem("dark", "Night shift"), lightItem("white", "Daylight"), lightItem("warm", "Evening glow")],
+  // the light's choices, each shown on the card as a little swatch of the room lit that way
+  const lightEl = $(".room__rail--light", stage);
+  const lightRail = lightEl && makeRail(lightEl, mood, {
+    side: "right", title: "Light", current: "On now",
+    items: ORDER.map((k, i) => ({
+      key: k, name: k[0].toUpperCase() + k.slice(1), sub: ["Night shift", "Daylight", "Evening glow"][i],
+      pic: el => { el.dataset.k = k; el.innerHTML = '<i class="rail__beam"></i><i class="rail__tube"></i>'; },
+    })),
     onSettle: lightSettled,
   });
-  const setMood = (name, instant) => (lightDial ? lightDial.go(ORDER.indexOf(name), instant) : ((dial.u = ORDER.indexOf(name)), lightSettled(dial.u, true)));
+  const setMood = (name, instant) => (lightRail ? lightRail.go(ORDER.indexOf(name), instant) : ((mood.u = ORDER.indexOf(name)), lightSettled(mood.u, true)));
 
   /* ------------------------------------------------ the room: five ruled surfaces, lit */
   const ROOM = new THREE.Vector4(), LINE = { value: new THREE.Color("#345ca8") }, EDGE = { value: new THREE.Color("#244078") };
@@ -810,17 +703,17 @@ function room() {
   }
 
   /* ------------------------------------------------ the robots */
-  // Three to choose from on the left dial: Janyu Tech's tracked sludge cleaner, a four-wheeled defence
+  // Three to choose from on the left edge: Janyu Tech's tracked sludge cleaner, a four-wheeled defence
   // rover and a quadruped. The one that's out follows the pointer over the floor, each its own way: the
   // cleaner's tracks roll and its body dips and leans; the rover skid-steers on its four wheels and its
   // whip antenna sways; the quadruped trots, each foot planted while it carries weight and lifted clear
   // as it swings through (two-bone IK in each leg). A new one is printed where the last one stood: a
-  // scan line wipes the old one away from the top down, builds the new one up from the floor, and the
-  // tube stutters as it lands. (In the two newer models the front is -x, hence the half turn.)
+  // scan line wipes the old one away from the top down and builds the new one up from the floor, then it
+  // hops, and the tube stutters as it lands. (In the two newer models the front is -x, hence the half turn.)
   const BOTS = [
-    { key: "cleaner", name: "Janyu cleaner", sub: "Tracked · sludge", file: "janyu-tech-bot", scale: 1.15, yaw: 0, hl: 0.61, hw: 0.34, track: 0.27, brush: true, vmax: 1.45, wmax: 1.5, acc: 2.4, turn: 4 },
-    { key: "rover", name: "Defence rover", sub: "Four-wheel scout", file: "defence-rover", scale: 1.02, yaw: Math.PI, hl: 0.66, hw: 0.335, track: 0.3, vmax: 1.75, wmax: 2.1, acc: 3.2, turn: 5 },
-    { key: "quadruped", name: "Quadruped", sub: "Four-legged walker", file: "quadruped-robot", scale: 0.9, yaw: Math.PI, hl: 0.55, hw: 0.5, vmax: 0.95, wmax: 1.3, acc: 2.2, turn: 3.6 },
+    { key: "cleaner", name: "Janyu cleaner", sub: "Tracked · sludge", file: "janyu-tech-bot", scale: 2, yaw: 0, hl: 0.61, hw: 0.34, track: 0.27, brush: true, vmax: 2.1, wmax: 1.5, acc: 2.4, turn: 4 },
+    { key: "rover", name: "Defence rover", sub: "Four-wheel scout", file: "defence-rover", scale: 1.8, yaw: Math.PI, hl: 0.66, hw: 0.335, track: 0.3, vmax: 2.6, wmax: 2.1, acc: 3.2, turn: 5 },
+    { key: "quadruped", name: "Quadruped", sub: "Four-legged walker", file: "quadruped-robot", scale: 1.45, yaw: Math.PI, hl: 0.55, hw: 0.5, vmax: 1.4, wmax: 1.3, acc: 2.2, turn: 3.6 },
   ];
   const bot = { R: null, x: -1.6, z: -8.4, th: -0.6, v: 0, w: 0, vx: 0, vz: 0, gx: -1.6, gz: -8.4, tx: -1.6, tz: -8.4, acc: 0, pitch: 0, pv: 0, roll: 0, rv: 0 };
   // a soft dark patch under each robot (or each foot), so it sits on the floor whatever the light
@@ -841,7 +734,9 @@ function room() {
       .replace("#include <project_vertex>", "#include <project_vertex>\nvScanY = (modelMatrix * vec4(transformed, 1.0)).y;");
     sh.fragmentShader = sh.fragmentShader
       .replace("#include <common>", "#include <common>\nvarying float vScanY; uniform float uScanY, uScanOn; uniform vec3 uScanC;")
-      .replace("#include <emissivemap_fragment>", "#include <emissivemap_fragment>\ntotalEmissiveRadiance += uScanC * uScanOn * (2.4 * exp(-abs(uScanY - vScanY) * 70.0) + 0.06);");
+      .replace("#include <emissivemap_fragment>", `#include <emissivemap_fragment>
+        float scanSide = 1.0 - abs(dot(normal, normalize((viewMatrix * vec4(0.0, 1.0, 0.0, 0.0)).xyz)));   // the robot's sides light up, not a flat top the line lies across
+        totalEmissiveRadiance += uScanC * uScanOn * (2.4 * exp(-abs(uScanY - vScanY) * 70.0) * (0.15 + 0.85 * scanSide) + 0.06);`);
   };
   const loader = new GLTFLoader();
   loader.setMeshoptDecoder(MeshoptDecoder);
@@ -898,7 +793,7 @@ function room() {
     if (ant) R.ant = { node: ant, p: 0, pv: 0, r: 0, rv: 0 };
     if (model.getObjectByName("Hip_FL")) rigLegs(R, model);
     if (R.legs) {
-      R.feet = R.legs.map(() => { const b = blob(0.34, 0.34, 0.5); g.add(b); return b; });
+      R.feet = R.legs.map(() => { const b = blob(0.4 * R.scale, 0.4 * R.scale, 0.5); g.add(b); return b; });
       g.add(blob(R.HL * 2.4, R.HW * 2.3, 0.14));
     } else g.add(blob(R.HL * 2.5, R.HW * 2.9, 0.5));
     return R;
@@ -945,7 +840,8 @@ function room() {
     const hz = 1.5 + 1.3 * clamp(Math.abs(bot.v) / R.vmax, 0, 1) + 0.5 * clamp(Math.abs(bot.w), 0, 1);
     if (G.amp > 0.01) G.ph = (G.ph + hz * dt) % 1;
     const tilt = R.tilt;
-    tilt.position.y = R.tilt0.y - 0.016 * G.amp * (0.5 + 0.5 * Math.cos(G.ph * 4 * Math.PI));   // down as the feet take the weight
+    const J = R.hop;
+    tilt.position.y = R.tilt0.y - 0.016 * G.amp * (0.5 + 0.5 * Math.cos(G.ph * 4 * Math.PI)) - (J ? Math.max(J.c, -0.3) * 0.17 : 0);   // down as the feet take the weight (and to crouch for a hop)
     tilt.rotation.z = R.sgn * bot.pitch + 0.014 * G.amp * Math.sin(G.ph * TAU);
     tilt.rotation.x = R.sgn * bot.roll;
     tilt.updateMatrix();
@@ -956,7 +852,7 @@ function room() {
       const xg = Lg.rest.x * s * R.sgn, zg = Lg.rest.z * s * R.sgn;
       const Sx = clamp((bot.v + bot.w * zg) * T, -0.3, 0.3), Sz = clamp(-bot.w * xg * T, -0.2, 0.2);
       const p = (G.ph + Lg.phase) % 1, down = p < DUTY || G.amp < 0.02;
-      let k, y = Lg.rest.y;
+      let k, y = Lg.rest.y + (J ? J.tuck * 0.14 : 0);
       if (p < DUTY) k = 0.5 - p / DUTY;
       else { const q = (p - DUTY) / (1 - DUTY); k = smooth(q) - 0.5; y += (0.035 + 0.3 * Math.hypot(Sx, Sz)) * G.amp * Math.sin(Math.PI * q); }
       const x = Lg.rest.x + Sx * k, z = Lg.rest.z + Sz * k;
@@ -968,14 +864,15 @@ function room() {
       f.material.opacity = 0.5 * clamp(1 - Lg.lift / 0.12, 0.25, 1);
       if (down && !Lg.down && G.amp > 0.3) {                       // a foot coming down scuffs the leaves
         _w.set(x, 0, z).applyMatrix4(R.model.matrixWorld);
-        stomp(_w.x, _w.z, G.amp);
+        stomp(_w.x, _w.z, G.amp, 0.35 * s);
       }
       Lg.down = down;
     });
   }
   function animateBot(R, dt) {
-    const g = R.group;
-    g.position.set(bot.x, 0, bot.z);
+    const g = R.group, J = R.hop;
+    g.position.set(bot.x, J ? J.y : 0, bot.z);
+    if (!R.legs) { const c = J ? J.c : 0, s = R.scale; R.model.scale.set(s * (1 + 0.08 * c), s * (1 - 0.16 * c), s * (1 + 0.08 * c)); }   // the wheeled ones squash and stretch to hop
     g.rotation.y = bot.th;
     R.clip.constant = R.scanY.value;
     for (const wh of R.wheels) wh.pivot.rotation.z -= R.sgn * (bot.v + wh.side * bot.w * R.TRACK) / wh.r * dt;
@@ -997,14 +894,15 @@ function room() {
     const dx = bot.tx - bot.x, dz = bot.tz - bot.z, dist = Math.hypot(dx, dz);
     const err = dist > 0.05 ? wrapAngle(Math.atan2(-dz, dx) - bot.th) : 0;
     const arrive = clamp((dist - 0.3) / 1.8, 0, 1);
-    const vWant = R.vmax * arrive * Math.max(0, Math.cos(err)) ** 1.5;
-    const wWant = clamp(2.2 * err, -R.wmax, R.wmax) * clamp(dist / 0.4, 0, 1);
+    const hold = swap.scanning || R.hop;                           // it stands still to be printed, and to hop
+    const vWant = hold ? 0 : R.vmax * arrive * Math.max(0, Math.cos(err)) ** 1.5;
+    const wWant = hold ? 0 : clamp(2.2 * err, -R.wmax, R.wmax) * clamp(dist / 0.4, 0, 1);
     const v0 = bot.v;
     bot.v += (vWant - bot.v) * (1 - Math.exp(-dt * R.acc));
     bot.w += (wWant - bot.w) * (1 - Math.exp(-dt * R.turn));
     bot.th = wrapAngle(bot.th + bot.w * dt);
     const fx = Math.cos(bot.th), fz = -Math.sin(bot.th);
-    const nx = clamp(bot.x + fx * bot.v * dt, xL + 0.9, xR - 0.9), nz = clamp(bot.z + fz * bot.v * dt, -D + 0.9, -3);
+    const m = (bot.R ? bot.R.HL : 0.7) + 0.25, nx = clamp(bot.x + fx * bot.v * dt, xL + m, xR - m), nz = clamp(bot.z + fz * bot.v * dt, -D + m, -3);
     bot.vx = (nx - bot.x) / dt; bot.vz = (nz - bot.z) / dt;
     bot.x = nx; bot.z = nz;
     // the body dips as it brakes and lifts as it pulls away, and leans out of a turn (critically damped)
@@ -1056,32 +954,45 @@ function room() {
       animateBot(R, 0);
       if (!anim) { swap.scanning = null; return done(); }
       swap.scanning = R; R.scanOn.value = 1; R.scanY.value = -0.02;   // and the new one built up from the floor
-      land(R);
-      gsap.to(R.scanY, { value: R.top, duration: 1.05, ease: "power2.out", onComplete: () => { R.scanY.value = 99; R.scanOn.value = 0; swap.scanning = null; done(); } });
+      if (!old) land(R);                                             // (the first lands as it's printed; a new one hops, then lands)
+      gsap.to(R.scanY, { value: R.top, duration: 1.05, ease: "power2.out", onComplete: () => { R.scanY.value = 99; R.scanOn.value = 0; swap.scanning = null; if (old) hop(R); done(); } });
     }, () => {                                                     // it wouldn't load: the old one comes back
       if (old) { old.scanY.value = 99; old.scanOn.value = 0; old.group.visible = true; }
       swap.scanning = null; swap.want = old; swap.busy = false;
-      if (old && botDial) botDial.go(BOTS.indexOf(old), true);
+      if (old && botRail) botRail.go(BOTS.indexOf(old), true);
     });
   }
+  // a robot just swapped in hops for joy: it crouches, springs up, tucks in the air and comes down with
+  // a thump (the wheeled ones squash and stretch; the quadruped bends its knees)
+  function hop(R) {
+    if (reduce || !window.gsap) return;
+    const J = (R.hop = { y: 0, c: 0, tuck: 0 });
+    gsap.timeline({ onComplete: () => { if (R.hop === J) R.hop = null; } })
+      .to(J, { c: 1, duration: 0.26, ease: "power2.inOut" })
+      .to(J, { c: -0.5, y: 0.45 + 0.3 * R.scale, tuck: 1, duration: 0.32, ease: "power2.out" })
+      .to(J, { c: 0, y: 0, tuck: 0, duration: 0.3, ease: "power2.in" })
+      .add(() => land(R))
+      .to(J, { c: 0.85, duration: 0.07, ease: "power1.out" })
+      .to(J, { c: 0, duration: 0.7, ease: "elastic.out(1, 0.4)" });
+  }
   function land(R) {
-    const s = { k: 0 }, r0 = Math.max(R.HL, R.HW) * 2.2;
+    const s = { k: 0 }, r0 = Math.max(R.HL, R.HW) * 2.2, reach = 1.2 + 1.8 * R.HL;
     pulse.visible = true; pulse.position.set(bot.x, 0.012, bot.z);
     gsap.to(s, { k: 1, duration: 1.2, ease: "power2.out", onUpdate: () => { const r = r0 * lerp(0.5, 2.6, s.k); pulse.scale.set(r, 1, r); pulse.material.opacity = 0.9 * (1 - s.k); }, onComplete: () => (pulse.visible = false) });
     for (const p of parts) {                                       // the landing blows the leaves about
       const dx = p.x - bot.x, dz = p.z - bot.z, dd = Math.hypot(dx, dz);
-      if (p.y > 1.2 || dd > 2.4) continue;
-      const w = (1 - dd / 2.4) ** 1.2, k = 2.6 * w / (dd + 0.05);
+      if (p.y > 1.2 || dd > reach) continue;
+      const w = (1 - dd / reach) ** 1.2, k = 2.6 * w / (dd + 0.05);
       kick(p, dx * k, 1.7 * w * rand(0.6, 1.2), dz * k, w);
     }
     gsap.killTweensOf(L);
     gsap.timeline().to(L, { power: 0.55, duration: 0.05 }).to(L, { power: 1.1, duration: 0.08 }).to(L, { power: 1, duration: 0.4, ease: "power2.out" });
   }
-  function stomp(x, z, amp) {
+  function stomp(x, z, amp, r) {
     for (const p of parts) {
       if (p.y > 0.4) continue;
       const dx = p.x - x, dz = p.z - z, dd = Math.hypot(dx, dz);
-      if (dd < 0.3) { const w = (1 - dd / 0.3) * amp, k = 0.5 * w / (dd + 0.03); kick(p, dx * k, 0.6 * w * rand(0.6, 1.2), dz * k, 0.4 * w); }
+      if (dd < r) { const w = (1 - dd / r) * amp, k = 0.5 * w / (dd + 0.03); kick(p, dx * k, 0.6 * w * rand(0.6, 1.2), dz * k, 0.4 * w); }
     }
   }
   function drawScan() {
@@ -1094,20 +1005,16 @@ function room() {
     scanRing.material.opacity = 0.85;
   }
 
-  // the robot dial, on the left: each choice a portrait of the robot
-  const botEl = $(".room__dial--bot", stage);
+  // the robot rail, on the left: the card shows a portrait of each
+  const botEl = $(".room__rail--bot", stage);
   let savedBot = null;
   try { savedBot = localStorage.getItem("jt-bot"); } catch (e) { /* private mode */ }
   const botIndex = Math.max(0, BOTS.findIndex(R => R.key === savedBot));
-  const botDial = botEl && makeDial(botEl, { u: botIndex, spin: 0 }, {
-    side: "left", title: "ROBOT",
+  const botRail = botEl && makeRail(botEl, { u: botIndex }, {
+    side: "left", title: "Robot", current: "In the room",
     items: BOTS.map(R => ({
-      key: R.key, name: R.name, sub: R.sub, aria: R.name,
-      fill: (defs, id) => {
-        if (!defs.querySelector(`#${id}-plate`)) { const gr = S("radialGradient", { id: id + "-plate", cx: 0.5, cy: 0.3, r: 0.8 }, defs); S("stop", { offset: 0, class: "dial__plate-0" }, gr); S("stop", { offset: 1, class: "dial__plate-1" }, gr); }
-        return `url(#${id}-plate)`;
-      },
-      face: (g, defs, id) => S("image", { href: new URL(`./assets/models/${R.file}.webp`, import.meta.url).href, x: -0.94, y: -0.9, width: 1.88, height: 1.88, "clip-path": `url(#${id}-unit)` }, g),
+      key: R.key, name: R.name, sub: R.sub,
+      pic: el => { el.innerHTML = `<img src="${new URL(`./assets/models/${R.file}.webp`, import.meta.url).href}" alt="">`; },
     })),
     onOpen: () => BOTS.forEach(R => loadBot(R).catch(() => {})),  // about to choose: fetch them all
     onSettle: (i, instant) => {
@@ -1115,7 +1022,7 @@ function room() {
       showBot(i, instant);
     },
   });
-  if (botDial) botDial.go(botIndex, true); else showBot(botIndex, true);
+  if (botRail) botRail.go(botIndex, true); else showBot(botIndex, true);
 
   /* ------------------------------------------------ pointer and scroll */
   const Pt = { x: -9999, y: -9999, px: 0, py: 0, vx: 0, vy: 0, speed: 0, nx: 0, ny: 0, sx: 0, sy: 0, inside: false, moved: false };
@@ -1127,10 +1034,10 @@ function room() {
     Pt.inside = true; Pt.moved = true;
   };
   const leave = () => { Pt.inside = false; Pt.nx = 0; Pt.ny = 0; };
-  const onDial = e => e.target.closest && e.target.closest(".room__dial");   // working a dial isn't steering the robot
-  stage.addEventListener("pointermove", e => { if (!onDial(e)) point(e.clientX, e.clientY); }, { passive: true });
-  stage.addEventListener("pointerdown", e => { if (!onDial(e)) point(e.clientX, e.clientY); }, { passive: true });
-  stage.addEventListener("touchmove", e => { const t = e.touches[0]; if (t && !onDial(e)) point(t.clientX, t.clientY); }, { passive: true });
+  const onRail = e => e.target.closest && e.target.closest(".room__rail");   // choosing on a rail isn't steering the robot
+  stage.addEventListener("pointermove", e => { if (!onRail(e)) point(e.clientX, e.clientY); }, { passive: true });
+  stage.addEventListener("pointerdown", e => { if (!onRail(e)) point(e.clientX, e.clientY); }, { passive: true });
+  stage.addEventListener("touchmove", e => { const t = e.touches[0]; if (t && !onRail(e)) point(t.clientX, t.clientY); }, { passive: true });
   stage.addEventListener("pointerleave", leave);
   stage.addEventListener("touchend", leave);
   let heroTop = 0, span = 0;
@@ -1147,7 +1054,7 @@ function room() {
     const ts = ((dx < 0 ? xL : xR) - o.x) / dx, zs = o.z - ts, ys = o.y + dy * ts;
     return ys > 0 && ys < HR ? [dx < 0 ? xL + 1 : xR - 1, zs, false] : null;
   }
-  // the tube answers a click: the dial rolls on to the next mood
+  // the tube answers a click: the light moves on to the next mood
   const ray = new THREE.Raycaster(), ndc = new THREE.Vector2();
   const overLamp = (X, Y) => {
     const r = stage.getBoundingClientRect();
@@ -1157,7 +1064,7 @@ function room() {
   };
   stage.addEventListener("click", e => {
     if (e.target.closest("a, button") || !overLamp(e.clientX, e.clientY)) return;
-    if (lightDial) lightDial.go((Math.round(dial.u) + 1) % 3);
+    if (lightRail) lightRail.go((Math.round(mood.u) + 1) % 3);
   });
   let hoverCheck = 0;
   stage.addEventListener("pointermove", e => {
@@ -1490,7 +1397,7 @@ function room() {
     wind(t);
     applyLight(t);
     envCheck(t);
-    for (const Dl of dials) drawDial(Dl, dt);
+    for (const Rl of rails) drawRail(Rl, dt);
     if (motes.visible) moteStep(t, dt);
 
     // the branches hang in the opening: they slide with the camera and leave the frame as it moves in
@@ -1548,8 +1455,8 @@ function room() {
     if (fp) { floorVel.fx = fp[0]; floorVel.fz = fp[1]; }
     floorVel.speed = Math.hypot(floorVel.x, floorVel.z);
     if (hit && Pt.moved) {                                         // only the pointer moves it; it stays put otherwise
-      const near = -(cam.z + f * EYE / (H - cy) + 0.9);           // not so near that it drives out of view
-      bot.gx = clamp(hit[0], xL + 0.9, xR - 0.9); bot.gz = clamp(Math.min(hit[1], near), -D + 0.9, -3);
+      const m = (bot.R ? bot.R.HL : 0.7) + 0.3, near = -(cam.z + f * EYE / (H - cy) + 0.5 + m);   // not so near that it drives out of view
+      bot.gx = clamp(hit[0], xL + m, xR - m); bot.gz = clamp(Math.min(hit[1], near), -D + m, -3);
       Pt.moved = false;
     }
     drive(dt);
@@ -1577,17 +1484,17 @@ function room() {
     airTarget = Math.round(fine ? clamp(W * H / 40000, 14, 36) : clamp(W * H / 48000, 8, 18));
     heroTop = hero.offsetTop; span = hero.offsetHeight - stage.offsetHeight;
     placeRoom();
-    for (const Dl of dials) layoutDial(Dl);
+    for (const Rl of rails) layoutRail(Rl);
   }
   let running = false;
-  // the reflections follow the light, a few times a second at most while the dial turns
+  // the reflections follow the light, a few times a second at most while it changes
   function envCheck(t) {
-    const u = clamp(dial.u, 0, 2);
-    if (Math.abs(u - dial.envU) > 0.02 && t - dial.envAt > 240) { setEnv(cur); dial.envU = u; dial.envAt = t; }
+    const u = clamp(mood.u, 0, 2);
+    if (Math.abs(u - mood.envU) > 0.02 && t - mood.envAt > 240) { setEnv(cur); mood.envU = u; mood.envAt = t; }
   }
   const still = () => {
     applyLight(0); envCheck(performance.now()); placeFloaters(0); writeLeaves();
-    for (const Dl of dials) drawDial(Dl, 0);
+    for (const Rl of rails) drawRail(Rl, 0);
     for (const R of BOTS) if (R.group && R.group.visible) animateBot(R, 0);
     renderer.render(scene, camera);
   };
@@ -1602,7 +1509,7 @@ function room() {
   addEventListener("resize", () => { clearTimeout(rt); rt = setTimeout(() => { measure(); if (fontsReady) buildFloaters(); if (!running) still(); }, 150); });
   let visible = true;
   new IntersectionObserver(([e]) => (visible = e.isIntersecting)).observe(stage);
-  if (/[?&]roomdebug/.test(location.search)) window.__room = { bot, parts, L, dial, dials, BOTS, showBot, setMood, lamp, camera };
+  if (/[?&]roomdebug/.test(location.search)) window.__room = { bot, parts, L, mood, rails, BOTS, showBot, setMood, lamp, camera };
 
   if (reduce) {                                                   // a still room: everything where it stands
     LEAF_U.uFade.value = 1;
@@ -1632,13 +1539,10 @@ function room() {
       gsap.fromTo(Ls, { intro: 1, op: 0, blur: 4 }, { intro: 0, op: 1, blur: 0, duration: 1.7, ease: "expo.out", stagger: 0.07, delay: 0.25 });
       gsap.fromTo(Q, { intro: 0.35, op: 0, blur: 3 }, { intro: 0, op: 1, blur: 0, duration: 1.4, ease: "expo.out", delay: 1.1 });
       if (cueIn) gsap.fromTo(cueIn, { y: 16, autoAlpha: 0 }, { y: 0, autoAlpha: 1, duration: 1, ease: "expo.out", delay: 1.7 });
-      dials.forEach((Dl, k) => {                                   // the dials pop out of the edges and roll in
-        gsap.to(Dl, { pop: 1, duration: 1.1, ease: "back.out(1.5)", delay: 1.15 + k * 0.15 });
-        gsap.fromTo(Dl.st, { spin: k ? 200 : -200 }, { spin: 0, duration: 2, ease: "power4.out", delay: 1.15 + k * 0.15 });
-      });
+      rails.forEach((Rl, k) => gsap.to(Rl, { pop: 1, duration: 1.3, ease: "power2.out", delay: 1.2 + k * 0.12 }));   // the rails draw themselves in
       gsap.delayedCall(1.5, () => { botsLive = true; nextBot(false); });   // and the robot is printed on the floor
     } else {
-      dials.forEach(Dl => (Dl.pop = 1));
+      rails.forEach(Rl => (Rl.pop = 1));
       botsLive = true; nextBot(true);
       strokes.forEach(p => (p.style.strokeDashoffset = 0));
       blossoms.forEach(b => (b.pop = 1));
