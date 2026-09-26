@@ -355,11 +355,46 @@ a.card:hover .card__cta i { transform: translateX(5px); }
    ========================================================= */
 .hero--room { display: block; height: 170vh; height: 170svh; min-height: 0; padding: 0; overflow: visible; background: #eef1f5; }
 .room__stage { position: sticky; top: 0; height: 100vh; height: 100svh; overflow: hidden; isolation: isolate; background: #eef1f5; }
-.room__walls, .room__leaves { position: absolute; inset: 0; width: 100%; height: 100%; display: block; pointer-events: none; }
-.room__walls { z-index: 0; }
-.room__leaves { z-index: 1; opacity: 0; transition: opacity 1.4s ease .4s; }
-.room__leaves--front { z-index: 3; }
-.room__stage.is-live .room__leaves { opacity: 1; }
+.room__gl { position: absolute; inset: 0; z-index: 0; width: 100%; height: 100%; display: block; }
+.room__vignette { position: absolute; inset: 0; z-index: 1; pointer-events: none; }
+.room__vignette::before, .room__vignette::after { content: ""; position: absolute; inset: 0; transition: opacity 1.2s ease; }
+.room__vignette::before { background: radial-gradient(circle at 50% 45%, rgba(20,32,60,0) 35vmin, rgba(20,32,60,.05) 78vmax); }
+.room__vignette::after { background: radial-gradient(circle at 50% 42%, rgba(2,4,8,0) 28vmin, rgba(2,4,8,.5) 88vmax); opacity: 0; }
+.room__stage[data-light="dark"] .room__vignette::after { opacity: 1; }
+.room__stage[data-light="warm"] .room__vignette::after { opacity: .35; }
+
+/* the light switch: Dark · White · Warm (the lamp in the room answers a click too) */
+.room__light {
+  position: absolute; right: var(--gutter); bottom: clamp(16px, 3.6vh, 34px); z-index: 6;
+  display: flex; align-items: center; gap: 2px; padding: 4px; border-radius: 999px;
+  background: rgba(255,255,255,.62); box-shadow: inset 0 0 0 1px rgba(11,11,12,.08); backdrop-filter: blur(10px); -webkit-backdrop-filter: blur(10px);
+  font-size: 11px; font-weight: 600; letter-spacing: .12em; text-transform: uppercase; color: var(--ink);
+  opacity: 0; visibility: hidden; transition: opacity .8s ease 1.4s, visibility 0s 1.4s, background 1s ease, color 1s ease;
+}
+.room__stage.is-3d.is-live .room__light { opacity: 1; visibility: visible; transition-delay: 1.4s, 0s, 0s, 0s; }
+.room__light-t { padding: 0 8px 0 10px; opacity: .55; }
+.room__light button { display: flex; align-items: center; gap: 7px; padding: 7px 12px; border-radius: 999px; transition: background .35s ease, color .35s ease; }
+.room__light button i { width: 9px; height: 9px; border-radius: 50%; box-shadow: inset 0 0 0 1px rgba(11,11,12,.25); }
+.room__light [data-mood="dark"] i { background: #1c2230; }
+.room__light [data-mood="white"] i { background: #fff; }
+.room__light [data-mood="warm"] i { background: #ffb15f; }
+.room__light button:hover { background: rgba(11,11,12,.06); }
+.room__light button[aria-pressed="true"] { background: var(--ink); color: #fff; }
+.room__light button:focus-visible { outline: 2px solid var(--blue); outline-offset: 2px; }
+.room__stage[data-light="dark"] .room__light { background: rgba(14,18,26,.55); box-shadow: inset 0 0 0 1px rgba(255,255,255,.12); color: #eef2f8; }
+.room__stage[data-light="dark"] .room__light button:hover { background: rgba(255,255,255,.08); }
+.room__stage[data-light="dark"] .room__light button[aria-pressed="true"] { background: #eef2f8; color: #0b0b0c; }
+@media (max-width: 640px) {                  /* just the swatches on a phone */
+  .room__light-t, .room__light button span { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; }
+  .room__light button { padding: 8px; }
+  .room__light button i { width: 12px; height: 12px; }
+}
+.room__stage .branch { transition: filter 1.2s ease; }
+.room__stage[data-light="warm"] .branch { filter: sepia(.35) saturate(1.2) brightness(.93); }
+.room__stage[data-light="dark"] .branch { filter: brightness(.34) saturate(.75); }
+.room__stage[data-light="dark"] .room__scroll-in { color: #eef2f8; }
+.room__stage[data-light="dark"] .room__scroll-line { background: linear-gradient(#eef2f8, rgba(238,242,248,.15)); }
+.room__stage.is-3d .room__copy { opacity: 0; }                 /* drawn in the scene instead; kept for layout and readers */
 
 .room__copy {                               /* the title's middle sits on the vanishing point (hero.js: VP) */
   position: absolute; left: 0; right: 0; top: 41%; z-index: 2; transform: translateY(-50%);

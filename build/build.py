@@ -32,7 +32,7 @@ for _p in PAGES.values():
             if b["t"] == "gallery": b["imgs"] = [x for x in b["imgs"] if x["src"] not in GONE]
             if b["t"] == "card" and b.get("img") in GONE: b["img"] = ""
         _s["blocks"] = [b for b in _s["blocks"] if not (b["t"] == "slider" and not b["slides"]) and not (b["t"] == "gallery" and not b["imgs"])]
-VER = "11"
+VER = "13"
 
 # Links that are broken on the live site (anchor id typos) – point them at the real ids.
 LINK_FIX = {
@@ -578,7 +578,7 @@ def doc(title, desc, body, og="", body_cls="", canonical="/"):
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Unbounded:wght@500;700;900&family=Inter+Tight:ital,wght@0,400;0,500;0,600;0,800;1,800&display=swap" rel="stylesheet">
 <link rel="stylesheet" href="/styles.css?v={VER}">
-<link rel="stylesheet" href="/site.css?v={VER}">
+<link rel="stylesheet" href="/site.css?v={VER}">{THREE_HEAD if body_cls == "home" else ""}
 </head>
 <body class="{body_cls}" id="top">
 <div class="cursor" aria-hidden="true"><span class="cursor__label">View</span></div>
@@ -593,7 +593,7 @@ def doc(title, desc, body, og="", body_cls="", canonical="/"):
 <script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.5/ScrollTrigger.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/lenis@1.1.13/dist/lenis.min.js"></script>
 <script src="/fluid.js?v={VER}"></script>
-{'<script src="/hero.js?v=' + VER + '"></script>' if body_cls == "home" else ""}
+{'<script type="module" src="/hero.js?v=' + VER + '"></script>' if body_cls == "home" else ""}
 <script src="/main.js?v={VER}"></script>
 </body>
 </html>'''
@@ -684,6 +684,15 @@ def bpx(c):
             f'<img class="bpx__photo" src="/assets/bp/{k}.webp" alt="{esc(c["title"])}" loading="lazy" decoding="async"><span class="bpx__scan"></span>')
 
 
+# the home landing is a three.js scene, loaded as ES modules
+THREE_URL = "https://cdn.jsdelivr.net/npm/three@0.186.1/"
+THREE_HEAD = (
+    '\n<script type="importmap">{"imports": {"three": "' + THREE_URL + 'build/three.module.min.js", "three/addons/": "' + THREE_URL
+    + 'examples/jsm/"}}</script>'
+    + f'\n<link rel="modulepreload" href="{THREE_URL}build/three.module.min.js"><link rel="modulepreload" href="{THREE_URL}build/three.core.min.js">'
+)
+
+
 def home_page():
     p = PAGES["home"]
     S = [s["blocks"] for s in p["sections"]]
@@ -734,16 +743,19 @@ def home_page():
 
 <section class="hero hero--room" data-hero>
   <div class="room__stage">
-    <canvas class="room__walls" aria-hidden="true"></canvas>
-    <canvas class="room__leaves room__leaves--back" aria-hidden="true"></canvas>
+    <canvas class="room__gl" aria-hidden="true"></canvas>
+    <div class="room__vignette" aria-hidden="true"></div>
     <div class="room__copy">
       <h1 class="room__title"><span class="sr-only">Janyu Tech</span>{letters("JANYU", "")} {letters("TECH", " room__word--tech")}</h1>
       <p class="room__quote">{esc(hero_lead)}</p>
       <div class="sr-only">{"".join(f"<{'h2' if k == 0 else 'p'}>{esc(t)}</{'h2' if k == 0 else 'p'}>" for k, t in enumerate(seo))}</div>
     </div>
-    <canvas class="room__leaves room__leaves--front" aria-hidden="true"></canvas>
     <div class="branch branch--tl" data-branch="tl" aria-hidden="true"></div>
     <div class="branch branch--tr" data-branch="tr" aria-hidden="true"></div>
+    <div class="room__light" role="group" aria-label="Room light">
+      <span class="room__light-t" aria-hidden="true">Light</span>
+      {"".join(f'<button type="button" data-mood="{m}" aria-pressed="{str(m == "white").lower()}"><i aria-hidden="true"></i><span>{m.title()}</span></button>' for m in ("dark", "white", "warm"))}
+    </div>
     <div class="room__scroll" aria-hidden="true"><div class="room__scroll-in">
       <span class="room__scroll-t">{"".join(f'<span class="rl" style="--i:{k}"><i data-c="{c}">{c}</i></span>' for k, c in enumerate("Scroll"))}</span>
       <span class="room__scroll-line"></span>

@@ -296,7 +296,8 @@
   function home() {
     const loader = $(".loader"), num = $(".loader__num");
     const intro = () => {
-      document.dispatchEvent(new CustomEvent("jt:intro"));          // hero.js: branches draw in, petals start
+      document.documentElement.dataset.intro = "1";                // hero.js is a module and may arrive later
+      document.dispatchEvent(new CustomEvent("jt:intro"));          // hero.js: the room comes alive
       const tl = gsap.timeline({ onComplete: () => { document.body.classList.remove("is-loading"); lenis && lenis.start(); } });
       if (loader) tl.to(loader, { clipPath: "inset(0 0 100% 0)", duration: 1, ease: "expo.inOut" }).set(loader, { display: "none" });
       tl.from(".site-header", { yPercent: -100, opacity: 0, duration: 0.9, ease: "expo.out", clearProps: "transform,opacity" }, loader ? "-=0.45" : 0);
