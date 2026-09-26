@@ -3,13 +3,15 @@
  * Ceiling, walls, floor and back wall are ruled with a fine grid, a few vines
  * creep over the walls, and JANYU TECH floats in the middle with the quote.
  *  – a tube light hangs from the ceiling and lights the room: Dark, White or
- *    Warm, chosen on a half-protractor dial on the right edge (or by clicking
- *    the tube). It flickers now and then like a real one – a stutter, a hum,
- *    a tired tube blinking – and everything, petals and leaves too, is lit
- *    and shadowed by it
- *  – the robot (Janyu Tech's tracked cleaner) follows the pointer over the
- *    floor: it turns towards it, drives in smooth arcs, rolls its wheels, dips
- *    and leans a little, and its brush sweeps the leaves it meets
+ *    Warm, chosen on the dial on the right edge (or by clicking the tube). It
+ *    flickers now and then like a real one – a stutter, a hum, a tired tube
+ *    blinking – and everything, petals and leaves too, is lit and shadowed by it
+ *  – a robot follows the pointer over the floor, one of three chosen on the dial
+ *    on the left edge: Janyu Tech's tracked cleaner (its brush sweeps the leaves
+ *    it meets), a four-wheeled rover or a quadruped that trots. A new one is
+ *    printed where the last one stood, by a scan line
+ *  – the two dials are half discs on the screen's edges: a glass knob at rest,
+ *    opening out on a spring into a wide, clear wheel of choices on hover
  *  – leaves and petals blow in from the two branches, tumble down and settle;
  *    sweeping the pointer across the floor kicks them back into the air
  *  – camera: pointer parallax; scrolling (the stage is pinned for a moment)
@@ -47,6 +49,7 @@ function room() {
   renderer.toneMapping = THREE.NeutralToneMapping;
   renderer.shadowMap.enabled = true;
   renderer.shadowMap.type = THREE.PCFShadowMap;
+  renderer.localClippingEnabled = true;                            // the robots' scan line
   stage.classList.add("is-3d");
   const scene = new THREE.Scene();
   scene.fog = new THREE.FogExp2("#ffffff", 0);
@@ -204,8 +207,8 @@ function room() {
   const RS = ORDER.map(k => resolve(MOODS[k])), cur = resolve(MOODS.white), L = { power: 1 };
   const INK = { value: cur.ink.clone() }, TECH = { value: cur.tech.clone() }, QUOTE = { value: cur.quote.clone() };
   const WALL = { value: cur.wall.clone() }, GLOW = { value: 0 }, LIFT = { value: 0 };
-  // the dial's position: 0 dark, 1 white, 2 warm, and anything between while it turns
-  const dial = { u: 1, spin: 0, envU: -9, envAt: -1e9, settled: "", drag: null };
+  // the light dial's position: 0 dark, 1 white, 2 warm, and anything between while it turns
+  const dial = { u: 1, spin: 0, envU: -9, envAt: -1e9, settled: "" };
 
   // a real tube is never quite steady: it stutters, it hums, and a tired one blinks and fails
   const FL = { next: 2500, seq: [], buzz: [0, 0] };
@@ -270,112 +273,246 @@ function room() {
   }
   let saved = null;
   try { saved = localStorage.getItem("jt-light"); } catch (e) { /* private mode */ }
-  // the dial settles on a mood: the tube re-strikes (a quick double blink), and the choice is kept
-  function settle(i, instant) {
-    i = clamp(Math.round(i), 0, 2);
+  // the light dial settles on a mood: the tube re-strikes (a quick double blink), and the choice is kept
+  function lightSettled(i, instant) {
     const name = ORDER[i];
-    if (instant || reduce || !window.gsap) dial.u = i;
-    else { gsap.killTweensOf(dial, "u"); gsap.to(dial, { u: i, duration: 0.85, ease: "back.out(1.7)" }); }
     if (name === dial.settled) return;
     const first = !dial.settled;
     dial.settled = name;
     stage.dataset.light = name;
-    if (dialEl) { dialEl.setAttribute("aria-valuenow", String(i)); dialEl.setAttribute("aria-valuetext", name[0].toUpperCase() + name.slice(1) + " light"); }
     try { localStorage.setItem("jt-light", name); } catch (e) { /* private mode */ }
     if (first || instant || reduce || !window.gsap) return;
     gsap.killTweensOf(L);
     gsap.timeline().to(L, { power: 0.35, duration: 0.05 }).to(L, { power: 0.95, duration: 0.05 }).to(L, { power: 0.5, duration: 0.07 }).to(L, { power: 1, duration: 0.3, ease: "power2.out" });
   }
-  const setMood = (name, instant) => settle(ORDER.indexOf(name), instant);
 
-  /* ------------------------------------------------ the dial: half a protractor on the right edge */
-  // rolled by dragging it round, the wheel, a tap on a mood or the arrow keys. The light blends as it
-  // turns and it springs to the nearest mood. Its scale magnifies where it passes the mark.
-  const dialEl = $(".room__dial", stage), DT = [], DL = [], DEG = Math.PI / 180;
-  let dialScale = null, dialRot = null;
-  if (dialEl) {
-    const S = (tag, attrs, parent) => { const e = document.createElementNS("http://www.w3.org/2000/svg", tag); for (const k in attrs) e.setAttribute(k, attrs[k]); if (parent) parent.appendChild(e); return e; };
-    const svg = S("svg", { viewBox: "0 0 120 240", "aria-hidden": "true" });
-    S("path", { class: "room__dial-plate", d: "M120 0 A120 120 0 0 0 120 240 Z" }, svg);
-    S("path", { class: "room__dial-rim", d: "M120 5 A115 115 0 0 0 120 235" }, svg);
-    S("path", { class: "room__dial-rim", d: "M120 44 A76 76 0 0 0 120 196" }, svg);
-    dialScale = S("g", { class: "room__dial-scale" }, svg);
-    for (let a = -177; a <= 180; a += 3) {                         // a tick every 3°, longer every 15° and 30°
-      const major = a % 30 === 0, mid = a % 15 === 0;
-      DT.push({ a, base: major ? 10 : mid ? 7 : 4, el: S("line", { class: major ? "is-major" : mid ? "is-mid" : "" }, dialScale) });
-      if (major) {
-        const r = 96, x = 120 - r * Math.cos(a * DEG), y = 120 - r * Math.sin(a * DEG);
-        S("text", { class: "room__dial-num", x: x.toFixed(2), y: y.toFixed(2), transform: `rotate(${a - 90} ${x.toFixed(2)} ${y.toFixed(2)})` }, dialScale).textContent = String((180 - a + 360) % 360);
-      }
-    }
-    ORDER.forEach((m, i) => {
-      const g = S("g", { class: "room__dial-label", "data-mood": m }, svg);
-      S("circle", { class: "room__dial-dot", r: 3.4 }, g);
-      S("text", { x: 7.5, y: 3.4 }, g).textContent = m.toUpperCase();
-      DL.push({ g, a: 60 - 60 * i });
+  /* ------------------------------------------------ the dials: two half discs on the screen's edges */
+  // The light dial is stuck to the right edge, the robot dial to the left. At rest each is a small
+  // glass knob showing what's chosen, the other choices peeking round its rim. Brought under the
+  // pointer (or focused) it opens out on a spring into a wide, clear wheel – the room still shows
+  // through it – that fans every choice out along its rim, named, with a needle on the chosen one.
+  // Drag the needle round, wheel it, tap a choice or use the arrow keys: it springs onto the nearest
+  // choice, and closed again the wheel rolls that choice under the mark. On a touch screen the first
+  // tap opens it.
+  const SVG_NS = "http://www.w3.org/2000/svg", DEG = Math.PI / 180;
+  const S = (tag, attrs, parent) => { const e = document.createElementNS(SVG_NS, tag); for (const k in attrs) e.setAttribute(k, attrs[k]); if (parent) parent.appendChild(e); return e; };
+  const dials = [];
+  let poked = false;                                               // a still room (reduced motion) redraws only when a dial changes
+  const poke = () => { if (!poked) { poked = true; requestAnimationFrame(() => { poked = false; if (!running) still(); }); } };
+  function makeDial(el, st, opt) {
+    const n = opt.items.length, d = opt.side === "left" ? 1 : -1, id = "dial-" + opt.side;   // d: which way is into the screen
+    const D = { el, st, n, d, o: 0, ov: 0, pop: reduce ? 1 : 0, hover: false, focus: false, tap: false, drag: null, hot: -1, hv: opt.items.map(() => 0), sel: -1, R0: 80, R1: 240, box: 300, key: "", ind: 0, closeT: 0, tapT: 0, wheelT: 0 };
+    D.th1 = Math.min(58, 124 / Math.max(1, n - 1));                // opened, the choices span ±62° at most
+    const svg = S("svg", { "aria-hidden": "true", focusable: "false" }), defs = S("defs", {}, svg);
+    D.glass = S("radialGradient", { id: id + "-glass", gradientUnits: "userSpaceOnUse" }, defs);
+    D.stops = [0, 0.6, 1].map(o => S("stop", { offset: o, class: "dial__glass" }, D.glass));
+    D.fade = S("linearGradient", { id: id + "-fade", gradientUnits: "userSpaceOnUse", x1: 0, x2: 0 }, defs);   // the scale fades out towards its ends
+    [0, 0.5, 1].forEach(o => S("stop", { offset: o, class: "dial__ink", "stop-opacity": o === 0.5 ? 1 : 0 }, D.fade));
+    S("circle", { r: 1 }, S("clipPath", { id: id + "-unit" }, defs));
+    D.hit = S("path", { class: "dial__hit" }, svg);
+    D.disc = S("path", { class: "dial__disc", fill: `url(#${id}-glass)` }, svg);
+    D.orbit = S("circle", { class: "dial__orbit" }, svg);
+    D.comet = S("circle", { class: "dial__comet" }, svg);
+    D.minor = S("path", { class: "dial__ticks", stroke: `url(#${id}-fade)` }, svg);
+    D.major = S("path", { class: "dial__ticks dial__ticks--major", stroke: `url(#${id}-fade)` }, svg);
+    D.rim = S("path", { class: "dial__rim" }, svg);
+    D.arc = S("path", { class: "dial__arc" }, svg);
+    D.mark = S("path", { class: "dial__mark" }, svg);
+    D.needle = S("path", { class: "dial__needle" }, svg);
+    D.hub = S("circle", { class: "dial__hub" }, svg);
+    D.title = S("text", { class: "dial__title", "text-anchor": d > 0 ? "start" : "end" }, svg);
+    D.title.textContent = opt.title;
+    D.ripple = S("circle", { class: "dial__ripple", r: 1 }, svg);
+    const layer = S("g", {}, svg);
+    D.items = opt.items.map((it, i) => {
+      const g = S("g", { class: "dial__item", "data-i": i, "data-k": it.key }, layer), face = S("g", {}, g);
+      S("circle", { class: "dial__halo", r: 1.3 }, face);
+      S("circle", { class: "dial__bubble", r: 1, fill: it.fill(defs, id) }, face);
+      it.face(face, defs, id);
+      S("circle", { class: "dial__ring", r: 1 }, face);
+      const label = S("g", { class: "dial__label" }, g);
+      S("text", { class: "dial__name" }, label).textContent = it.name.toUpperCase();
+      S("text", { class: "dial__sub", y: 14 }, label).textContent = it.sub;
+      return { g, face, label };
     });
-    S("path", { class: "room__dial-mark", d: "M3 113 L12.5 120 L3 127 Z" }, svg);
-    dialEl.appendChild(svg);
+    el.appendChild(svg);
+    D.svg = svg;
 
-    const centre = () => { const r = dialEl.getBoundingClientRect(); return [r.right, r.top + r.height / 2]; };
-    const angleAt = (x, y) => { const [ax, ay] = centre(); return Math.atan2(ay - y, ax - x) / DEG; };
-    const rubber = x => 0.3 * (1 - Math.exp(-x / 0.3));           // pulling past the ends meets resistance
-    dialEl.addEventListener("pointerdown", e => {
-      try { dialEl.setPointerCapture(e.pointerId); } catch (err) { /* not a live pointer */ }
-      if (window.gsap) gsap.killTweensOf(dial, "u");
-      dial.drag = { a0: angleAt(e.clientX, e.clientY), u0: dial.u, x: e.clientX, y: e.clientY, moved: 0 };
+    const centre = () => { const b = el.getBoundingClientRect(); return [d > 0 ? b.left : b.right, b.top + b.height / 2]; };
+    const angleAt = (x, y) => { const [cx, cy] = centre(); return Math.atan2(y - cy, d * (x - cx)) / DEG; };
+    const spacing = () => lerp(74, D.th1, clamp(D.o, 0, 1));
+    const rubber = x => 0.3 * (1 - Math.exp(-x / 0.3));             // pulling past the ends meets resistance
+    const hold = () => { if (window.gsap) gsap.killTweensOf(st, "u"); };
+    const opened = () => opt.onOpen && opt.onOpen();
+    const on = (type, fn, o) => el.addEventListener(type, e => { fn(e); poke(); }, o);
+    on("pointerenter", e => { if (e.pointerType !== "mouse") return; clearTimeout(D.closeT); D.hover = true; opened(); });
+    on("pointerleave", e => { if (e.pointerType !== "mouse") return; clearTimeout(D.closeT); D.closeT = setTimeout(() => { D.hover = false; poke(); }, 200); });
+    on("focus", () => { if (el.matches(":focus-visible")) { D.focus = true; opened(); } });
+    on("blur", () => (D.focus = false));
+    on("pointerover", e => { const it = e.target.closest(".dial__item"); D.hot = it ? +it.dataset.i : -1; });
+    on("pointerout", e => { const to = e.relatedTarget; if (!to || !to.closest || !to.closest(".dial__item")) D.hot = -1; });
+    on("pointerdown", e => {
+      if (e.button > 0) return;
+      try { e.target.setPointerCapture(e.pointerId); } catch (err) { /* not a live pointer */ }
+      hold();
+      D.drag = { a0: angleAt(e.clientX, e.clientY), u0: st.u, x: e.clientX, y: e.clientY, moved: 0, touch: e.pointerType !== "mouse", open: D.o > 0.5, item: e.target.closest(".dial__item") };
+      opened();
     });
-    dialEl.addEventListener("pointermove", e => {
-      if (!dial.drag) return;
-      const d = dial.drag;
-      d.moved = Math.max(d.moved, Math.hypot(e.clientX - d.x, e.clientY - d.y));
-      let u = d.u0 - (angleAt(e.clientX, e.clientY) - d.a0) / 60;
-      if (u < 0) u = -rubber(-u); else if (u > 2) u = 2 + rubber(u - 2);
-      dial.u = u;
+    on("pointermove", e => {
+      const g = D.drag;
+      if (!g) return;
+      g.moved = Math.max(g.moved, Math.hypot(e.clientX - g.x, e.clientY - g.y));
+      if (g.moved < 6) return;
+      el.classList.add("is-dragging");
+      let u = g.u0 + (angleAt(e.clientX, e.clientY) - g.a0) / spacing();   // the needle follows the pointer round
+      if (u < 0) u = -rubber(-u); else if (u > n - 1) u = n - 1 + rubber(u - n + 1);
+      st.u = u;
     });
     const release = e => {
-      const d = dial.drag;
-      if (!d) return;
-      dial.drag = null;
-      if (d.moved > 5) return settle(dial.u);
-      const lb = e.target.closest && e.target.closest(".room__dial-label");    // a tap: that mood, or a step towards the side tapped
-      settle(lb ? ORDER.indexOf(lb.dataset.mood) : Math.round(dial.u) + (e.clientY < centre()[1] ? -1 : 1));
+      const g = D.drag;
+      if (!g) return;
+      D.drag = null;
+      el.classList.remove("is-dragging");
+      if (g.touch) { D.tap = true; clearTimeout(D.tapT); D.tapT = setTimeout(() => { D.tap = false; poke(); }, 3800); }
+      if (g.moved >= 6 || e.type === "pointercancel") return go(st.u);
+      if (g.touch && !g.open) return;                               // on a touch screen the first tap only opens it
+      if (g.item) return go(+g.item.dataset.i);
+      go(Math.round(st.u) + (angleAt(e.clientX, e.clientY) < D.ind ? -1 : 1));   // a tap on the wheel: a step towards that side
     };
-    dialEl.addEventListener("pointerup", release);
-    dialEl.addEventListener("pointercancel", release);
-    let wheelT = 0;
-    dialEl.addEventListener("wheel", e => {
-      e.preventDefault();
-      if (window.gsap) gsap.killTweensOf(dial, "u");
-      dial.u = clamp(dial.u + e.deltaY * 0.0032, -0.25, 2.25);
-      clearTimeout(wheelT); wheelT = setTimeout(() => settle(dial.u), 170);
+    on("pointerup", release);
+    on("pointercancel", release);
+    document.addEventListener("pointerdown", e => { if (D.tap && !el.contains(e.target)) { D.tap = false; poke(); } }, { passive: true });
+    on("wheel", e => {
+      e.preventDefault(); e.stopPropagation();                      // it turns the dial, not the page
+      hold();
+      st.u = clamp(st.u + (e.deltaMode === 1 ? 16 : 1) * e.deltaY * 0.0032, -0.25, n - 0.75);
+      clearTimeout(D.wheelT); D.wheelT = setTimeout(() => go(st.u), 170);
     }, { passive: false });
-    dialEl.addEventListener("keydown", e => {
+    on("keydown", e => {
       const step = { ArrowUp: -1, ArrowLeft: -1, PageUp: -1, ArrowDown: 1, ArrowRight: 1, PageDown: 1 }[e.key];
-      if (step) { e.preventDefault(); settle(Math.round(dial.u) + step); }
-      else if (e.key === "Home" || e.key === "End") { e.preventDefault(); settle(e.key === "Home" ? 0 : 2); }
+      if (step) { e.preventDefault(); go(Math.round(st.u) + step); }
+      else if (e.key === "Home" || e.key === "End") { e.preventDefault(); go(e.key === "Home" ? 0 : n - 1); }
     });
-  }
-  function drawDial() {
-    if (!dialScale) return;
-    const rot = 60 * dial.u - 60 + dial.spin;                       // degrees, clockwise
-    if (rot === dialRot) return;
-    dialRot = rot;
-    dialScale.setAttribute("transform", `rotate(${rot.toFixed(3)} 120 120)`);
-    for (const T of DT) {
-      const th = ((T.a + rot + 540) % 360) - 180, w = Math.exp(-((th / 15) ** 2));
-      const r2 = 114, r1 = r2 - T.base * (1 + 0.9 * w), c = Math.cos(T.a * DEG), s = Math.sin(T.a * DEG);
-      T.el.setAttribute("x1", (120 - r1 * c).toFixed(2)); T.el.setAttribute("y1", (120 - r1 * s).toFixed(2));
-      T.el.setAttribute("x2", (120 - r2 * c).toFixed(2)); T.el.setAttribute("y2", (120 - r2 * s).toFixed(2));
-      T.el.style.opacity = (0.3 + 0.7 * w).toFixed(3);
+    function go(i, instant) {
+      i = clamp(Math.round(i), 0, n - 1);
+      hold();
+      if (instant || reduce || !window.gsap) st.u = i;
+      else gsap.to(st, { u: i, duration: 0.85, ease: "back.out(1.7)" });
+      el.setAttribute("aria-valuenow", String(i));
+      el.setAttribute("aria-valuetext", opt.items[i].aria);
+      if (i !== D.sel) {
+        D.items.forEach((it, k) => it.g.classList.toggle("is-on", k === i));
+        if (D.sel >= 0 && !instant && !reduce && D.ripple.animate) D.ripple.animate([{ transform: "scale(1)", opacity: 0.75 }, { transform: "scale(2.2)", opacity: 0 }], { duration: 900, easing: "cubic-bezier(.2,.7,.2,1)" });
+        D.sel = i;
+      }
+      opt.onSettle(i, instant);
     }
-    for (const Lb of DL) {
-      const th = Lb.a + rot, w = Math.exp(-((th / 24) ** 2)), r = 60;
-      const x = 120 - r * Math.cos(th * DEG), y = 120 - r * Math.sin(th * DEG);
-      Lb.g.setAttribute("transform", `translate(${(x - 14).toFixed(2)} ${y.toFixed(2)}) scale(${(0.82 + 0.34 * w).toFixed(3)})`);
-      Lb.g.style.opacity = (clamp(1 - Math.abs(th) / 100, 0, 1) * (0.4 + 0.6 * w)).toFixed(3);
-    }
+    D.go = go;
+    dials.push(D);
+    return D;
   }
+  // its size follows the screen: a knob of R0 at rest, opening out to R1 – about half the screen's height
+  function layoutDial(D) {
+    const narrow = W < 640;
+    D.R0 = narrow ? clamp(H * 0.075, 50, 64) : clamp(H * 0.1, 62, 100);
+    D.R1 = Math.max(D.R0 * 1.6, Math.min(H * 0.285, W * (narrow ? 0.46 : 0.3), 300));
+    D.box = Math.ceil(D.R1 * 1.14 + 24);
+    D.svg.setAttribute("width", D.box); D.svg.setAttribute("height", D.box * 2);
+    D.svg.setAttribute("viewBox", `0 0 ${D.box} ${D.box * 2}`);
+    D.key = "";
+  }
+  function drawDial(D, dt) {
+    const st = D.st, d = D.d;
+    const want = D.hover || D.focus || D.tap || D.drag ? 1 : 0;
+    if (reduce) D.o = want;
+    else { D.ov += ((want - D.o) * 160 - D.ov * 15) * dt; D.o += D.ov * dt; }   // a spring, so it overshoots a touch
+    let easing = false;
+    for (let i = 0; i < D.n; i++) { const t = D.hot === i ? 1 : 0; D.hv[i] = reduce ? t : D.hv[i] + (t - D.hv[i]) * Math.min(1, dt * 12); if (Math.abs(t - D.hv[i]) > 0.002) easing = true; }
+    const key = `${D.o.toFixed(4)} ${st.u.toFixed(4)} ${st.spin.toFixed(3)} ${D.pop.toFixed(4)} ${D.box} ${easing ? D.hv.join() : D.hot}`;
+    if (key === D.key) return;
+    D.key = key;
+    const o = D.o, oc = clamp(o, 0, 1), box = D.box, R = Math.max(1, lerp(D.R0, D.R1, o) * D.pop);
+    const Ox = d > 0 ? 0 : box, Oy = box, sw = d > 0 ? 1 : 0;
+    // closed, the wheel is rolled so the choice sits on the mark; opened, it rolls to show them all and
+    // the needle points at the choice instead
+    const th = lerp(74, D.th1, oc), uv = lerp(st.u, (D.n - 1) / 2, oc), rot = -uv * th + st.spin, ind = (st.u - uv) * th;
+    D.ind = ind;
+    const X = (r, a) => (Ox + d * r * Math.cos(a * DEG)).toFixed(1), Y = (r, a) => (Oy + r * Math.sin(a * DEG)).toFixed(1);
+    const half = r => `M${Ox} ${(Oy - r).toFixed(1)}A${r.toFixed(1)} ${r.toFixed(1)} 0 0 ${sw} ${Ox} ${(Oy + r).toFixed(1)}`;
+    D.disc.setAttribute("d", half(R) + "Z");
+    D.hit.setAttribute("d", half(R + 10) + "Z");
+    D.rim.setAttribute("d", half(R - 0.6));
+    D.glass.setAttribute("cx", Ox); D.glass.setAttribute("cy", Oy); D.glass.setAttribute("r", R.toFixed(1));
+    [lerp(0.9, 0.02, oc), lerp(0.9, 0.06, oc), lerp(0.94, 0.3, oc)].forEach((a, i) => D.stops[i].setAttribute("stop-opacity", a.toFixed(3)));   // opened, it's nearly clear
+    D.fade.setAttribute("y1", (Oy - R).toFixed(1)); D.fade.setAttribute("y2", (Oy + R).toFixed(1));
+    for (const c of [D.orbit, D.comet, D.hub]) { c.setAttribute("cx", Ox); c.setAttribute("cy", Oy); }
+    D.orbit.setAttribute("r", (R * 0.82).toFixed(1)); D.comet.setAttribute("r", (R - 0.6).toFixed(1)); D.hub.setAttribute("r", (5 + 4 * oc).toFixed(1));
+    // the scale: a tick every 4°, longer every 20°, magnified where it passes the needle; it rolls with the wheel
+    let minor = "", major = "";
+    const r2 = R - 4, k = lerp(0.8, 1.25, oc) * D.pop;
+    for (let t = -180; t < 180; t += 4) {
+      const a = (((t + rot) % 360) + 540) % 360 - 180;
+      if (Math.abs(a) > 88) continue;
+      const big = t % 20 === 0, len = (big ? 8 : 4) * (1 + 1.2 * Math.exp(-(((a - ind) / 16) ** 2))) * k;
+      const seg = `M${X(r2 - len, a)} ${Y(r2 - len, a)}L${X(r2, a)} ${Y(r2, a)}`;
+      if (big) major += seg; else minor += seg;
+    }
+    D.minor.setAttribute("d", minor); D.major.setAttribute("d", major);
+    const s = th * 0.3, ra = R - 0.6, dm = 5.5 / (R + 12) / DEG;
+    D.arc.setAttribute("d", `M${X(ra, ind - s)} ${Y(ra, ind - s)}A${ra.toFixed(1)} ${ra.toFixed(1)} 0 0 ${sw} ${X(ra, ind + s)} ${Y(ra, ind + s)}`);
+    D.mark.setAttribute("d", `M${X(R + 3, ind)} ${Y(R + 3, ind)}L${X(R + 12, ind - dm)} ${Y(R + 12, ind - dm)}L${X(R + 12, ind + dm)} ${Y(R + 12, ind + dm)}Z`);
+    D.title.setAttribute("x", (Ox + d * 14).toFixed(1)); D.title.setAttribute("y", (Oy - R * lerp(0.73, 0.93, oc) + 3).toFixed(1));
+    D.title.style.opacity = (clamp(D.pop * 2 - 1, 0, 1) * lerp(1, clamp((D.R1 - 200) / 40, 0, 1), oc)).toFixed(3);   // a small wheel opened has no room for it
+    // the choices ride round on an arc, the one at the needle biggest; opened, each is named
+    const ri = lerp(0.47, 0.6, oc) * R;
+    let rsel = 0;
+    D.items.forEach((it, i) => {
+      const a = (i - uv) * th + st.spin, w = Math.exp(-(((a - ind) / (th * 0.55)) ** 2));
+      const vis = clamp((100 - Math.abs(a)) / 16, 0, 1) * clamp(D.pop * 1.6 - 0.4, 0, 1);
+      it.g.style.visibility = vis > 0.01 ? "" : "hidden";
+      if (vis <= 0.01) return;
+      const rb = Math.max(0.01, lerp(lerp(0.13, 0.34, w) * D.R0, lerp(0.14, 0.185, w) * D.R1, o) * D.pop * (1 + 0.14 * D.hv[i]));
+      const x = Ox + d * ri * Math.cos(a * DEG), y = Oy + ri * Math.sin(a * DEG);
+      if (i === D.sel) { rsel = rb; D.ripple.setAttribute("cx", x.toFixed(1)); D.ripple.setAttribute("cy", y.toFixed(1)); D.ripple.setAttribute("r", rb.toFixed(1)); }
+      it.face.setAttribute("transform", `translate(${x.toFixed(2)} ${y.toFixed(2)}) scale(${rb.toFixed(3)})`);
+      it.g.style.opacity = (vis * lerp(0.45 + 0.55 * w, 0.78 + 0.22 * w, oc)).toFixed(3);
+      const lo = clamp((o - 0.5 - 0.1 * Math.abs(i - st.u)) / 0.3, 0, 1);   // the names come in after it opens, nearest first
+      const ly = a < -th * 0.5 ? y - rb - 30 - (1 - lo) * 8 : y + rb + 16 + (1 - lo) * 8;   // above the ones up the arc, clear of the needle
+      it.label.setAttribute("transform", `translate(${x.toFixed(2)} ${ly.toFixed(2)})`);
+      it.label.style.opacity = lo.toFixed(3);
+    });
+    const nl = Math.max(0, ri - (rsel || 0.18 * R) - 6);             // the needle, from the hub to just short of the choice
+    D.needle.setAttribute("d", `M${Ox} ${Oy}L${X(nl, ind)} ${Y(nl, ind)}`);
+    D.needle.style.opacity = D.hub.style.opacity = oc.toFixed(3);
+  }
+
+  // the light's choices: each a swatch of the room lit that way – the tube in its channel, its light falling
+  const SWATCH = {
+    dark:  { bg: ["#233049", "#05070c"], tube: "#c3d2f0", beam: "#7f9de0", a: 0.5 },
+    white: { bg: ["#ffffff", "#dfe5ee"], tube: "#ffffff", beam: "#c5d5ef", a: 0.55 },
+    warm:  { bg: ["#ffdcae", "#e8872c"], tube: "#fff5e6", beam: "#fff0d8", a: 0.75 },
+  };
+  const lightItem = (k, sub) => {
+    const F = SWATCH[k], name = k[0].toUpperCase() + k.slice(1);
+    return {
+      key: k, name, sub, aria: name + " light",
+      fill: (defs, id) => { const gr = S("radialGradient", { id: `${id}-${k}`, cx: 0.5, cy: 0.25, r: 0.85 }, defs); S("stop", { offset: 0, "stop-color": F.bg[0] }, gr); S("stop", { offset: 1, "stop-color": F.bg[1] }, gr); return `url(#${id}-${k})`; },
+      face: (g, defs, id) => {
+        const bm = S("linearGradient", { id: `${id}-${k}-beam`, x1: 0, y1: 0, x2: 0, y2: 1 }, defs);
+        S("stop", { offset: 0, "stop-color": F.beam, "stop-opacity": F.a }, bm); S("stop", { offset: 1, "stop-color": F.beam, "stop-opacity": 0 }, bm);
+        S("path", { d: "M-0.5 -0.12L0.5 -0.12L0.9 0.8L-0.9 0.8Z", fill: `url(#${id}-${k}-beam)`, "clip-path": `url(#${id}-unit)` }, g);
+        S("rect", { class: "dial__fixture", x: -0.6, y: -0.33, width: 1.2, height: 0.11, rx: 0.03 }, g);
+        S("rect", { class: "dial__tube", x: -0.54, y: -0.21, width: 1.08, height: 0.11, rx: 0.055, fill: F.tube }, g);
+      },
+    };
+  };
+  const lightEl = $(".room__dial--light", stage);
+  const lightDial = lightEl && makeDial(lightEl, dial, {
+    side: "right", title: "LIGHT",
+    items: [lightItem("dark", "Night shift"), lightItem("white", "Daylight"), lightItem("warm", "Evening glow")],
+    onSettle: lightSettled,
+  });
+  const setMood = (name, instant) => (lightDial ? lightDial.go(ORDER.indexOf(name), instant) : ((dial.u = ORDER.indexOf(name)), lightSettled(dial.u, true)));
 
   /* ------------------------------------------------ the room: five ruled surfaces, lit */
   const ROOM = new THREE.Vector4(), LINE = { value: new THREE.Color("#345ca8") }, EDGE = { value: new THREE.Color("#244078") };
@@ -672,67 +809,199 @@ function room() {
     }
   }
 
-  /* ------------------------------------------------ the robot */
-  const BOT_SCALE = 1.15, HL = 0.61 * BOT_SCALE, HW = 0.34 * BOT_SCALE, TRACK = 0.27 * BOT_SCALE;
-  const bot = { obj: null, x: -1.6, z: -8.4, th: -0.6, v: 0, w: 0, vx: 0, vz: 0, gx: -1.6, gz: -8.4, tx: -1.6, tz: -8.4, wheels: [], tilt: null, acc: 0, pitch: 0, pv: 0, roll: 0, rv: 0 };
-  // a soft dark patch under the chassis, so it sits on the floor whatever the light
+  /* ------------------------------------------------ the robots */
+  // Three to choose from on the left dial: Janyu Tech's tracked sludge cleaner, a four-wheeled defence
+  // rover and a quadruped. The one that's out follows the pointer over the floor, each its own way: the
+  // cleaner's tracks roll and its body dips and leans; the rover skid-steers on its four wheels and its
+  // whip antenna sways; the quadruped trots, each foot planted while it carries weight and lifted clear
+  // as it swings through (two-bone IK in each leg). A new one is printed where the last one stood: a
+  // scan line wipes the old one away from the top down, builds the new one up from the floor, and the
+  // tube stutters as it lands. (In the two newer models the front is -x, hence the half turn.)
+  const BOTS = [
+    { key: "cleaner", name: "Janyu cleaner", sub: "Tracked · sludge", file: "janyu-tech-bot", scale: 1.15, yaw: 0, hl: 0.61, hw: 0.34, track: 0.27, brush: true, vmax: 1.45, wmax: 1.5, acc: 2.4, turn: 4 },
+    { key: "rover", name: "Defence rover", sub: "Four-wheel scout", file: "defence-rover", scale: 1.02, yaw: Math.PI, hl: 0.66, hw: 0.335, track: 0.3, vmax: 1.75, wmax: 2.1, acc: 3.2, turn: 5 },
+    { key: "quadruped", name: "Quadruped", sub: "Four-legged walker", file: "quadruped-robot", scale: 0.9, yaw: Math.PI, hl: 0.55, hw: 0.5, vmax: 0.95, wmax: 1.3, acc: 2.2, turn: 3.6 },
+  ];
+  const bot = { R: null, x: -1.6, z: -8.4, th: -0.6, v: 0, w: 0, vx: 0, vz: 0, gx: -1.6, gz: -8.4, tx: -1.6, tz: -8.4, acc: 0, pitch: 0, pv: 0, roll: 0, rv: 0 };
+  // a soft dark patch under each robot (or each foot), so it sits on the floor whatever the light
   const contact = document.createElement("canvas"); contact.width = contact.height = 128;
   { const g = contact.getContext("2d"), gr = g.createRadialGradient(64, 64, 0, 64, 64, 64); gr.addColorStop(0, "rgba(10,16,30,.85)"); gr.addColorStop(0.5, "rgba(10,16,30,.45)"); gr.addColorStop(1, "rgba(10,16,30,0)"); g.fillStyle = gr; g.fillRect(0, 0, 128, 128); }
-  const contactMat = new THREE.MeshBasicMaterial({ map: new THREE.CanvasTexture(contact), transparent: true, depthWrite: false, opacity: 0.5, toneMapped: false });
-  const contactMesh = new THREE.Mesh(new THREE.PlaneGeometry(HL * 2.5, HW * 2.9).rotateX(-Math.PI / 2), contactMat);
-  contactMesh.position.y = 0.006; contactMesh.renderOrder = 1;
+  const contactTex = new THREE.CanvasTexture(contact);
+  const blob = (x, z, opacity) => {
+    const m = new THREE.Mesh(new THREE.PlaneGeometry(1, 1).rotateX(-Math.PI / 2), new THREE.MeshBasicMaterial({ map: contactTex, transparent: true, depthWrite: false, opacity, toneMapped: false }));
+    m.scale.set(x, 1, z); m.position.y = 0.006; m.renderOrder = 1;
+    return m;
+  };
+  // the scan: every robot's materials clip at a height and glow along the cut
+  const SCAN_C = { value: new THREE.Color("#3f80f2") };
+  const scanShader = (sh, R) => {
+    Object.assign(sh.uniforms, { uScanY: R.scanY, uScanOn: R.scanOn, uScanC: SCAN_C });
+    sh.vertexShader = sh.vertexShader
+      .replace("#include <common>", "#include <common>\nvarying float vScanY;")
+      .replace("#include <project_vertex>", "#include <project_vertex>\nvScanY = (modelMatrix * vec4(transformed, 1.0)).y;");
+    sh.fragmentShader = sh.fragmentShader
+      .replace("#include <common>", "#include <common>\nvarying float vScanY; uniform float uScanY, uScanOn; uniform vec3 uScanC;")
+      .replace("#include <emissivemap_fragment>", "#include <emissivemap_fragment>\ntotalEmissiveRadiance += uScanC * uScanOn * (2.4 * exp(-abs(uScanY - vScanY) * 70.0) + 0.06);");
+  };
   const loader = new GLTFLoader();
   loader.setMeshoptDecoder(MeshoptDecoder);
-  loader.load(new URL("./assets/models/janyu-tech-bot.glb", import.meta.url).href, gltf => {
-    const model = gltf.scene;
-    model.scale.setScalar(BOT_SCALE);
+  function loadBot(R) {
+    if (!R.ready) R.ready = new Promise((ok, no) => loader.load(new URL(`./assets/models/${R.file}.glb`, import.meta.url).href, g => ok(rig(R, g.scene)), undefined, no))
+      .then(R => renderer.compileAsync(R.group, camera, scene).then(() => R, () => R))   // its shaders built ahead, so it arrives without a stutter
+      .catch(err => { R.ready = null; throw err; });
+    return R.ready;
+  }
+  const _v = new THREE.Vector3(), _w = new THREE.Vector3(), _inv = new THREE.Matrix4();
+  function rig(R, model) {
+    R.scanY = { value: 99 }; R.scanOn = { value: 0 };
+    R.clip = new THREE.Plane(new THREE.Vector3(0, -1, 0), 99);     // keeps what's below the scan line
+    model.scale.setScalar(R.scale);
+    model.rotation.y = R.yaw;
     model.traverse(o => {
       if (!o.isMesh) return;
       o.castShadow = true; o.receiveShadow = true;
       const m = o.material;
-      if (m && m.isMeshStandardMaterial) { m.envMapIntensity = 1; if (m.metalness > 0.5) m.roughness = Math.max(m.roughness, 0.28); }
+      if (!m || !m.isMeshStandardMaterial || m.userData.scan) return;
+      m.userData.scan = true;
+      m.envMapIntensity = 1;
+      if (m.metalness > 0.5) m.roughness = Math.max(m.roughness, 0.28);
+      m.clippingPlanes = [R.clip]; m.clipShadows = true;
+      m.onBeforeCompile = sh => scanShader(sh, R);
+      m.customProgramCacheKey = () => "bot-scan";
     });
     const g = new THREE.Group();
-    g.add(model, contactMesh); scene.add(g);
+    g.add(model); g.visible = false;
+    scene.add(g);
     g.updateMatrixWorld(true);
-    // each wheel turns on its own centre (compression can move a node's origin)
+    Object.assign(R, { group: g, model, sgn: R.yaw ? -1 : 1, HL: R.hl * R.scale, HW: R.hw * R.scale, TRACK: (R.track || 0.3) * R.scale, wheels: [], legs: null, ant: null });
+    R.tilt = model.getObjectByName("BodyTilt");
+    R.tilt0 = R.tilt && R.tilt.position.clone();
+    R.top = new THREE.Box3().setFromObject(model).max.y + 0.04;
+    const sideOf = o => Math.sign(g.worldToLocal(o.getWorldPosition(_v)).z) || 1;
     model.traverse(o => {
-      const m = /^Wheel_(Left|Right)_(Drive|Idler|Roller_\d)$/.exec(o.name);
-      if (!m) return;
-      const inv = new THREE.Matrix4().copy(o.matrixWorld).invert(), box = new THREE.Box3();
-      o.traverse(n => { if (n.isMesh) { n.geometry.computeBoundingBox(); box.union(n.geometry.boundingBox.clone().applyMatrix4(new THREE.Matrix4().multiplyMatrices(inv, n.matrixWorld))); } });
-      const c = box.getCenter(new THREE.Vector3()), size = box.getSize(new THREE.Vector3()), pivot = new THREE.Group();
-      pivot.position.copy(c);
-      for (const ch of [...o.children]) { ch.position.sub(c); pivot.add(ch); }
-      o.add(pivot);
-      bot.wheels.push({ pivot, left: m[1] === "Left", r: Math.max(Math.max(size.x, size.y) / 2 * o.getWorldScale(new THREE.Vector3()).x, 0.01) });
+      if (/^Wheel_(Left|Right)_(Drive|Idler|Roller_\d)$/.test(o.name)) {
+        // the cleaner's: each turns on its own centre (compression can move a node's origin)
+        const inv = new THREE.Matrix4().copy(o.matrixWorld).invert(), box = new THREE.Box3();
+        o.traverse(m => { if (m.isMesh) { m.geometry.computeBoundingBox(); box.union(m.geometry.boundingBox.clone().applyMatrix4(new THREE.Matrix4().multiplyMatrices(inv, m.matrixWorld))); } });
+        const c = box.getCenter(new THREE.Vector3()), size = box.getSize(new THREE.Vector3()), pivot = new THREE.Group();
+        pivot.position.copy(c);
+        for (const ch of [...o.children]) { ch.position.sub(c); pivot.add(ch); }
+        o.add(pivot);
+        pivot.updateMatrixWorld(true);
+        R.wheels.push({ pivot, side: sideOf(pivot), r: Math.max(Math.max(size.x, size.y) / 2 * o.getWorldScale(_w).x, 0.01) });
+      } else if (/^Wheel_[FR][LR]$/.test(o.name)) {                // the rover's hang from pivots at their hubs already
+        const box = new THREE.Box3().setFromObject(o);
+        R.wheels.push({ pivot: o, side: sideOf(o), r: (box.max.y - box.min.y) / 2 });
+      }
     });
-    bot.tilt = model.getObjectByName("BodyTilt");
-    bot.obj = g;
-    placeBot(0);
-    if (!running) still();
-  });
-  function placeBot(dt) {
-    if (!bot.obj) return;
-    bot.obj.position.set(bot.x, 0, bot.z);
-    bot.obj.rotation.y = bot.th;
-    for (const wh of bot.wheels) wh.pivot.rotation.z -= (bot.v + (wh.left ? -1 : 1) * bot.w * TRACK) / wh.r * dt;
-    if (bot.tilt) { bot.tilt.rotation.z = bot.pitch; bot.tilt.rotation.x = bot.roll; }
+    const ant = model.getObjectByName("Antenna");
+    if (ant) R.ant = { node: ant, p: 0, pv: 0, r: 0, rv: 0 };
+    if (model.getObjectByName("Hip_FL")) rigLegs(R, model);
+    if (R.legs) {
+      R.feet = R.legs.map(() => { const b = blob(0.34, 0.34, 0.5); g.add(b); return b; });
+      g.add(blob(R.HL * 2.4, R.HW * 2.3, 0.14));
+    } else g.add(blob(R.HL * 2.5, R.HW * 2.9, 0.5));
+    return R;
+  }
+  // a leg: the hip rolls it out sideways, then two bones in its plane – the thigh swings on the hip
+  // actuator, the shin on the knee. It's all worked out in BodyTilt's frame (model units), so the body
+  // can bob and pitch over the planted feet.
+  function rigLegs(R, model) {
+    const tilt = R.tilt;
+    model.updateMatrixWorld(true);
+    _inv.copy(tilt.matrixWorld).invert();
+    R.legs = ["FL", "FR", "RL", "RR"].map(T => {
+      const hip = model.getObjectByName("Hip_" + T), knee = model.getObjectByName("Knee_" + T), tip = new THREE.Box3();
+      knee.traverse(m => { if (m.isMesh && /rubber/i.test(m.material.name)) { m.geometry.computeBoundingBox(); tip.union(m.geometry.boundingBox.clone().applyMatrix4(new THREE.Matrix4().multiplyMatrices(_inv, m.matrixWorld))); } });
+      const A = hip.position.clone(), K = A.clone().add(knee.position), F = new THREE.Vector3((tip.min.x + tip.max.x) / 2, tip.min.y, (tip.min.z + tip.max.z) / 2);
+      const a0 = Math.atan2(K.y - A.y, K.x - A.x), b0 = Math.atan2(F.y - K.y, F.x - K.x), base = Math.atan2(F.y - A.y, F.x - A.x);
+      return {
+        hip, knee, A, a0, b0, l1: Math.hypot(K.x - A.x, K.y - A.y), l2: Math.hypot(F.x - K.x, F.y - K.y),
+        z0: F.z - A.z,                                               // the leg's plane stands out from the hip
+        bend: Math.sign(wrapAngle(a0 - base)) || 1,                  // which way the knee folds
+        rest: F.clone().applyMatrix4(tilt.matrix),                   // where the foot stands, in the model's frame
+        phase: T === "FL" || T === "RR" ? 0 : 0.5, down: true, lift: 0, x: 0, z: 0,   // a trot: diagonal pairs step together
+      };
+    });
+    R.gait = { ph: 0, amp: 0 };
+  }
+  function legIK(Lg, x, y, z) {
+    const dy = y - Lg.A.y, dz = z - Lg.A.z, l1 = Lg.l1, l2 = Lg.l2;
+    const yp = -Math.sqrt(Math.max(dy * dy + dz * dz - Lg.z0 * Lg.z0, 1e-6));   // how far down the foot is within the rolled plane
+    const roll = Math.atan2(dz, dy) - Math.atan2(Lg.z0, yp), px = x - Lg.A.x;
+    const dd = clamp(Math.hypot(px, yp), Math.abs(l1 - l2) + 1e-3, l1 + l2 - 1e-3);
+    const t1 = Math.atan2(yp, px) + Lg.bend * Math.acos(clamp((l1 * l1 + dd * dd - l2 * l2) / (2 * l1 * dd), -1, 1));
+    const t2 = Math.atan2(yp - l1 * Math.sin(t1), px - l1 * Math.cos(t1));
+    Lg.hip.rotation.set(roll, 0, t1 - Lg.a0);
+    Lg.knee.rotation.z = t2 - Lg.b0 - (t1 - Lg.a0);
+  }
+  // the trot: each foot is planted for DUTY of a step while the body passes over it (so it doesn't
+  // skate, turning or not), then it lifts and swings through to land as far ahead
+  const DUTY = 0.56;
+  function walk(R, dt) {
+    const G = R.gait, s = R.scale;
+    const moving = clamp((Math.abs(bot.v) + Math.abs(bot.w) * 0.45) / 0.16, 0, 1);
+    G.amp += (moving - G.amp) * (1 - Math.exp(-dt * 5));
+    const hz = 1.5 + 1.3 * clamp(Math.abs(bot.v) / R.vmax, 0, 1) + 0.5 * clamp(Math.abs(bot.w), 0, 1);
+    if (G.amp > 0.01) G.ph = (G.ph + hz * dt) % 1;
+    const tilt = R.tilt;
+    tilt.position.y = R.tilt0.y - 0.016 * G.amp * (0.5 + 0.5 * Math.cos(G.ph * 4 * Math.PI));   // down as the feet take the weight
+    tilt.rotation.z = R.sgn * bot.pitch + 0.014 * G.amp * Math.sin(G.ph * TAU);
+    tilt.rotation.x = R.sgn * bot.roll;
+    tilt.updateMatrix();
+    _inv.copy(tilt.matrix).invert();
+    const T = DUTY / hz * G.amp * R.sgn / s;                         // stance time, and the step from the robot's frame to the model's
+    R.legs.forEach((Lg, i) => {
+      // how far the body travels over this foot while it's planted: the walk, plus the turn about the middle
+      const xg = Lg.rest.x * s * R.sgn, zg = Lg.rest.z * s * R.sgn;
+      const Sx = clamp((bot.v + bot.w * zg) * T, -0.3, 0.3), Sz = clamp(-bot.w * xg * T, -0.2, 0.2);
+      const p = (G.ph + Lg.phase) % 1, down = p < DUTY || G.amp < 0.02;
+      let k, y = Lg.rest.y;
+      if (p < DUTY) k = 0.5 - p / DUTY;
+      else { const q = (p - DUTY) / (1 - DUTY); k = smooth(q) - 0.5; y += (0.035 + 0.3 * Math.hypot(Sx, Sz)) * G.amp * Math.sin(Math.PI * q); }
+      const x = Lg.rest.x + Sx * k, z = Lg.rest.z + Sz * k;
+      Lg.lift = y - Lg.rest.y; Lg.x = x; Lg.z = z;
+      _v.set(x, y, z).applyMatrix4(_inv);
+      legIK(Lg, _v.x, _v.y, _v.z);
+      const f = R.feet[i];                                         // its patch of shadow, fainter as it lifts
+      f.position.x = x * s * R.sgn; f.position.z = z * s * R.sgn;
+      f.material.opacity = 0.5 * clamp(1 - Lg.lift / 0.12, 0.25, 1);
+      if (down && !Lg.down && G.amp > 0.3) {                       // a foot coming down scuffs the leaves
+        _w.set(x, 0, z).applyMatrix4(R.model.matrixWorld);
+        stomp(_w.x, _w.z, G.amp);
+      }
+      Lg.down = down;
+    });
+  }
+  function animateBot(R, dt) {
+    const g = R.group;
+    g.position.set(bot.x, 0, bot.z);
+    g.rotation.y = bot.th;
+    R.clip.constant = R.scanY.value;
+    for (const wh of R.wheels) wh.pivot.rotation.z -= R.sgn * (bot.v + wh.side * bot.w * R.TRACK) / wh.r * dt;
+    if (R.legs) walk(R, dt);
+    else if (R.tilt) { R.tilt.rotation.z = R.sgn * bot.pitch; R.tilt.rotation.x = R.sgn * bot.roll; }
+    if (R.ant && dt > 0) {                                         // the whip antenna lags as it pulls away and swings out in a turn
+      const A = R.ant, pT = clamp(bot.acc * 0.05, -0.35, 0.35), rT = clamp(bot.w * bot.v * 0.1, -0.3, 0.3);
+      A.pv += ((pT - A.p) * 140 - A.pv * 3.2) * dt; A.p += A.pv * dt;
+      A.rv += ((rT - A.r) * 140 - A.rv * 3.2) * dt; A.r += A.rv * dt;
+      A.node.rotation.z = R.sgn * A.p; A.node.rotation.x = R.sgn * A.r;
+    }
   }
   // follow the goal in smooth arcs: turn towards it, drive while roughly facing it, ease off as it arrives.
   // Speeds and turn rates ease towards what's wanted, so there is never a jolt.
   function drive(dt) {
-    if (!bot.obj) return;
+    const R = bot.R || BOTS[0];
     const k = 1 - Math.exp(-dt * 3.5);
     bot.tx += (bot.gx - bot.tx) * k; bot.tz += (bot.gz - bot.tz) * k;       // the goal itself glides
     const dx = bot.tx - bot.x, dz = bot.tz - bot.z, dist = Math.hypot(dx, dz);
     const err = dist > 0.05 ? wrapAngle(Math.atan2(-dz, dx) - bot.th) : 0;
     const arrive = clamp((dist - 0.3) / 1.8, 0, 1);
-    const vWant = 1.45 * arrive * Math.max(0, Math.cos(err)) ** 1.5;
-    const wWant = clamp(2.2 * err, -1.5, 1.5) * clamp(dist / 0.4, 0, 1);
+    const vWant = R.vmax * arrive * Math.max(0, Math.cos(err)) ** 1.5;
+    const wWant = clamp(2.2 * err, -R.wmax, R.wmax) * clamp(dist / 0.4, 0, 1);
     const v0 = bot.v;
-    bot.v += (vWant - bot.v) * (1 - Math.exp(-dt * 2.4));
-    bot.w += (wWant - bot.w) * (1 - Math.exp(-dt * 4));
+    bot.v += (vWant - bot.v) * (1 - Math.exp(-dt * R.acc));
+    bot.w += (wWant - bot.w) * (1 - Math.exp(-dt * R.turn));
     bot.th = wrapAngle(bot.th + bot.w * dt);
     const fx = Math.cos(bot.th), fz = -Math.sin(bot.th);
     const nx = clamp(bot.x + fx * bot.v * dt, xL + 0.9, xR - 0.9), nz = clamp(bot.z + fz * bot.v * dt, -D + 0.9, -3);
@@ -745,6 +1014,109 @@ function room() {
     bot.rv += (-(bot.roll - rT) * 64 - bot.rv * 16) * dt; bot.roll += bot.rv * dt;
   }
 
+  // the scan line round the robot as it's printed, and a ring of light washing out over the floor as it lands
+  const ringTex = (() => {
+    const c = document.createElement("canvas"), g = c.getContext("2d"), gr = g.createRadialGradient(128, 128, 0, 128, 128, 128);
+    c.width = c.height = 256;
+    [[0, 0], [0.7, 0], [0.86, 1], [0.93, 0.35], [1, 0]].forEach(([o, a]) => gr.addColorStop(o, `rgba(255,255,255,${a})`));
+    g.fillStyle = gr; g.fillRect(0, 0, 256, 256);
+    return new THREE.CanvasTexture(c);
+  })();
+  const ring = () => {
+    const m = new THREE.Mesh(new THREE.PlaneGeometry(1, 1).rotateX(-Math.PI / 2), new THREE.MeshBasicMaterial({ map: ringTex, color: SCAN_C.value, transparent: true, depthWrite: false, toneMapped: false, fog: false }));
+    m.renderOrder = 5; m.visible = false; scene.add(m);
+    return m;
+  };
+  const scanRing = ring(), pulse = ring();
+  const swap = { busy: false, want: null, scanning: null };
+  let botsLive = false;
+  function showBot(i, instant) {
+    swap.want = BOTS[i];
+    loadBot(swap.want).catch(() => {});
+    if (botsLive && !swap.busy) nextBot(instant);
+  }
+  function nextBot(instant) {
+    const R = swap.want, old = bot.R;
+    if (!R || R === old) return;
+    swap.busy = true;
+    const anim = !instant && !reduce && !!window.gsap;
+    const out = old && anim ? new Promise(ok => {                 // the old one is wiped away, top down
+      swap.scanning = old; old.scanOn.value = 1; old.scanY.value = old.top;
+      gsap.to(old.scanY, { value: -0.02, duration: 0.6, ease: "power2.in", onComplete: ok });
+    }) : Promise.resolve();
+    const done = () => {
+      swap.busy = false;
+      if (!running) still();
+      if (swap.want !== bot.R) nextBot(instant);
+    };
+    Promise.all([loadBot(R), out]).then(() => {
+      if (old) { old.group.visible = false; old.scanY.value = 99; old.scanOn.value = 0; }
+      bot.R = R; R.group.visible = true;
+      if (R.gait) R.gait.amp = 0;
+      animateBot(R, 0);
+      if (!anim) { swap.scanning = null; return done(); }
+      swap.scanning = R; R.scanOn.value = 1; R.scanY.value = -0.02;   // and the new one built up from the floor
+      land(R);
+      gsap.to(R.scanY, { value: R.top, duration: 1.05, ease: "power2.out", onComplete: () => { R.scanY.value = 99; R.scanOn.value = 0; swap.scanning = null; done(); } });
+    }, () => {                                                     // it wouldn't load: the old one comes back
+      if (old) { old.scanY.value = 99; old.scanOn.value = 0; old.group.visible = true; }
+      swap.scanning = null; swap.want = old; swap.busy = false;
+      if (old && botDial) botDial.go(BOTS.indexOf(old), true);
+    });
+  }
+  function land(R) {
+    const s = { k: 0 }, r0 = Math.max(R.HL, R.HW) * 2.2;
+    pulse.visible = true; pulse.position.set(bot.x, 0.012, bot.z);
+    gsap.to(s, { k: 1, duration: 1.2, ease: "power2.out", onUpdate: () => { const r = r0 * lerp(0.5, 2.6, s.k); pulse.scale.set(r, 1, r); pulse.material.opacity = 0.9 * (1 - s.k); }, onComplete: () => (pulse.visible = false) });
+    for (const p of parts) {                                       // the landing blows the leaves about
+      const dx = p.x - bot.x, dz = p.z - bot.z, dd = Math.hypot(dx, dz);
+      if (p.y > 1.2 || dd > 2.4) continue;
+      const w = (1 - dd / 2.4) ** 1.2, k = 2.6 * w / (dd + 0.05);
+      kick(p, dx * k, 1.7 * w * rand(0.6, 1.2), dz * k, w);
+    }
+    gsap.killTweensOf(L);
+    gsap.timeline().to(L, { power: 0.55, duration: 0.05 }).to(L, { power: 1.1, duration: 0.08 }).to(L, { power: 1, duration: 0.4, ease: "power2.out" });
+  }
+  function stomp(x, z, amp) {
+    for (const p of parts) {
+      if (p.y > 0.4) continue;
+      const dx = p.x - x, dz = p.z - z, dd = Math.hypot(dx, dz);
+      if (dd < 0.3) { const w = (1 - dd / 0.3) * amp, k = 0.5 * w / (dd + 0.03); kick(p, dx * k, 0.6 * w * rand(0.6, 1.2), dz * k, 0.4 * w); }
+    }
+  }
+  function drawScan() {
+    const R = swap.scanning;
+    scanRing.visible = !!R;
+    if (!R) return;
+    scanRing.position.set(bot.x, Math.max(0.02, R.scanY.value), bot.z);
+    scanRing.rotation.y = bot.th;
+    scanRing.scale.set(R.HL * 2.5, 1, R.HW * 3.3);
+    scanRing.material.opacity = 0.85;
+  }
+
+  // the robot dial, on the left: each choice a portrait of the robot
+  const botEl = $(".room__dial--bot", stage);
+  let savedBot = null;
+  try { savedBot = localStorage.getItem("jt-bot"); } catch (e) { /* private mode */ }
+  const botIndex = Math.max(0, BOTS.findIndex(R => R.key === savedBot));
+  const botDial = botEl && makeDial(botEl, { u: botIndex, spin: 0 }, {
+    side: "left", title: "ROBOT",
+    items: BOTS.map(R => ({
+      key: R.key, name: R.name, sub: R.sub, aria: R.name,
+      fill: (defs, id) => {
+        if (!defs.querySelector(`#${id}-plate`)) { const gr = S("radialGradient", { id: id + "-plate", cx: 0.5, cy: 0.3, r: 0.8 }, defs); S("stop", { offset: 0, class: "dial__plate-0" }, gr); S("stop", { offset: 1, class: "dial__plate-1" }, gr); }
+        return `url(#${id}-plate)`;
+      },
+      face: (g, defs, id) => S("image", { href: new URL(`./assets/models/${R.file}.webp`, import.meta.url).href, x: -0.94, y: -0.9, width: 1.88, height: 1.88, "clip-path": `url(#${id}-unit)` }, g),
+    })),
+    onOpen: () => BOTS.forEach(R => loadBot(R).catch(() => {})),  // about to choose: fetch them all
+    onSettle: (i, instant) => {
+      try { localStorage.setItem("jt-bot", BOTS[i].key); } catch (e) { /* private mode */ }
+      showBot(i, instant);
+    },
+  });
+  if (botDial) botDial.go(botIndex, true); else showBot(botIndex, true);
+
   /* ------------------------------------------------ pointer and scroll */
   const Pt = { x: -9999, y: -9999, px: 0, py: 0, vx: 0, vy: 0, speed: 0, nx: 0, ny: 0, sx: 0, sy: 0, inside: false, moved: false };
   const point = (X, Y) => {
@@ -755,9 +1127,10 @@ function room() {
     Pt.inside = true; Pt.moved = true;
   };
   const leave = () => { Pt.inside = false; Pt.nx = 0; Pt.ny = 0; };
-  stage.addEventListener("pointermove", e => point(e.clientX, e.clientY), { passive: true });
-  stage.addEventListener("pointerdown", e => point(e.clientX, e.clientY), { passive: true });
-  stage.addEventListener("touchmove", e => { const t = e.touches[0]; if (t) point(t.clientX, t.clientY); }, { passive: true });
+  const onDial = e => e.target.closest && e.target.closest(".room__dial");   // working a dial isn't steering the robot
+  stage.addEventListener("pointermove", e => { if (!onDial(e)) point(e.clientX, e.clientY); }, { passive: true });
+  stage.addEventListener("pointerdown", e => { if (!onDial(e)) point(e.clientX, e.clientY); }, { passive: true });
+  stage.addEventListener("touchmove", e => { const t = e.touches[0]; if (t && !onDial(e)) point(t.clientX, t.clientY); }, { passive: true });
   stage.addEventListener("pointerleave", leave);
   stage.addEventListener("touchend", leave);
   let heroTop = 0, span = 0;
@@ -784,7 +1157,7 @@ function room() {
   };
   stage.addEventListener("click", e => {
     if (e.target.closest("a, button") || !overLamp(e.clientX, e.clientY)) return;
-    settle((Math.round(dial.u) + 1) % 3);
+    if (lightDial) lightDial.go((Math.round(dial.u) + 1) % 3);
   });
   let hoverCheck = 0;
   stage.addEventListener("pointermove", e => {
@@ -1012,7 +1385,7 @@ function room() {
     }
     const sp = Math.min(floorVel.speed, 12), sweep = fp && sp > 0.5, R = 0.5 + sp * 0.035;
     const stir = Pt.inside && Pt.speed > 0.4, push = cam.vz > 0.05 ? cam.vz : 0, o = eye();
-    const bfx = Math.cos(bot.th), bfz = -Math.sin(bot.th), bsp = Math.abs(bot.v) + Math.abs(bot.w) * 0.4;
+    const B = bot.R, bfx = Math.cos(bot.th), bfz = -Math.sin(bot.th), bsp = Math.abs(bot.v) + Math.abs(bot.w) * 0.4;
     for (let i = parts.length - 1; i >= 0; i--) {
       const p = parts[i], leafy = p.kind === 1;
       p.age += dt;
@@ -1027,11 +1400,11 @@ function room() {
           kick(p, (floorVel.x * 0.5 + dx * n * sp * 0.22) * w, (0.8 + sp * 0.3) * w * rand(0.6, 1.2), (floorVel.z * 0.5 + dz * n * sp * 0.22) * w, w);
         }
       }
-      // the robot: its front brush sweeps leaves ahead of it, and it shoves aside the ones it runs into
-      if (bot.obj && low && bsp > 0.05) {
+      // the robot: the cleaner's front brush sweeps leaves ahead of it, and it shoves aside the ones it runs into
+      if (B && !B.legs && low && bsp > 0.05) {                    // (the quadruped's feet scuff them instead: stomp)
         const rx = p.x - bot.x, rz = p.z - bot.z, lx = rx * bfx + rz * bfz, lz = -rx * bfz + rz * bfx;
-        if (Math.abs(lx) < HL + 0.35 && Math.abs(lz) < HW + 0.3) {
-          const ahead = bot.v >= 0 ? lx > HL - 0.15 : lx < -HL + 0.15;
+        if (Math.abs(lx) < B.HL + 0.35 && Math.abs(lz) < B.HW + 0.3) {
+          const ahead = B.brush && (bot.v >= 0 ? lx > B.HL - 0.15 : lx < -B.HL + 0.15);
           const sx = -bfz, sz = bfx, side = lz < 0 ? -1 : 1;
           if (ahead) kick(p, bot.vx * 1.15 + sx * side * bsp * 0.35, Math.max(0, Math.abs(bot.v) - 0.5) * rand(0.2, 0.6), bot.vz * 1.15 + sz * side * bsp * 0.35, 0.5);
           else kick(p, sx * side * (bsp * 1.2 + 0.6) + bot.vx * 0.5, bsp * rand(0.15, 0.5), sz * side * (bsp * 1.2 + 0.6) + bot.vz * 0.5, 0.6);
@@ -1117,7 +1490,7 @@ function room() {
     wind(t);
     applyLight(t);
     envCheck(t);
-    drawDial();
+    for (const Dl of dials) drawDial(Dl, dt);
     if (motes.visible) moteStep(t, dt);
 
     // the branches hang in the opening: they slide with the camera and leave the frame as it moves in
@@ -1180,7 +1553,8 @@ function room() {
       Pt.moved = false;
     }
     drive(dt);
-    placeBot(dt);
+    for (const R of BOTS) if (R.group && R.group.visible) animateBot(R, dt);
+    drawScan();
     step(t, dt, fp);
     placeFloaters(t);
     writeLeaves();
@@ -1203,6 +1577,7 @@ function room() {
     airTarget = Math.round(fine ? clamp(W * H / 40000, 14, 36) : clamp(W * H / 48000, 8, 18));
     heroTop = hero.offsetTop; span = hero.offsetHeight - stage.offsetHeight;
     placeRoom();
+    for (const Dl of dials) layoutDial(Dl);
   }
   let running = false;
   // the reflections follow the light, a few times a second at most while the dial turns
@@ -1210,7 +1585,12 @@ function room() {
     const u = clamp(dial.u, 0, 2);
     if (Math.abs(u - dial.envU) > 0.02 && t - dial.envAt > 240) { setEnv(cur); dial.envU = u; dial.envAt = t; }
   }
-  const still = () => { applyLight(0); envCheck(performance.now()); drawDial(); placeFloaters(0); placeBot(0); writeLeaves(); renderer.render(scene, camera); };
+  const still = () => {
+    applyLight(0); envCheck(performance.now()); placeFloaters(0); writeLeaves();
+    for (const Dl of dials) drawDial(Dl, 0);
+    for (const R of BOTS) if (R.group && R.group.visible) animateBot(R, 0);
+    renderer.render(scene, camera);
+  };
   measure();
   prewarm();
   setMood(MOODS[saved] ? saved : "white", true);
@@ -1222,11 +1602,12 @@ function room() {
   addEventListener("resize", () => { clearTimeout(rt); rt = setTimeout(() => { measure(); if (fontsReady) buildFloaters(); if (!running) still(); }, 150); });
   let visible = true;
   new IntersectionObserver(([e]) => (visible = e.isIntersecting)).observe(stage);
-  if (/[?&]roomdebug/.test(location.search)) window.__room = { bot, parts, L, dial, settle, setMood, lamp };
+  if (/[?&]roomdebug/.test(location.search)) window.__room = { bot, parts, L, dial, dials, BOTS, showBot, setMood, lamp, camera };
 
   if (reduce) {                                                   // a still room: everything where it stands
     LEAF_U.uFade.value = 1;
     stage.classList.add("is-live");
+    botsLive = true; nextBot(true);
     still();
     return;
   }
@@ -1251,8 +1632,14 @@ function room() {
       gsap.fromTo(Ls, { intro: 1, op: 0, blur: 4 }, { intro: 0, op: 1, blur: 0, duration: 1.7, ease: "expo.out", stagger: 0.07, delay: 0.25 });
       gsap.fromTo(Q, { intro: 0.35, op: 0, blur: 3 }, { intro: 0, op: 1, blur: 0, duration: 1.4, ease: "expo.out", delay: 1.1 });
       if (cueIn) gsap.fromTo(cueIn, { y: 16, autoAlpha: 0 }, { y: 0, autoAlpha: 1, duration: 1, ease: "expo.out", delay: 1.7 });
-      gsap.fromTo(dial, { spin: -220 }, { spin: 0, duration: 2, ease: "power4.out", delay: 1.25 });   // the dial rolls in
+      dials.forEach((Dl, k) => {                                   // the dials pop out of the edges and roll in
+        gsap.to(Dl, { pop: 1, duration: 1.1, ease: "back.out(1.5)", delay: 1.15 + k * 0.15 });
+        gsap.fromTo(Dl.st, { spin: k ? 200 : -200 }, { spin: 0, duration: 2, ease: "power4.out", delay: 1.15 + k * 0.15 });
+      });
+      gsap.delayedCall(1.5, () => { botsLive = true; nextBot(false); });   // and the robot is printed on the floor
     } else {
+      dials.forEach(Dl => (Dl.pop = 1));
+      botsLive = true; nextBot(true);
       strokes.forEach(p => (p.style.strokeDashoffset = 0));
       blossoms.forEach(b => (b.pop = 1));
       branchLeaves.forEach(l => (l.style.opacity = ""));
