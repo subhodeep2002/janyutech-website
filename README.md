@@ -26,7 +26,7 @@ A static rebuild of every page of janyutech.com (55 pages), with the original co
 **On every page:**
 
 - **Type.** One typeface, Inter Tight, on one fixed scale: each size is the body size times a power of 1.333 (1.25 on phones).
-- **Corner controls.** Logo, menu and scroll bar sit on frosted white chips, so they read the same over photos, blue panels and light sections.
+- **Corner controls.** The logo sits on a frosted white chip with a sprig of blue blossom tucked over its corner; the sprig sways on hover and bends with the scroll. The nav is a frosted bar of plain links with one underline that stretches from link to link like a rubber band. Bottom left, a hex nut draws its outline as you scroll, with the percentage in its hole; pressing it goes down a screen, or back to the top at the end.
 - **Elasticity.** Pictures lean with the speed of the scroll and spring back. Buttons, cards and the menu give like springs, and pill buttons lean towards the pointer.
 - **Petals.** Blue petals drift down the screen; the scroll carries them and the pointer pushes them aside.
 - **Text.** Headings rise out of a blur, and small labels decode from random characters.
@@ -43,7 +43,7 @@ Everything is readable without JavaScript. Visitors who ask for reduced motion g
 | `site.css` | Pill buttons, running bands, slider controls, every home-page section and every inner-page component |
 | `main.js` | All behaviour. It runs on every page and switches on what each page has: smooth scrolling (Lenis) with GSAP ScrollTrigger, the reveals, the hero's WebGL depth parallax, sliders, petals, bands and springs |
 | `assets/scene/` | The terrace renders. `hero-depth.webp` and `hero-m-depth.webp` are the hero's depth maps. `aerial-bp.webp` is the aerial view as a line drawing |
-| `assets/blossom/` | The looping blossom sprays (transparent VP9 `.webm` for Chrome and Firefox, HEVC `.mov` for Safari, and a poster for each) and the petal used as a bullet |
+| `assets/blossom/` | The looping blossom sprays (transparent VP9 `.webm` for Chrome and Firefox, HEVC `.mov` for Safari, and a poster for each), the sprig on the logo and the petal used as a bullet |
 | `assets/icons/` | The five "why choose us" icons from janyutech.com |
 | `assets/video/` | The film from janyutech.com's home page (H.264) and its poster |
 | `assets/bp/` | Robot photos and their matching blueprint drawings (made by `build/blueprint.py`) |
@@ -80,7 +80,7 @@ blender -b --factory-startup -P build/render/terrace.py -- --shot aerial --time 
 python3 build/render/depth_map.py hero-depth.png assets/scene/hero-depth.webp 800 600 9
 ```
 
-`--depth` renders how far each pixel is. `depth_map.py` turns that into the parallax map (the phone version is `--shot hero_m`, at 600 × 1000, converted to 420 × 700 with 7). `--lines` draws the view as a blueprint. Convert the PNGs to WebP to put them in `assets/scene/`. The blossom videos come from `build/render/blossom.py`.
+`--depth` renders how far each pixel is. `depth_map.py` turns that into the parallax map (the phone version is `--shot hero_m`, at 600 × 1000, converted to 420 × 700 with 7). `--lines` draws the view as a blueprint. Convert the PNGs to WebP to put them in `assets/scene/`. The blossom videos come from `build/render/blossom.py`; the sprig on the logo is its `--shape sprig --seed 19 --density 0.55 --still 0`.
 
 ### Blueprint images
 

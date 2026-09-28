@@ -559,18 +559,48 @@ def marquee(items, cls="", speed=1, links=False):
     return f'<div class="marq {cls}" data-marq="{speed}"><div class="marq__row">{row}</div></div>'
 
 
+def hex_path(r, rc, c=32):
+    """a hexagon standing on a point (like the nut in our mark), corners rounded by rc, drawn clockwise from the top"""
+    V = [(c + r * _m.cos(_m.radians(-90 + 60 * k)), c + r * _m.sin(_m.radians(-90 + 60 * k))) for k in range(6)]
+    t = rc / r                                     # the hexagon's side equals its circumradius
+    lerp = lambda p, q, u: (p[0] + (q[0] - p[0]) * u, p[1] + (q[1] - p[1]) * u)
+    d = ""
+    for k in range(6):
+        v, nx = V[k], V[(k + 1) % 6]
+        a, b = lerp(v, nx, t), lerp(nx, v, t)      # leave this corner, reach the next one
+        d += (f"M{a[0]:.2f} {a[1]:.2f}" if k == 0 else "") + f"L{b[0]:.2f} {b[1]:.2f}"
+        n2 = V[(k + 2) % 6]
+        e = lerp(nx, n2, t)
+        d += f"Q{nx[0]:.2f} {nx[1]:.2f} {e[0]:.2f} {e[1]:.2f}"
+    return d + "Z"
+
+
+def nut():
+    """the scroll gauge: a hex nut whose outline draws itself as the page goes by, the percentage in its hole;
+    a press scrolls down a screen, or back to the top at the end"""
+    outer, track = hex_path(30.5, 7), hex_path(24.5, 5.5)
+    return (f'<button type="button" class="nut" data-nut aria-label="Scroll down">'
+            f'<svg class="nut__shadow" viewBox="0 0 64 64" aria-hidden="true"><path d="{outer}"/></svg>'
+            f'<span class="nut__glass" style="clip-path: path(\'{outer}\')" aria-hidden="true"></span>'
+            f'<svg class="nut__svg" viewBox="0 0 64 64" aria-hidden="true"><path class="nut__track" d="{track}"/><path class="nut__bar" d="{track}" pathLength="1"/>'
+            f'<circle class="nut__hole" cx="32" cy="32" r="13.5"/></svg>'
+            f'<span class="nut__n" aria-hidden="true">00</span>'
+            f'<svg class="nut__up" viewBox="0 0 24 24" aria-hidden="true"><path d="M12 18.5V6M6.8 11.2 12 6l5.2 5.2"/></svg>'
+            f'<span class="nut__tip" aria-hidden="true"><span class="t-down">Scroll</span><span class="t-up">Back to top</span></span></button>')
+
+
 def header():
     return f'''<a class="skip" href="#content">Skip to content</a>
 <header class="hdr" data-hdr>
-  <a href="/" class="hdr__logo chip" aria-label="JanyuTech home">{jt_logo(title=False)}</a>
-  <nav class="hdr__nav chip" aria-label="Main">
-    <a class="hdr__cta" href="/products/">Explore our robots</a>
-    <a class="hdr__book" href="/contact-us/">Book a demo</a>
-    <button type="button" data-menu-btn aria-expanded="false" aria-controls="menu"><span class="hdr__burger" aria-hidden="true"><i></i><i></i></span><span class="hdr__menu-open">Menu</span><span class="hdr__menu-close">Close</span></button>
+  <a href="/" class="hdr__logo chip" aria-label="JanyuTech home">{jt_logo(title=False)}<span class="hdr__sprig" aria-hidden="true"><img src="/assets/blossom/sprig.webp" alt="" width="120" height="107" decoding="async"></span></a>
+  <nav class="hdr__nav chip" aria-label="Main" data-nav>
+    <a class="hdr__link hdr__cta" href="/products/"><span class="hdr__t">Explore our robots</span></a>
+    <a class="hdr__link hdr__book" href="/contact-us/"><span class="hdr__t">Book a demo</span></a>
+    <button type="button" class="hdr__link hdr__menu" data-menu-btn aria-expanded="false" aria-controls="menu"><span class="hdr__t"><span class="hdr__burger" aria-hidden="true"><i></i><i></i></span><span class="hdr__menu-open">Menu</span><span class="hdr__menu-close">Close</span></span></button>
+    <span class="hdr__line" aria-hidden="true"></span>
   </nav>
 </header>
-<div class="sbar chip" data-sbar aria-hidden="true"><span class="sbar__track"><span class="sbar__thumb"></span></span><span class="sbar__label">00</span></div>
-<button type="button" class="sdown chip" data-sdown><span class="sdown__arrow" aria-hidden="true"></span><span class="t-down">Scroll</span><span class="t-up">Back to top</span></button>
+{nut()}
 <div class="menu" id="menu" data-menu>
   <div class="menu__bg" aria-hidden="true"><span class="menu__grid"></span></div>
   <div class="menu__in">

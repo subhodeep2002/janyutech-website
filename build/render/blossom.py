@@ -3,7 +3,7 @@ Blue cherry-blossom clusters for the site: a spray of blossoming twigs that burs
 the top-left corner and sways in a breeze, rendered with a transparent background (Cycles).
 
   blender -b --factory-startup -P blossom.py -- --seed 3 --out DIR [--frames 150] [--res 1080] [--still F]
-             [--samples 48] [--shape corner|hang|side]
+             [--samples 48] [--shape corner|hang|rise|side|sprig]
 
 Everything loops: every sway is a sum of sines with whole numbers of cycles over the loop.
 """
@@ -378,6 +378,8 @@ if SHAPE == "corner":        # bursts in from the top-left corner and spills dow
 elif SHAPE == "hang":        # hangs from the top edge in long sprays
     for x in (-0.9, -0.35, 0.25, 0.8):
         grow((x + rng.uniform(-0.1, 0.1), rng.uniform(-0.1, 0.2), 1.3), (rng.uniform(-0.3, 0.3), 0, -1), 6, 0.2, 0.024, 0.006, 1, None, 0.6, 0.02)
+elif SHAPE == "sprig":       # one short twig with a few flowers, for small places (the corner of the logo)
+    grow((-0.78, 0.0, -0.74), (1, 0, 0.92), 3, 0.46, 0.03, 0.011, 2, None, 0.0, -0.02, 0, 0.17)
 elif SHAPE == "rise":        # climbs in from the bottom-left corner and arcs up and over
     grow((-1.45, 0.05, -1.35), (1, 0, 0.9), 8, 0.24, 0.034, 0.008, 0, None, 0.75, -0.06)
     grow((-1.4, -0.1, -0.7), (1, 0, 0.5), 5, 0.2, 0.022, 0.006, 1, None, 0.6, -0.04)

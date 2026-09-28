@@ -145,24 +145,62 @@
     });
   }
 
-  /* ------------------------------------------------------------ the scroll bar and the cue (frosted chips, the same on every background) */
-  const sbar = $("[data-sbar]"), sdown = $("[data-sdown]");
-  if (sbar) {
-    const label = $(".sbar__label", sbar), thumb = $(".sbar__thumb", sbar), track = $(".sbar__track", sbar);
+  /* ------------------------------------------------------------ the scroll gauge: a hex nut whose outline draws itself as the page goes by */
+  const nut = $("[data-nut]");
+  if (nut) {
+    const bar = $(".nut__bar", nut), num = $(".nut__n", nut);
+    let top = false;
     ScrollTrigger.create({
       start: 0, end: "max",
-      onUpdate: s => { sbar.style.setProperty("--p", s.progress.toFixed(4)); label.textContent = String(Math.round(s.progress * 100)).padStart(2, "0"); sdown?.classList.toggle("is-top", s.progress > 0.985); },
+      onUpdate: s => {
+        const p = s.progress;
+        bar.style.strokeDashoffset = (1 - p).toFixed(4);
+        num.textContent = String(Math.round(p * 100)).padStart(2, "0");
+        if ((p > 0.985) !== top) { top = !top; nut.classList.toggle("is-top", top); nut.setAttribute("aria-label", top ? "Back to top" : "Scroll down"); }
+      },
     });
-    let drag = false;
-    thumb.addEventListener("pointerdown", e => { drag = true; thumb.setPointerCapture(e.pointerId); d.body.style.cursor = "grabbing"; });
-    thumb.addEventListener("pointermove", e => {
-      if (!drag) return;
-      const r = track.getBoundingClientRect(), k = clamp((e.clientY - r.top) / r.height, 0, 1);
-      scrollTo(k * (html.scrollHeight - innerHeight), { duration: 1.2 });
-    });
-    thumb.addEventListener("pointerup", () => { drag = false; d.body.style.cursor = ""; });
+    // a press goes down a screen, or back to the top from the end
+    nut.addEventListener("click", () => scrollTo(top ? 0 : (lenis ? lenis.animatedScroll : scrollY) + innerHeight * 0.9));
   }
-  sdown?.addEventListener("click", () => scrollTo(sdown.classList.contains("is-top") ? 0 : innerHeight * 0.9));
+
+  /* ------------------------------------------------------------ the nav: one underline that stretches from link to link like a rubber band */
+  const nav = $("[data-nav]");
+  const navLine = (() => {
+    if (!nav) return { to() {}, rest() {}, hold() {}, place() {} };
+    const line = $(".hdr__line", nav), items = $$(".hdr__link", nav);
+    const here = items.find(a => a.tagName === "A" && new URL(a.href, location.href).pathname === location.pathname) || null;
+    here && here.classList.add("is-here");
+    const S = { l: 0, r: 0, o: 0 };
+    let cur = null, held = null;
+    const draw = () => { line.style.left = S.l.toFixed(1) + "px"; line.style.width = Math.max(0, S.r - S.l).toFixed(1) + "px"; line.style.opacity = S.o.toFixed(3); };
+    const edges = el => { const t = $(".hdr__t", el) || el, r = t.getBoundingClientRect(), n = nav.getBoundingClientRect(); return [r.left - n.left, r.right - n.left]; };
+    function to(el, instant) {
+      if (!el) {                                   // nowhere to rest: shrink into its middle and fade
+        const c = (S.l + S.r) / 2;
+        cur = null;
+        return reduce || instant ? (Object.assign(S, { l: c, r: c, o: 0 }), draw()) : gsap.to(S, { l: c, r: c, o: 0, duration: 0.45, ease: "power3.out", overwrite: "auto", onUpdate: draw });
+      }
+      const [l, r] = edges(el);
+      if (reduce || instant) { Object.assign(S, { l, r, o: 1 }); cur = el; return draw(); }
+      if (!cur || S.o < 0.05) {                    // appear: grow out from the middle of the word
+        const c = (l + r) / 2;
+        Object.assign(S, { l: c, r: c });
+        gsap.to(S, { l, r, o: 1, duration: 0.8, ease: "elastic.out(1, 0.6)", overwrite: "auto", onUpdate: draw });
+      } else if (el !== cur) {                     // the leading edge runs ahead, the trailing edge is pulled after it
+        const right = l > S.l;
+        gsap.to(S, { r, duration: right ? 0.38 : 0.9, delay: right ? 0 : 0.1, ease: right ? "power3.out" : "elastic.out(1, 0.5)", overwrite: "auto", onUpdate: draw });
+        gsap.to(S, { l, duration: right ? 0.9 : 0.38, delay: right ? 0.1 : 0, ease: right ? "elastic.out(1, 0.5)" : "power3.out", overwrite: "auto", onUpdate: draw });
+        gsap.to(S, { o: 1, duration: 0.2, overwrite: "auto", onUpdate: draw });
+      }
+      cur = el;
+    }
+    const rest = () => to(held || here);
+    items.forEach(el => { el.addEventListener("mouseenter", () => to(el)); el.addEventListener("focus", () => to(el)); });
+    nav.addEventListener("mouseleave", rest);
+    nav.addEventListener("focusout", e => { if (!nav.contains(e.relatedTarget)) rest(); });
+    addEventListener("resize", () => to(cur, true));
+    return { to, rest, hold(el) { held = el; to(el || here); }, place() { to(here, true); } };
+  })();
 
   /* ------------------------------------------------------------ menu: opens as a circle out of the Menu button */
   const menu = $("[data-menu]"), menuBtn = $("[data-menu-btn]");
@@ -171,6 +209,7 @@
   function openMenu() {
     if (!menu || d.body.classList.contains("menu-open")) return;
     d.body.classList.add("menu-open"); menuBtn?.setAttribute("aria-expanded", "true");
+    navLine.hold(menuBtn);
     const r = menuBtn.getBoundingClientRect();
     origin = [r.left + r.width / 2, r.top + r.height / 2];
     const R = Math.hypot(Math.max(origin[0], innerWidth - origin[0]), Math.max(origin[1], innerHeight - origin[1])) + 24;
@@ -186,6 +225,7 @@
     if (!menu || !d.body.classList.contains("menu-open")) return;
     menuBtn?.setAttribute("aria-expanded", "false");
     d.body.classList.remove("menu-open");
+    navLine.hold(null);
     unlock();
     if (reduce) { gsap.set(menu, { visibility: "hidden" }); return; }
     gsap.to(menu, { clipPath: circle(0), duration: 0.7, ease: "expo.in", overwrite: true, onComplete: () => gsap.set(menu, { visibility: "hidden" }) });
@@ -271,7 +311,7 @@
   function elastic() {
     if (reduce || !lenis) return;
     const els = $$(".why__img, .prod__img, .loc__img, .inter__panel-img, .duo__img picture, .field__frame, .card__img, .photo a, .gallery__item, .event__img, .video__frame, .member__img, .phero__banner");
-    if (!els.length) return;
+    const sprig = $(".hdr__sprig img");
     const vis = new Set();
     const io = new IntersectionObserver(es => es.forEach(e => { if (e.isIntersecting) vis.add(e.target); else { vis.delete(e.target); e.target.style.transform = ""; } }));
     els.forEach(el => io.observe(el));
@@ -282,12 +322,13 @@
       v += ((target - x) * 180 - v * 14) * dt;       // stiffness 180, damping 14: a little under-damped
       x += v * dt;
       if (Math.abs(x) < 0.0004 && Math.abs(v) < 0.0004 && !target) {
-        if (!rest) { vis.forEach(el => { el.style.transform = ""; }); rest = true; }
+        if (!rest) { vis.forEach(el => { el.style.transform = ""; }); sprig && sprig.style.removeProperty("rotate"); rest = true; }
         return;
       }
       rest = false;
       const s = `skewY(${(x * 2.4).toFixed(3)}deg) scale(${(1 - Math.abs(x) * 0.025).toFixed(4)})`;
       vis.forEach(el => { el.style.transform = s; });
+      if (sprig) sprig.style.rotate = (x * 9).toFixed(2) + "deg";     // the blossom on the logo bends in the scroll's wind
     });
   }
   // magnetic: pills lean towards the pointer and spring back (past centre, then settle) when it leaves
@@ -902,7 +943,7 @@
     if (reduce) $$("[data-reveal], [data-part]").forEach(visible);
     if (isHome) { if (!reduce) reveals(); home(); }
     else { inner(); if (!reduce) reveals(); petals(desk() ? 12 : 7); }
-    marquees(); elastic();
+    marquees(); elastic(); navLine.place();
     if (!reduce) magnetic();
     ScrollTrigger.refresh();
     if (location.hash && location.hash !== "#top") { const el = d.getElementById(decodeURIComponent(location.hash.slice(1))); el && setTimeout(() => scrollTo(el, { immediate: true, offset: -40 }), 300); }

@@ -81,17 +81,24 @@ body.is-locked { overflow: hidden; }
 @supports not ((-webkit-backdrop-filter: blur(1px)) or (backdrop-filter: blur(1px))) { .chip { background: rgba(255, 255, 255, .94); } }
 .hdr { position: fixed; inset: 0 0 auto 0; z-index: 60; display: flex; justify-content: space-between; align-items: center; padding: 18px var(--gut); pointer-events: none; }
 .hdr > * { pointer-events: auto; }
-.hdr__logo { display: flex; align-items: center; height: 52px; padding: 0 18px; transition: transform .6s var(--e-spring), box-shadow .4s; }
+/* the logo, with a sprig of our blue blossom tucked over its corner */
+.hdr__logo { position: relative; display: flex; align-items: center; height: 52px; padding: 0 18px; transition: transform .6s var(--e-spring); }
 .hdr__logo:hover { transform: scale(1.04); }
 .jt-logo { height: 24px; width: auto; overflow: visible; }
 .jt-logo text { font-family: var(--f); font-weight: 700; font-size: 25px; letter-spacing: .02em; }
 .jt-logo .jt-shine { transform: translateX(-120%); transition: transform 1s var(--e-out); }
 .hdr__logo:hover .jt-shine { transform: translateX(120%); }
-.hdr__nav { display: flex; align-items: center; gap: 4px; height: 52px; padding: 5px; }
-.hdr__nav a, .hdr__nav button { display: inline-flex; align-items: center; gap: 10px; height: 42px; padding: 0 18px; border-radius: 999px; font-size: 13px; font-weight: 600; letter-spacing: .02em; white-space: nowrap; transition: background .35s, color .35s, transform .5s var(--e-spring); }
-.hdr__nav a:hover, .hdr__nav button:hover { background: rgba(23, 35, 59, .07); transform: scale(1.04); }
-.hdr__nav .hdr__cta { background: var(--c-brand); color: #fff; }
-.hdr__nav .hdr__cta:hover { background: var(--c-brand-2); }
+.hdr__sprig { position: absolute; right: -68px; top: -45px; width: 84px; pointer-events: none; transform-origin: 5% 95%; rotate: 24deg; transition: rotate 1s var(--e-spring), scale 1s var(--e-spring); }
+.hdr__sprig img { display: block; width: 100%; height: auto; transform-origin: 5% 95%; filter: drop-shadow(0 6px 7px rgba(9, 24, 70, .26)); }
+.hdr__logo:hover .hdr__sprig { rotate: 10deg; scale: 1.08; }
+/* the nav: plain links on a frosted bar; one underline stretches from link to link like a rubber band (main.js) */
+.hdr__nav { position: relative; display: flex; align-items: center; height: 52px; padding: 0 8px; }
+.hdr__link { display: inline-flex; align-items: center; height: 100%; padding: 0 16px; font-size: 14px; font-weight: 600; letter-spacing: -.005em; white-space: nowrap; color: var(--c-ink); transition: color .35s var(--e-out); }
+.hdr__link:hover, .hdr__link:focus-visible, .hdr__link.is-here { color: var(--c-blue); }
+.hdr__link:focus-visible { outline: none; }
+.hdr__t { display: inline-flex; align-items: center; gap: 9px; }
+.hdr__line { position: absolute; left: 0; bottom: 12px; width: 0; height: 2px; border-radius: 2px; background: var(--c-blue); opacity: 0; pointer-events: none; }
+.no-js .hdr__link:hover .hdr__t { text-decoration: underline; text-underline-offset: 6px; }
 .hdr__burger { position: relative; width: 16px; height: 10px; }
 .hdr__burger i { position: absolute; left: 0; right: 0; height: 1.5px; border-radius: 1px; background: currentColor; transition: transform .5s var(--e-spring), top .5s var(--e-spring); }
 .hdr__burger i:first-child { top: 1px; } .hdr__burger i:last-child { top: 7px; }
@@ -104,26 +111,36 @@ body.menu-open .hdr__menu-close { display: inline; }
   .hdr { padding: 12px; }
   .hdr__logo { height: 44px; padding: 0 14px; }
   .jt-logo { height: 19px; }
-  .hdr__nav { height: 44px; padding: 4px; }
-  .hdr__nav a, .hdr__nav button { height: 36px; padding: 0 13px; font-size: 12px; }
-  .hdr__nav .hdr__cta { display: none; }
+  .hdr__sprig { right: -34px; top: -22px; width: 50px; }
+  .hdr__nav { height: 44px; padding: 0 4px; }
+  .hdr__link { padding: 0 12px; font-size: 13px; }
+  .hdr__cta { display: none; }
+  .hdr__line { bottom: 9px; }
 }
-@media (max-width: 380px) { .hdr__nav .hdr__book { display: none; } }
+@media (max-width: 380px) { .hdr__book { display: none; } }
 
-/* the scroll position (left edge) and the scroll cue (bottom left), in chips too */
-.sbar { position: fixed; left: var(--gut); top: 50%; z-index: 55; width: 36px; height: 190px; margin-top: -95px; border-radius: 18px; display: flex; flex-direction: column; align-items: center; padding: 14px 0 12px; gap: 10px; }
-.sbar__track { position: relative; flex: 1; width: 2px; border-radius: 1px; background: rgba(23, 35, 59, .15); }
-.sbar__thumb { position: absolute; left: -2px; width: 6px; height: 34px; top: calc(var(--p, 0) * (100% - 34px)); border-radius: 3px; background: var(--c-brand); cursor: grab; }
-.sbar__thumb::before { content: ""; position: absolute; inset: -10px -12px; }
-.sbar__label { font-size: 11px; font-weight: 600; font-variant-numeric: tabular-nums; }
-.sdown { position: fixed; left: var(--gut); bottom: 22px; z-index: 55; display: flex; align-items: center; gap: 10px; height: 40px; padding: 0 16px 0 14px; font-size: 12px; font-weight: 600; letter-spacing: .04em; transition: transform .5s var(--e-spring); }
-.sdown:hover { transform: scale(1.05); }
-.sdown__arrow { position: relative; width: 12px; height: 14px; }
-.sdown__arrow::before { content: ""; position: absolute; left: 5.5px; top: 0; width: 1.5px; height: 13px; background: currentColor; }
-.sdown__arrow::after { content: ""; position: absolute; left: 2px; bottom: 1px; width: 7px; height: 7px; border-right: 1.5px solid currentColor; border-bottom: 1.5px solid currentColor; transform: rotate(45deg); }
-.sdown.is-top .sdown__arrow { transform: rotate(180deg); }
-.sdown .t-up { display: none; } .sdown.is-top .t-down { display: none; } .sdown.is-top .t-up { display: inline; }
-@media (max-width: 991px) { .sbar, .sdown { display: none; } }
+/* the scroll gauge (bottom left): a hex nut whose outline draws itself as the page goes by */
+.nut { position: fixed; left: var(--gut); bottom: 22px; z-index: 55; width: 64px; height: 64px; padding: 0; color: var(--c-ink); transition: scale .7s var(--e-spring); -webkit-tap-highlight-color: transparent; }
+.nut:hover { scale: 1.08; }
+.nut:active { scale: .94; }
+.nut:focus-visible { outline: none; }
+.nut:focus-visible .nut__track { stroke: var(--c-blossom); }
+.nut__shadow { position: absolute; inset: 0; width: 100%; height: 100%; overflow: visible; translate: 0 7px; fill: rgba(9, 24, 70, .3); filter: blur(8px); }
+.nut__glass { position: absolute; inset: 0; background: rgba(255, 255, 255, .84); -webkit-backdrop-filter: blur(16px) saturate(1.6); backdrop-filter: blur(16px) saturate(1.6); }
+.nut__svg { position: absolute; inset: 0; width: 100%; height: 100%; }
+.nut__track { fill: none; stroke: rgba(23, 35, 59, .12); stroke-width: 3; transition: stroke .3s; }
+.nut__bar { fill: none; stroke: var(--c-blue); stroke-width: 3; stroke-linecap: round; stroke-linejoin: round; stroke-dasharray: 1 1; stroke-dashoffset: 1; }
+.nut__hole { fill: #e8eef6; stroke: rgba(23, 35, 59, .08); stroke-width: 1; }
+.nut__n { position: absolute; inset: 0; display: grid; place-items: center; font-size: 12px; font-weight: 700; font-variant-numeric: tabular-nums; letter-spacing: .02em; transition: opacity .3s, scale .5s var(--e-spring); }
+.nut__up { position: absolute; left: 50%; top: 50%; width: 16px; height: 16px; margin: -8px 0 0 -8px; fill: none; stroke: currentColor; stroke-width: 2; stroke-linecap: round; stroke-linejoin: round; opacity: 0; scale: .4; transition: opacity .3s, scale .6s var(--e-spring); }
+.nut.is-top .nut__n { opacity: 0; scale: .4; }
+.nut.is-top .nut__up { opacity: 1; scale: 1; }
+.nut__tip { position: absolute; left: calc(100% + 10px); top: 50%; padding: 8px 14px; border-radius: 999px; background: rgba(255, 255, 255, .92); box-shadow: 0 10px 24px -14px rgba(9, 24, 70, .5); font-size: 12px; font-weight: 600; white-space: nowrap; translate: -8px -50%; opacity: 0; pointer-events: none; transition: opacity .3s, translate .6s var(--e-spring); }
+.nut:hover .nut__tip, .nut:focus-visible .nut__tip { opacity: 1; translate: 0 -50%; }
+.nut .t-up { display: none; }
+.nut.is-top .t-down { display: none; }
+.nut.is-top .t-up { display: inline; }
+@media (max-width: 991px) { .nut { display: none; } }
 
 /* ---------------------------------------------------------- menu: opens as a circle from the Menu button */
 .menu { position: fixed; inset: 0; z-index: 58; background: var(--c-brand); color: #fff; overflow: hidden; visibility: hidden; clip-path: circle(0% at calc(100% - 80px) 44px); }
