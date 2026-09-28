@@ -119,7 +119,7 @@
       },
       {
        "t": "html",
-       "html": "<p>Janyutech aspires to be a leading force in human risk-mitigating robotics, with a strong focus on the core manufacturing sector. Our mission is to transform India’s industrial landscape through our 3P model:</p><p><strong> People</strong> – enhancing human safety by reducing exposure to hazardous and strenuous tasks.</p><p><strong> Profits</strong> – boosting plant profitability by increasing operational efficiency, minimizing downtime, and ensuring consistent quality.</p><p><strong>Planet</strong> – promoting sustainable practices by optimizing resource consumption and reducing environmental impact.</p>"
+       "html": "<p>Janyutech aspires to be a leading force in human risk-mitigating robotics, with a strong focus on the core manufacturing sector. Our mission is to transform India’s industrial landscape through our 3P model:</p><p><strong> People</strong>: enhancing human safety by reducing exposure to hazardous and strenuous tasks.</p><p><strong> Profits</strong>: boosting plant profitability by increasing operational efficiency, minimizing downtime, and ensuring consistent quality.</p><p><strong>Planet</strong>: promoting sustainable practices by optimizing resource consumption and reducing environmental impact.</p>"
       },
       {
        "t": "h",
@@ -535,7 +535,7 @@
        "img": "https://janyutech.com/wp-content/uploads/2024/04/Mr.-Sentthil-Vinayakam.png",
        "name": "Mr. Sentthil Vinayakam",
        "job": "VP, Telecommunication & Edutech",
-       "text": "Telecommunication, Edutech and Technical Head for the 5G Technology – Architecture and Implementation",
+       "text": "Telecommunication, Edutech and Technical Head for the 5G Technology: Architecture and Implementation",
        "links": [
         "https://www.linkedin.com/in/nuti-ramarao-bab7a5a/"
        ]
@@ -1358,7 +1358,7 @@
          "href": ""
         },
         {
-         "text": "Experience with multi-layer PCB design – split planes, signal integrity analysis, controlled impedance, stack-up definition, component library generation. Understanding of ground loops and mitigation strategies.",
+         "text": "Experience with multi-layer PCB design: split planes, signal integrity analysis, controlled impedance, stack-up definition, component library generation. Understanding of ground loops and mitigation strategies.",
          "href": ""
         },
         {
@@ -1624,7 +1624,7 @@
        "t": "card",
        "img": "",
        "title": "Address",
-       "text": "Unit 1 & 2, Dhuri Industrial Complex No.1, Madhu Vrinda Phase 1, Waliv Phata, Sativali Road, Vasai East – 401208.",
+       "text": "Unit 1 & 2, Dhuri Industrial Complex No.1, Madhu Vrinda Phase 1, Waliv Phata, Sativali Road, Vasai East 401208.",
        "href": "",
        "btn": ""
       },
@@ -1654,7 +1654,7 @@
        "t": "list",
        "items": [
         {
-         "text": "Mon to Sat 09:00 am – 06:00 pm",
+         "text": "Mon to Sat 09:00 am to 06:00 pm",
          "href": ""
         }
        ]
@@ -4374,7 +4374,7 @@
       },
       {
        "t": "html",
-       "html": "<p>The Automated Jetting System for Preheater/Smoke Chamber Cleaning is a high-pressure water jet lancing solution designed for preventive maintenance in furnaces operating at 1000°C and above. Equipped with a fully articulating robotic arm, the system offers multidirectional lancing movement – up, down, sideways, rotational, and backwards – allowing comprehensive cleaning coverage, including hard-to-reach areas.</p>"
+       "html": "<p>The Automated Jetting System for Preheater/Smoke Chamber Cleaning is a high-pressure water jet lancing solution designed for preventive maintenance in furnaces operating at 1000°C and above. Equipped with a fully articulating robotic arm, the system offers multidirectional lancing movement (up, down, sideways, rotational and backwards), allowing comprehensive cleaning coverage, including hard-to-reach areas.</p>"
       },
       {
        "t": "list",
@@ -4510,7 +4510,7 @@
       },
       {
        "t": "html",
-       "html": "<p>The Automatic Concrete Cube Maker is a strong, portable system engineered for precision and productivity in concrete sample cube making for testing. Designed to produce standard concrete test cubes on-site, it features a stainless-steel hopper, motorised screw conveyor and automated tamping with stroke control – ensuring consistent compaction per IS-10086 standards. The system operates via a user-friendly 7” HMI panel with programmable recipes and requires only a 230V power supply.</p>"
+       "html": "<p>The Automatic Concrete Cube Maker is a strong, portable system engineered for precision and productivity in concrete sample cube making for testing. Designed to produce standard concrete test cubes on-site, it features a stainless-steel hopper, motorised screw conveyor and automated tamping with stroke control, ensuring consistent compaction per IS-10086 standards. The system operates via a user-friendly 7” HMI panel with programmable recipes and requires only a 230V power supply.</p>"
       },
       {
        "t": "list",
@@ -5432,7 +5432,7 @@
       },
       {
        "t": "html",
-       "html": "<p>Our Lehr Roller Cleaning System is a precision-engineered, remotely operated solution for cleaning roller beds in annealing lehr furnaces within glass manufacturing units. Over time, lehr rollers accumulate fine glass dust, oil and thermal residue – leading to quality defects and operational inefficiencies. This system employs a motorised trolley-mounted cleaning module capable of traversing parallel roller beds with minimal human intervention.</p>"
+       "html": "<p>Our Lehr Roller Cleaning System is a precision-engineered, remotely operated solution for cleaning roller beds in annealing lehr furnaces within glass manufacturing units. Over time, lehr rollers accumulate fine glass dust, oil and thermal residue, leading to quality defects and operational inefficiencies. This system employs a motorised trolley-mounted cleaning module capable of traversing parallel roller beds with minimal human intervention.</p>"
       },
       {
        "t": "list",
@@ -5611,7 +5611,7 @@
       },
       {
        "t": "html",
-       "html": "<p>Our Lehr Roller Cleaning System is a precision-engineered, remotely operated solution for cleaning roller beds in annealing lehr furnaces within glass manufacturing units. Over time, lehr rollers accumulate fine glass dust, oil and thermal residue – leading to quality defects and operational inefficiencies. This system employs a motorised trolley-mounted cleaning module capable of traversing parallel roller beds with minimal human intervention.</p>"
+       "html": "<p>Our Lehr Roller Cleaning System is a precision-engineered, remotely operated solution for cleaning roller beds in annealing lehr furnaces within glass manufacturing units. Over time, lehr rollers accumulate fine glass dust, oil and thermal residue, leading to quality defects and operational inefficiencies. This system employs a motorised trolley-mounted cleaning module capable of traversing parallel roller beds with minimal human intervention.</p>"
       },
       {
        "t": "list",
@@ -6427,7 +6427,7 @@
       },
       {
        "t": "html",
-       "html": "<p>The VARAHA iMFD-20W is a strong, multi-functional mining robot engineered for safe and efficient operation in challenging underground environments. It performs four critical tasks remotely—cutting, drilling, dozing and material transport—eliminating the need for manual labour in high-risk zones. The system features a specialised ore-cutting saw capable of pulverising up to 8–9 feet of rock wall in a single pass.</p>"
+       "html": "<p>The VARAHA iMFD-20W is a strong, multi-functional mining robot engineered for safe and efficient operation in challenging underground environments. It performs four critical tasks remotely (cutting, drilling, dozing and material transport), eliminating the need for manual labour in high-risk zones. The system features a specialised ore-cutting saw capable of pulverising up to 8–9 feet of rock wall in a single pass.</p>"
       },
       {
        "t": "list",
@@ -8308,7 +8308,7 @@
       },
       {
        "t": "html",
-       "html": "<p>Our Intake Well Cleaning System is engineered for efficient desilting and debris removal from deep WES (Water Entry System) wells in thermal and industrial facilities. The system comprises two dedicated service trucks – Truck 1 (Utilities) housing the electric panel, generator and hydraulic power pack, and Truck 2 (Suction) for high-capacity sludge extraction. A precision-controlled winch system lowers a multi-nozzle cleaning solution head into the well, mounted on a rigid support plate.</p>"
+       "html": "<p>Our Intake Well Cleaning System is engineered for efficient desilting and debris removal from deep WES (Water Entry System) wells in thermal and industrial facilities. The system comprises two dedicated service trucks: Truck 1 (Utilities) housing the electric panel, generator and hydraulic power pack, and Truck 2 (Suction) for high-capacity sludge extraction. A precision-controlled winch system lowers a multi-nozzle cleaning solution head into the well, mounted on a rigid support plate.</p>"
       },
       {
        "t": "list",
@@ -10737,7 +10737,7 @@
       },
       {
        "t": "html",
-       "html": "<p>UV disinfection can effectively clean up hospital spaces to combat COVID-19 by – <strong>“Department Of Science And Technology, Govt Of India</strong>“.</p>"
+       "html": "<p>UV disinfection can effectively clean up hospital spaces to combat COVID-19 by <strong>“Department Of Science And Technology, Govt Of India</strong>“.</p>"
       },
       {
        "t": "html",
@@ -10785,7 +10785,7 @@
       },
       {
        "t": "html",
-       "html": "<p>The Remotely operated Trolleys Smart Trolleys have racks for moving the critical supplies between the isolation wards and supply units. These are operated by a human operator with the aid of Camera feedback. The trolley has a WiFi connected tablet screen with a camera to get live Audio – Visuals of the patient to the control station and interact with the patient.</p>"
+       "html": "<p>The Remotely operated Trolleys Smart Trolleys have racks for moving the critical supplies between the isolation wards and supply units. These are operated by a human operator with the aid of Camera feedback. The trolley has a WiFi connected tablet screen with a camera to get live audio-visuals of the patient to the control station and interact with the patient.</p>"
       },
       {
        "t": "h",

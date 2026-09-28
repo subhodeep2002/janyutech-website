@@ -1,14 +1,14 @@
 /*
- * JanyuTech – motion and behaviour for every page.
- *  – smooth scrolling (Lenis) driving GSAP ScrollTrigger
- *  – text builds in as it scrolls into view: words rise out of a blur and overshoot a touch, lines follow,
+ * JanyuTech: motion and behaviour for every page.
+ *  - smooth scrolling (Lenis) driving GSAP ScrollTrigger
+ *  - text builds in as it scrolls into view: words rise out of a blur and overshoot a touch, lines follow,
  *    small labels decode from random characters
- *  – elasticity: pictures lean with the speed of the scroll and spring back; buttons and cards give like springs
- *  – blue petals drift down the screen, carried by the scroll and pushed aside by the pointer
- *  – home: the loader opens like an iris; the hero moves in depth with the cursor (WebGL and a depth map
+ *  - elasticity: pictures lean with the speed of the scroll and spring back; buttons and cards give like springs
+ *  - blue petals drift down the screen, carried by the scroll and pushed aside by the pointer
+ *  - home: the loader opens like an iris; the hero moves in depth with the cursor (WebGL and a depth map
  *    rendered with the scene); bands of words run with the scroll; sliders; India runs sideways along a
  *    circuit trace; the aerial blueprint is scanned into the real terrace; the footer slides up like a sheet
- *  – blue blossom: looping videos, loaded as they come near, one playing at a time
+ *  - blue blossom: looping videos, loaded as they come near, one playing at a time
  * Everything is visible without JavaScript, and still for visitors who prefer reduced motion.
  */
 (() => {
@@ -82,7 +82,7 @@
       onUpdate: () => {
         const k = Math.floor(o.p * n);
         let out = "";
-        for (let i = 0; i < n; i++) { const c = text[i]; out += i < k || /[\s·—&.,]/.test(c) ? c : GLYPHS[(Math.random() * GLYPHS.length) | 0]; }
+        for (let i = 0; i < n; i++) { const c = text[i]; out += i < k || /[\s·&.,:-]/.test(c) ? c : GLYPHS[(Math.random() * GLYPHS.length) | 0]; }
         el.textContent = out;
       },
       onComplete: () => { el.textContent = text; },
@@ -226,7 +226,7 @@
   const safari = /^((?!chrome|android).)*safari/i.test(navigator.userAgent);
   const flowers = $$(".flower video");
   flowers.forEach(v => { if (safari) $$('source[type="video/webm"]', v).forEach(s => s.remove()); });
-  // Only one plays at a time – the one most in view – because two transparent videos decoding at once pull
+  // Only one plays at a time (the one most in view) because two transparent videos decoding at once pull
   // Chrome down to 30 frames a second; the others hold still and sway gently (CSS). Each loads as it comes near.
   const tryPlay = v => { if (v !== playing) return; const p = v.play(); p && p.catch(() => {}); };
   const loadVid = v => {

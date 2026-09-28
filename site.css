@@ -1,6 +1,6 @@
 /* =========================================================
-   JanyuTech – the home page's sections, then the inner pages.
-   Sizes of type come from the scale in styles.css (--t-1 … --t7); corners are rounded (20–56px).
+   JanyuTech: the home page's sections, then the inner pages.
+   Sizes of type come from the scale in styles.css (--t-1 … --t7); corners are rounded (20 to 56px).
    ========================================================= */
 picture { display: block; }
 .hero__img picture, .quote__bg picture, .eng__bg picture, .cta__bg picture, .loc__img picture, .inter__panel-img picture, .duo__img picture, .amen__bg, .aerial__bp, .aerial__real { width: 100%; height: 100%; }
@@ -329,9 +329,7 @@ picture { display: block; }
 .field { width: min(1120px, 78%); margin: 12rem auto 0; }
 .field__frame { position: relative; aspect-ratio: 16 / 9; border-radius: 34px; overflow: hidden; background: #0b1a44; box-shadow: 0 40px 80px -50px rgba(9, 24, 70, .7); }
 .field__vid { width: 100%; height: 100%; object-fit: cover; filter: brightness(1.3) contrast(1.06) saturate(1.12); }
-.field__tag { position: absolute; left: 20px; top: 20px; display: inline-flex; align-items: center; gap: 9px; height: 38px; padding: 0 16px; font-size: 13px; font-weight: 600; }
-.field__tag i { width: 8px; height: 8px; border-radius: 50%; background: #e5484d; animation: rec 1.6s ease-in-out infinite; }
-@keyframes rec { 50% { opacity: .25; } }
+.field__tag { position: absolute; left: 20px; top: 20px; display: inline-flex; align-items: center; height: 38px; padding: 0 18px; font-size: 13px; font-weight: 600; }
 .field__cap { display: flex; justify-content: space-between; gap: 24px; margin-top: 18px; }
 .field__cap .p2 { max-width: 34rem; opacity: .75; text-align: right; }
 .duo { display: flex; justify-content: center; gap: 1.4rem; padding: 14rem 0 0; }

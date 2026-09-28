@@ -605,7 +605,7 @@ def footer():
     </div>
     <div class="ftr__cols">
       <div class="ftr__col ftr__col--call"><p class="l2">Talk to us</p><a class="ftr__phone" href="tel:+917770012260">+91 77700 12260</a><a href="mailto:sales@janyutech.com">sales@janyutech.com</a></div>
-      <div class="ftr__col"><p class="l2">Visit</p><address>Unit 1 &amp; 2, Dhuri Industrial Complex No.1, Madhu Vrinda Phase 4, Waliv Phata, Sativali Road, Vasai East – 401208, India</address></div>
+      <div class="ftr__col"><p class="l2">Visit</p><address>Unit 1 &amp; 2, Dhuri Industrial Complex No.1, Madhu Vrinda Phase 4, Waliv Phata, Sativali Road, Vasai East 401208, India</address></div>
       {col("Explore", explore)}
       {col("Company", company)}
       {col("Follow", SOCIAL)}
@@ -712,7 +712,7 @@ def inner_page(p):
 {f'<div class="phero__banner{" phero__banner--contain" if is_cutout(hero_img) else ""}" data-theme="{"light" if is_cutout(hero_img) else "dark"}"><img src="{esc(img(hero_img))}" alt="" decoding="async"></div>' if hero_img else ""}'''
     body = hero + "".join(f'<section class="sec">{render_blocks(b)}</section>' for b in secs)
     og = img(hero_img) if hero_img else ""
-    return doc(p["title"], p["desc"] or f"{h1} – JanyuTech", body, og=BASE + og if og.startswith("/") else og, body_cls="inner", canonical=path)
+    return doc(p["title"], p["desc"] or f"{h1} | JanyuTech", body, og=BASE + og if og.startswith("/") else og, body_cls="inner", canonical=path)
 
 
 # ---------------------------------------------------------------- home
@@ -735,9 +735,9 @@ def note_vars(pre, dx, dy, side):
     return f"--{pre}dx:{dx}px;--{pre}dy:{dy}px;--{pre}tx:{'-100%' if side == 'l' else '0%'};--{pre}len:{_m.hypot(dx, dy):.0f}px;--{pre}ang:{ang:.1f}deg"
 
 WHY = [  # the five reasons: the icon from janyutech.com, and a photo from the field
-    ("core", "Built for the core", "Every robot is designed around the plant it serves — the process, the heat, the dust and the people who run it.",
+    ("core", "Built for the core", "Every robot is designed around the plant it serves: the process, the heat, the dust and the people who run it.",
      "Custom-designed for the core industry", "2024-04-Robotic-Material-Handling-1.webp"),
-    ("downtime", "Less downtime", "Robots clean, inspect and repair while the plant keeps running, so shutdowns get shorter — and fewer.",
+    ("downtime", "Less downtime", "Robots clean, inspect and repair while the plant keeps running, so shutdowns get shorter and fewer.",
      "Reduction in shutdown time", "2024-07-47.webp"),
     ("safety", "No human entry", "Our robots go into tanks, kilns, silos and sewers so that people don't have to.",
      "Risk mitigation and accident prevention", "2024-04-VARAHA-SC-E-INDUSTRIAL-TANK-CLEANING-ROBOT-1.webp"),
@@ -749,17 +749,17 @@ WHY = [  # the five reasons: the icon from janyutech.com, and a photo from the f
 
 PRODUCTS = [
     ("Varaha sludge cleaner", "/products/varaha-sludge-cleaning/", "sludge-cleaning-robot", False, ("Oil, gas & chemicals", "Tanks & reactors"),
-     "A remotely operated tank-cleaning robot that cuts and pumps out sludge from crude, chemical and water tanks — hydraulic, and at home under water."),
+     "A remotely operated tank-cleaning robot that cuts and pumps out sludge from crude, chemical and water tanks. Hydraulic, and at home under water."),
     ("Kara robotic arm", "/products/kara-robotic-arm/", "denka-arm-robot", True, ("Manufacturing", "Lines & warehouses"),
      "Pick-and-place and palletising arms that lift what people shouldn't, faster and more precisely, built into the line you already run."),
     ("Cement cube robot", "/products/cement-automation/", "cement-industry", True, ("Cement & construction", "Quality labs"),
      "Robotic concrete cube making and cement cube testing: the lab's heavy, repetitive work, automated and recorded."),
     ("Varaha quadruped", "/products/defence-robots/", "varaha-four-legged-robot", False, ("Defence & security", "Rough ground"),
-     "A four-legged robot for surveillance and inspection where wheels can't go — stairs, rubble and broken ground."),
+     "A four-legged robot for surveillance and inspection where wheels can't go: stairs, rubble and broken ground."),
     ("Solar panel cleaner", "/products/solar-panel-cleaner/", "solar-panel-cleaning-robot", False, ("Renewable energy", "Solar arrays"),
      "A vehicle-mounted robotic arm that cleans large arrays gently on uneven ground, with no rails to install."),
     ("Magnetic NDT crawler", "/products/heavy-engineering-metals/", "varaha-magnetic-crawler-for-ndt-testing", False, ("Heavy engineering", "Steel structures"),
-     "A magnetic crawler that climbs steel to carry the sensors for non-destructive testing — inspection without scaffolding."),
+     "A magnetic crawler that climbs steel to carry the sensors for non-destructive testing, so inspection needs no scaffolding."),
     ("Varaha mining robot", "/products/varaha-mining-robots/", "varah-dozer-a", False, ("Mining", "Underground"),
      "Remotely operated hydraulic vehicles that break, cut and move ore, keeping miners away from the most dangerous faces."),
 ]
@@ -888,7 +888,7 @@ def home_page():
     <div class="hero__dim" aria-hidden="true"></div>
     <div class="hero__ctn"><div class="hero__in">
       <p class="hero__kicker l2" data-part="label">Robotics · Made in India</p>
-      <h1 class="hero__title"><span class="sr-only">JanyuTech – robotics that take people out of hazardous work</span><span class="h1" data-part="h" aria-hidden="true">Janyu Tech</span></h1>
+      <h1 class="hero__title"><span class="sr-only">JanyuTech: robotics that take people out of hazardous work</span><span class="h1" data-part="h" aria-hidden="true">Janyu Tech</span></h1>
       <div class="hero__row">
         <span class="hero__side" data-part="ctn">Engineering safety</span>
         <div class="hero__switch chip" data-tabs-hero role="group" aria-label="Show the terrace by day or by night"><i class="hero__thumb" aria-hidden="true"></i><button type="button" class="is-active" data-tab="day" aria-pressed="true">Day</button><button type="button" data-tab="night" aria-pressed="false">Night</button></div>
@@ -919,7 +919,7 @@ def home_page():
   <div class="quote__bg">{scene_img("quote", "The orange Varaha sludge-cleaning robot on the terrace, the pool and the sea behind it")}</div>
   <figure class="quote__card chip" data-reveal-w>
     <svg class="quote__mark" viewBox="0 0 40 30" aria-hidden="true" data-reveal="ctn"><path d="M0 30V17C0 7.6 4.6 1.9 13.8 0l1.6 4.4C10.4 6 8.2 9 8 13.2h7.4V30H0Zm22.6 0V17c0-9.4 4.6-15.1 13.8-17L38 4.4C33 6 30.8 9 30.6 13.2H38V30H22.6Z"/></svg>
-    <blockquote><p class="h6" data-reveal="p">Instead of sending people into sewers, silos and kilns, we send robots — so every worker goes home safe.</p></blockquote>
+    <blockquote><p class="h6" data-reveal="p">Instead of sending people into sewers, silos and kilns, we send robots, so every worker goes home safe.</p></blockquote>
     <figcaption class="quote__by" data-reveal="ctn"><b>JanyuTech team</b><span>Vasai, India</span></figcaption>
   </figure>
 </section>
@@ -929,7 +929,7 @@ def home_page():
   {flower("bl-rise", "flower--concept-br", flip=True)}
   <div class="concept__in">
     <p class="l2" data-reveal="label">The concept</p>
-    <h2 class="concept__h h4" data-fill>JanyuTech is an Indian OEM building custom robots that take people out of hazardous work — in the core industries that build the nation.</h2>
+    <h2 class="concept__h h4" data-fill>JanyuTech is an Indian OEM building custom robots that take people out of hazardous work in the core industries that build the nation.</h2>
     <p class="concept__p p1" data-reveal="p">{esc(about_p)}</p>
   </div>
 </section>
@@ -983,7 +983,7 @@ def home_page():
   {flower("bl-corner-b", "flower--state-r", flip=True)}
   <div class="state__head" data-reveal-w>
     <p class="l2" data-reveal="label">Where we work</p>
-    <h2 class="state__h h4" data-reveal="h">Our robots work where people shouldn’t — inside kilns, smelters, sewers, silos and mines.</h2>
+    <h2 class="state__h h4" data-reveal="h">Our robots work where people shouldn’t: inside kilns, smelters, sewers, silos and mines.</h2>
   </div>
   {marquee(IND_A, "state__marq", 1, links=True)}
   {marquee(IND_B, "state__marq", -1, links=True)}
@@ -1001,7 +1001,7 @@ def home_page():
         <li><a href="/industries/software-solutions/"><span class="amen__n">04</span>Software solutions</a></li>
         <li><a href="/industries/dna/"><span class="amen__n">05</span>Defence, nuclear, aerospace</a></li>
       </ol></div>
-      <div class="amen__q chip"><p class="p1">We don’t sell machines off a shelf — we engineer the robot your plant needs, then stay to run it with you.</p>{btn_pill("/contact-us/", "Book a demo", "pill--blue")}</div>
+      <div class="amen__q chip"><p class="p1">We don’t sell machines off a shelf. We engineer the robot your plant needs, then stay to run it with you.</p>{btn_pill("/contact-us/", "Book a demo", "pill--blue")}</div>
     </div>
   </div>
 </section>
@@ -1024,7 +1024,7 @@ def home_page():
       <ul class="inter__also" data-reveal-w><li class="l2" data-reveal="label">Also available</li><li data-reveal="ctn">Robotics as a service (RaaS)</li><li data-reveal="ctn">Annual maintenance</li><li data-reveal="ctn">Operator training</li></ul>
     </div>
     <div class="inter__text" data-reveal-w>
-      <h2 class="h4" data-reveal="h">Every robot is built around the plant it serves — engineered, manufactured and tested in India</h2>
+      <h2 class="h4" data-reveal="h">Every robot is built around the plant it serves, and engineered, manufactured and tested in India</h2>
       <p class="p1" data-reveal="p">Remote operation from a safe distance, live cameras and sensors, rugged hydraulics and our own control software: each robot is made for one job, in one kind of plant, and supported for as long as it runs.</p>
       <div data-reveal="ctn">{btn_pill("/products/", "View products", "pill--blue")}</div>
     </div>
@@ -1032,9 +1032,9 @@ def home_page():
   <figure class="field" data-field>
     <div class="field__frame">
       <video class="field__vid" muted loop playsinline preload="none" poster="/assets/video/janyu-in-the-field.webp" width="960" height="540"><source data-src="/assets/video/janyu-in-the-field.mp4" type="video/mp4"></video>
-      <span class="field__tag chip"><i aria-hidden="true"></i>In the field</span>
+      <span class="field__tag chip">In the field</span>
     </div>
-    <figcaption class="field__cap"><span class="l2">Our robots at work</span><span class="p2">Robot arms, automated lines, lab automation and all-terrain crawlers — filmed where they work.</span></figcaption>
+    <figcaption class="field__cap"><span class="l2">Our robots at work</span><span class="p2">Robot arms, automated lines, lab automation and all-terrain crawlers, filmed where they work.</span></figcaption>
   </figure>
   <div class="duo" aria-hidden="true">
     <div class="duo__img">{scene_img("split-a", "")}</div>
@@ -1046,7 +1046,7 @@ def home_page():
   <div class="eng__bg">{scene_img("engineering", "The Kara robotic arm on the terrace, the sea behind it")}</div>
   <div class="eng__shade"></div>
   {marquee(["Engineering", "Robotics", "Automation"], "eng__marq", 1)}
-  <div class="eng__q chip" data-reveal-w><p class="h6" data-reveal="p">Every JanyuTech robot balances rugged hardware with smart software — built to work where people shouldn’t.</p><p class="l2" data-reveal="label">JanyuTech R&amp;D · Vasai</p></div>
+  <div class="eng__q chip" data-reveal-w><p class="h6" data-reveal="p">Every JanyuTech robot balances rugged hardware with smart software, built to work where people shouldn’t.</p><p class="l2" data-reveal="label">JanyuTech R&amp;D · Vasai</p></div>
   {btn_pill("/contact-us/", "Book a demo", "pill--light eng__btn")}
 </section>
 
@@ -1056,7 +1056,7 @@ def home_page():
     <li class="cred__card" data-reveal="ctn"><div class="cred__in"><span class="cred__plus" aria-hidden="true">+</span><h3 class="h5">Trusted by</h3><p class="p2">{", ".join(CLIENTS)} and many more across India.</p></div></li>
     <li class="cred__card" data-reveal="ctn"><div class="cred__in"><span class="cred__plus" aria-hidden="true">+</span><h3 class="h5">Awarded</h3><p class="p2">Recognised by industry and academia for robotics that reduce human risk. <a class="ulink" href="/awards-and-certificates/">See them all</a></p></div></li>
     <li class="cred__card" data-reveal="ctn"><div class="cred__in"><span class="cred__plus" aria-hidden="true">+</span><h3 class="h5">Made in India</h3><p class="p2">Designed, engineered and manufactured at our works in Vasai, Maharashtra.</p></div></li>
-    <li class="cred__card" data-reveal="ctn"><div class="cred__in"><span class="cred__plus" aria-hidden="true">+</span><h3 class="h5">{date.today().year}</h3><p class="p2">New robots in the field every quarter — for cement, steel, aluminium, mining, power and defence.</p></div></li>
+    <li class="cred__card" data-reveal="ctn"><div class="cred__in"><span class="cred__plus" aria-hidden="true">+</span><h3 class="h5">{date.today().year}</h3><p class="p2">New robots in the field every quarter, for cement, steel, aluminium, mining, power and defence.</p></div></li>
   </ul>
   <div class="cred__logos" data-marq="0.6"><div class="marq__row">{logos}</div></div>
 </section>
@@ -1067,7 +1067,7 @@ def home_page():
     <div class="cta__ctn" data-reveal-w>
       <p class="l2" data-reveal="label">From sewers to smelters</p>
       <h2 class="cta__h h1" data-reveal="h">Safer by design</h2>
-      <p class="cta__small p1" data-reveal="p">A short conversation is enough to know which robot fits your plant — a cleaning robot, an inspection crawler or a fully automated line.</p>
+      <p class="cta__small p1" data-reveal="p">A short conversation is enough to know which robot fits your plant: a cleaning robot, an inspection crawler or a fully automated line.</p>
       <div data-reveal="ctn">{btn_pill("/contact-us/", "Book a demo", "pill--light")}</div>
     </div>
   </div>
@@ -1099,7 +1099,7 @@ for slug, p in PAGES.items():
     if slug == "home": continue
     write(p["path"], inner_page(p))
 
-nf = doc("Page not found – JanyuTech", "This page does not exist.",
+nf = doc("Page not found | JanyuTech", "This page does not exist.",
          '<section class="phero" data-theme="light">' + flower("bl-rise", "flower--phero", flip=True) + '<p class="crumbs l2">Error 404</p><h1 class="phero__title h3">' + split_words("Page not found") + '</h1><p class="phero__lead p1">The page you are looking for has moved or no longer exists.</p><div class="btn-row"><a class="btn" href="/"><span>Back to home</span><i>→</i></a><a class="btn btn--ghost" href="/products/"><span>Browse products</span><i>→</i></a></div></section>',
          body_cls="inner", canonical="/404/")
 open(os.path.join(SITE, "404.html"), "w").write(nf)
