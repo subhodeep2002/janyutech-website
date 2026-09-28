@@ -2,30 +2,58 @@
 
 **Live:** https://janyutech.duckdns.org
 
-A static rebuild of every page of janyutech.com (55 pages), with the original content and a new design:
-smooth scrolling, letter-by-letter title reveals, a fluid-flow image hover effect, page transitions, a mega-menu, sliders, a lightbox, tabs and more.
-The home page opens inside Janyu Tech's production house in 3D: a room ruled with a grid, a tube light hanging from the ceiling, and work going on all round it. A robot arm lifts boxes from one conveyor to another while an operator watches on a tablet, a technician kneels at a rover up on a repair stand, an engineer solders at the electronics bench, someone types at the design office desk beside the project board, and a runner carries parts across. JANYU TECH floats in the middle with the quote beneath, a pilot with a controller watches the robot that drives over the test zone after the pointer, leaves and petals drift in from two blossom branches and settle, and scrolling carries the camera into the room. A slim column of ticks sits on each edge of the screen: the ticks swell into a heap under the pointer and a card shows the choice there. The one on the right sets the light, Dark, White or Warm (the tube flickers now and then like a real one), and the one on the left picks the robot, Janyu Tech's tracked cleaner, a four-wheeled defence rover or a walking quadruped. A new robot is printed onto the floor by a scan line and hops in.
+A static rebuild of every page of janyutech.com (55 pages), with the original content and a new design.
+
+**The home page** is set on a rooftop terrace above the sea, rendered in Blender. JanyuTech's quadruped, rover and Kara robot arm stand under blue cherry blossom, by day or by night.
+
+- **Loader.** The JanyuTech mark and logo appear with a count to 100, then an iris opens onto the terrace.
+- **Hero.** The view moves in depth with the cursor. A WebGL shader shifts the render by a depth map made from the same scene: near things move one way and far things the other, on a spring that overshoots a little. Phones get a slow drift instead. The hotspots and the title move with the view. **View products** goes to `/products/`.
+- **The sections below:**
+  - a pale sheet with a band of words that runs with the scroll;
+  - five reasons, with the icons from janyutech.com;
+  - the quote, over the orange Varaha sludge cleaner;
+  - the concept, whose words fill in as you scroll;
+  - Make in India, running sideways along a circuit trace;
+  - the terrace from above, drawn as a blueprint and scanned into the real render;
+  - the products, each drawn as a blueprint first and then scanned into its photo;
+  - the industries, in two running bands;
+  - what we do, with a light pill that springs from line to line;
+  - the film from janyutech.com's home page;
+  - an Engineering band of outlined words;
+  - the credentials;
+  - the last view, which the footer slides up over like a sheet.
+
+**On every page:**
+
+- **Type.** One typeface, Inter Tight, on one fixed scale: each size is the body size times a power of 1.333 (1.25 on phones).
+- **Corner controls.** Logo, menu and scroll bar sit on frosted white chips, so they read the same over photos, blue panels and light sections.
+- **Elasticity.** Pictures lean with the speed of the scroll and spring back. Buttons, cards and the menu give like springs, and pill buttons lean towards the pointer.
+- **Petals.** Blue petals drift down the screen; the scroll carries them and the pointer pushes them aside.
+- **Text.** Headings rise out of a blur, and small labels decode from random characters.
+- **Navigation.** The menu opens as a circle out of the Menu button, and pages change behind a blue veil.
+
+Everything is readable without JavaScript. Visitors who ask for reduced motion get it still.
 
 ## Folder layout
 
 | Path | What it is |
 | --- | --- |
 | `index.html`, `*/index.html` | The built pages (one folder per URL, same URLs as the old site) |
-| `styles.css` | Base styles and the home page |
-| `site.css` | Header, menus, footer and every inner-page component |
-| `main.js` | All interaction and animation (runs on every page, switches on what each page has) |
-| `fluid.js` | The image hover effect: a small WebGL fluid simulation (one shared context) that makes the picture flow around the cursor and settle back |
-| `hero.js` | Home landing, a three.js scene (loaded as ES modules from jsDelivr): the grid room and its tube light (the three moods and their flicker), the three robots that follow the pointer (wheels, the quadruped's walk, the scan and the hop that swap them), the two tick rails that choose the light and the robot, leaves and petals with their shadows, the lettering, the two blossom branches, pointer parallax and the camera move on scroll |
-| `workshop.js` | The production house inside the landing's room (loaded by `hero.js`): the arm cell and its pick-and-place cycle, the repair bay, the lab, the office, the store, the test zone, and the people, built in code as jointed figures posed with IK so their hands land on keyboards, tablets and tools |
-| `assets/models/` | The three robots and the robot arm for the landing (web copies made by `build/optimize_bot.mjs` and `build/rig_bots.mjs`) and the pictures of the robots on the robot rail's card |
+| `styles.css` | The base: colours, the type scale, the corner chips, menu, loader, footer, lightbox |
+| `site.css` | Pill buttons, running bands, slider controls, every home-page section and every inner-page component |
+| `main.js` | All behaviour. It runs on every page and switches on what each page has: smooth scrolling (Lenis) with GSAP ScrollTrigger, the reveals, the hero's WebGL depth parallax, sliders, petals, bands and springs |
+| `assets/scene/` | The terrace renders. `hero-depth.webp` and `hero-m-depth.webp` are the hero's depth maps. `aerial-bp.webp` is the aerial view as a line drawing |
+| `assets/blossom/` | The looping blossom sprays (transparent VP9 `.webm` for Chrome and Firefox, HEVC `.mov` for Safari, and a poster for each) and the petal used as a bullet |
+| `assets/icons/` | The five "why choose us" icons from janyutech.com |
+| `assets/video/` | The film from janyutech.com's home page (H.264) and its poster |
 | `assets/bp/` | Robot photos and their matching blueprint drawings (made by `build/blueprint.py`) |
 | `assets/img/` | Every site image, converted to WebP |
 | `assets/docs/` | The PDFs the site links to (brochure, internship, course details, Saturday Talk) |
-| `build/` | The generator and the extracted content |
+| `build/` | The generator, the extracted content, and the Blender scripts for the renders (`build/render/`) |
 
 ## Editing content and rebuilding
 
-All page text lives in `build/content.json`. Change it, then run (needs Pillow: `pip install Pillow`, because image sizes decide which pages get a banner and which cards show cutouts):
+All page text lives in `build/content.json`. The home page's own copy (the reasons, the products, the industries, the notes on the blueprint) is at the bottom of `build/build.py`. Change either, then run (needs Pillow: `pip install Pillow`, because image sizes decide which pages get a banner and which cards show cutouts):
 
 ```bash
 python3 build/build.py
@@ -41,9 +69,22 @@ confirms every internal link, anchor, image and PDF exists.
 
 `python3 build/verify.py build/raw` compares each built page, word for word, with the saved copy of the original site in `build/raw` (needs `beautifulsoup4`).
 
+### The renders
+
+The terrace images come from `build/render/terrace.py`, run in Blender 5.2 (Cycles on the GPU). It links the robots from `robots.blend`, which `build/render/make_lib.py` builds from the robot models. Each view is a camera in `SHOTS`:
+
+```bash
+blender -b --factory-startup -P build/render/terrace.py -- --shot hero --time day --res 2400 1800 --samples 256 --out hero-day.png
+blender -b --factory-startup -P build/render/terrace.py -- --shot hero --time day --res 1200 900 --out hero-depth.png --depth
+blender -b --factory-startup -P build/render/terrace.py -- --shot aerial --time day --res 2400 1500 --out aerial-lines.png --lines
+python3 build/render/depth_map.py hero-depth.png assets/scene/hero-depth.webp 800 600 9
+```
+
+`--depth` renders how far each pixel is. `depth_map.py` turns that into the parallax map (the phone version is `--shot hero_m`, at 600 × 1000, converted to 420 × 700 with 7). `--lines` draws the view as a blueprint. Convert the PNGs to WebP to put them in `assets/scene/`. The blossom videos come from `build/render/blossom.py`.
+
 ### Blueprint images
 
-The blueprint versions of robot photos are generated, not drawn by hand. To add or change them (for example after swapping the first-scroll robot in `WARP` inside `build/build.py`), run:
+The blueprint versions of robot photos are generated, not drawn by hand. To add or change them, run:
 
 ```bash
 python3 build/blueprint.py 2024-04-Some-Robot.webp
@@ -66,15 +107,14 @@ Upload everything **except the `build/` folder** to the web root, on any static 
 Links between pages are relative, so the site also works under a sub-path. For a local preview, serve the folder rather than opening the files:
 
 ```bash
-python3 -m http.server 5178
+python3 -m http.server 5190
 ```
 
-Then open http://localhost:5178.
+Then open http://localhost:5190.
 
 ## Things to know
 
 - **Contact form:** there is no server, so **Submit** opens the visitor's email app with the message addressed to sales@janyutech.com. To receive submissions directly instead, point the form at a service such as Formspree or your own endpoint (`form[data-mailto]` in `main.js`).
-- **Image hover effect:** runs only on desktop browsers with a mouse, and only on images served from the same domain. Phones, touch screens and visitors who turn on "reduce motion" get the plain images. Its settings (swirl, strength, how fast it settles) are at the top of `fluid.js`.
-- **Landing animation:** the landing stays pinned for a short scroll while the camera moves into the room. The light and the robot a visitor picks are remembered in their browser. Visitors who turn on "reduce motion" get a still room instead (no flicker, no camera move, the robot standing still). The room, the camera and the three moods are set near the top of `hero.js`, the robots (size, speed, names) in `BOTS`. Only the chosen robot loads with the page; the other two load when the pointer comes to the robot rail.
-- **The robots:** to change the cleaner, export it from Blender as `.glb`, then run `node build/optimize_bot.mjs janyu-tech-bot.glb assets/models/janyu-tech-bot.glb`. Keep the wheel names (`Wheel_Left_Drive` and so on): the landing turns them as the robot drives. The rover, the quadruped and the arm are rigged by `node build/rig_bots.mjs defence_rover.glb quadruped_robot.glb robot_arm.glb assets/models`: it gives the rover's wheels and antenna their own pivots, cuts each of the quadruped's legs into hip, thigh and shin so the landing can walk it, and hangs the arm's castings on a chain of joints (waist, shoulder, elbow, wrist, and the gripper's two fingers) so the landing can run its pick-and-place (both scripts need the packages listed at the top of them). The pictures on the robot rail's card are the `.webp` files beside the models.
+- **Hero parallax:** it needs WebGL. Without it, or with reduced motion, the hero shows the plain renders and still switches between day and night. Its strength is `AMT` in `depthHero()` in `main.js`.
+- **Blossom videos:** only the spray most in view plays at a time, because two transparent videos decoding at once pull Chrome down to 30 frames a second. The others hold still and sway gently.
 - **Links fixed during the rebuild:** a few menu and card links were broken on the old site (wrong page, anchor typos or an old URL). They now point to the right sections. The fixes are listed in `LINK_FIX` in `build/build.py`.
