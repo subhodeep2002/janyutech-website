@@ -129,18 +129,46 @@ body.menu-open .hdr__menu-close { display: inline; }
 .nut__glass { position: absolute; inset: 0; background: rgba(255, 255, 255, .84); -webkit-backdrop-filter: blur(16px) saturate(1.6); backdrop-filter: blur(16px) saturate(1.6); }
 .nut__svg { position: absolute; inset: 0; width: 100%; height: 100%; }
 .nut__track { fill: none; stroke: rgba(23, 35, 59, .12); stroke-width: 3; transition: stroke .3s; }
-.nut__bar { fill: none; stroke: var(--c-blue); stroke-width: 3; stroke-linecap: round; stroke-linejoin: round; stroke-dasharray: 1 1; stroke-dashoffset: 1; }
+.nut__bar { fill: none; stroke: var(--c-blue); stroke-width: 3; stroke-linecap: round; stroke-linejoin: round; stroke-dasharray: 1 1; stroke-dashoffset: 1; opacity: 0; }
 .nut__hole { fill: #e8eef6; stroke: rgba(23, 35, 59, .08); stroke-width: 1; }
 .nut__n { position: absolute; inset: 0; display: grid; place-items: center; font-size: 12px; font-weight: 700; font-variant-numeric: tabular-nums; letter-spacing: .02em; transition: opacity .3s, scale .5s var(--e-spring); }
 .nut__up { position: absolute; left: 50%; top: 50%; width: 16px; height: 16px; margin: -8px 0 0 -8px; fill: none; stroke: currentColor; stroke-width: 2; stroke-linecap: round; stroke-linejoin: round; opacity: 0; scale: .4; transition: opacity .3s, scale .6s var(--e-spring); }
 .nut.is-top .nut__n { opacity: 0; scale: .4; }
 .nut.is-top .nut__up { opacity: 1; scale: 1; }
-.nut__tip { position: absolute; left: calc(100% + 10px); top: 50%; padding: 8px 14px; border-radius: 999px; background: rgba(255, 255, 255, .92); box-shadow: 0 10px 24px -14px rgba(9, 24, 70, .5); font-size: 12px; font-weight: 600; white-space: nowrap; translate: -8px -50%; opacity: 0; pointer-events: none; transition: opacity .3s, translate .6s var(--e-spring); }
-.nut:hover .nut__tip, .nut:focus-visible .nut__tip { opacity: 1; translate: 0 -50%; }
+.nut__tip { position: absolute; left: calc(100% + 10px); top: 50%; padding: 9px 15px; border-radius: 999px; background: rgba(255, 255, 255, .92); box-shadow: 0 10px 24px -14px rgba(9, 24, 70, .5); font-size: 13px; font-weight: 600; white-space: nowrap; translate: -8px -50%; opacity: 0; pointer-events: none; transition: opacity .35s, translate .7s var(--e-spring); }
+.nut:hover .nut__tip, .nut:focus-visible .nut__tip, .nut.is-start .nut__tip { opacity: 1; translate: 0 -50%; }
+.nut__tip .t-down { display: inline-flex; align-items: center; gap: 7px; }
+/* "Scroll" in rubber letters: each squashes, stretches up and settles in turn, while an arrow pulls downward */
+.rub { display: inline-flex; }
+.rub i { display: inline-block; font-style: normal; transform-origin: 50% 100%; }
+.nut.is-start .rub i { animation: rubber 2.8s ease-in-out infinite; animation-delay: calc(1s + var(--i) * .07s); }
+.nut__pull { flex: none; max-width: none; width: 10px; height: 15px; fill: none; stroke: currentColor; stroke-width: 1.8; stroke-linecap: round; stroke-linejoin: round; transform-origin: 50% 0; }
+.nut.is-start .nut__pull { animation: pull 2.8s ease-in-out infinite; animation-delay: 1.3s; }
+@keyframes rubber {
+  0%, 34%, 100% { transform: none; }
+  5% { transform: scale(1.22, .78); }
+  12% { transform: translateY(-6px) scale(.86, 1.24); }
+  19% { transform: translateY(0) scale(1.12, .88); }
+  25% { transform: scale(.96, 1.05); }
+  30% { transform: scale(1.02, .98); }
+}
+@keyframes pull {
+  0%, 34%, 100% { transform: none; }
+  9% { transform: translateY(2px) scaleY(1.45); }
+  17% { transform: translateY(-1px) scaleY(.82); }
+  24% { transform: scaleY(1.08); }
+  29% { transform: scaleY(.97); }
+}
 .nut .t-up { display: none; }
 .nut.is-top .t-down { display: none; }
 .nut.is-top .t-up { display: inline; }
-@media (max-width: 991px) { .nut { display: none; } }
+/* phones: the nut shows only at the top of a page, with the cue above it (the rest of the time it would sit on the cards) */
+@media (max-width: 991px) {
+  .nut { left: 14px; bottom: 16px; transition: scale .7s var(--e-spring), opacity .4s; }
+  .nut:not(.is-start) { opacity: 0; scale: .5; pointer-events: none; }
+  .nut__tip { left: 0; top: auto; bottom: calc(100% + 8px); translate: 0 8px; }
+  .nut:hover .nut__tip, .nut:focus-visible .nut__tip, .nut.is-start .nut__tip { translate: 0 0; }
+}
 
 /* ---------------------------------------------------------- menu: opens as a circle from the Menu button */
 .menu { position: fixed; inset: 0; z-index: 58; background: var(--c-brand); color: #fff; overflow: hidden; visibility: hidden; clip-path: circle(0% at calc(100% - 80px) 44px); }
@@ -248,5 +276,6 @@ body.menu-open .hdr__menu-close { display: inline; }
 @media (max-width: 991px) { .lightbox { grid-template-columns: 52px 1fr 52px; } }
 
 @media (prefers-reduced-motion: reduce) {
-  *, *::before, *::after { transition-duration: .01ms !important; animation-duration: .01ms !important; }
+  *, *::before, *::after { transition-duration: .01ms !important; animation-duration: .01ms !important; animation-iteration-count: 1 !important; }
+  .rub i, .nut__pull { animation: none !important; }
 }

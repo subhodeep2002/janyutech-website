@@ -579,14 +579,20 @@ def nut():
     """the scroll gauge: a hex nut whose outline draws itself as the page goes by, the percentage in its hole;
     a press scrolls down a screen, or back to the top at the end"""
     outer, track = hex_path(30.5, 7), hex_path(24.5, 5.5)
-    return (f'<button type="button" class="nut" data-nut aria-label="Scroll down">'
+    return (f'<button type="button" class="nut is-start" data-nut aria-label="Scroll down">'
             f'<svg class="nut__shadow" viewBox="0 0 64 64" aria-hidden="true"><path d="{outer}"/></svg>'
             f'<span class="nut__glass" style="clip-path: path(\'{outer}\')" aria-hidden="true"></span>'
             f'<svg class="nut__svg" viewBox="0 0 64 64" aria-hidden="true"><path class="nut__track" d="{track}"/><path class="nut__bar" d="{track}" pathLength="1"/>'
             f'<circle class="nut__hole" cx="32" cy="32" r="13.5"/></svg>'
             f'<span class="nut__n" aria-hidden="true">00</span>'
             f'<svg class="nut__up" viewBox="0 0 24 24" aria-hidden="true"><path d="M12 18.5V6M6.8 11.2 12 6l5.2 5.2"/></svg>'
-            f'<span class="nut__tip" aria-hidden="true"><span class="t-down">Scroll</span><span class="t-up">Back to top</span></span></button>')
+            f'<span class="nut__tip" aria-hidden="true"><span class="t-down">{rubber("Scroll")}<svg class="nut__pull" viewBox="0 0 12 18"><path d="M6 1.5v14M1.8 11.4 6 15.6l4.2-4.2"/></svg></span>'
+            f'<span class="t-up">Back to top</span></span></button>')
+
+
+def rubber(word):
+    """a word whose letters squash and stretch in turn, like rubber (the Scroll cue)"""
+    return '<span class="rub">' + "".join(f'<i style="--i:{k}">{esc(ch)}</i>' for k, ch in enumerate(word)) + "</span>"
 
 
 def header():
@@ -713,6 +719,24 @@ def split_words(t):
     return " ".join(f'<span class="w"><span class="split">{esc(w)}</span></span>' for w in t.split())
 
 
+# Careers: while there are no open positions the page says so and still invites a CV. The old listings stay in
+# content.json; set CAREER_HIRING = True to show them (and the "We're hiring" intro) again.
+CAREER_HIRING = False
+CAREER_MAIL = "hr@janyutech.com,nitin.nair@janyutech.com"
+
+
+def not_hiring():
+    from urllib.parse import quote
+    href = f"mailto:{CAREER_MAIL}?subject={quote('I would like to work at JanyuTech')}"
+    return f'''<section class="sec sec--hire"><div class="hire" data-reveal-w>
+  <img class="hire__sprig" src="/assets/blossom/sprig.webp" alt="" width="120" height="107" loading="lazy">
+  <p class="hire__status" data-reveal="label">No open positions right now</p>
+  <h2 class="hire__h" data-reveal="h">Want to work with us?</h2>
+  <p class="hire__p" data-reveal="p">We aren’t hiring at the moment, but we’d still love to hear from you. If you want to build robots that keep people out of harm’s way, send us your CV and a few lines about the work you’d like to do. We’ll get in touch when a role opens up.</p>
+  <div class="hire__cta" data-reveal="ctn">{btn_pill(href, "Let us know you’re interested", "pill--blue")}<span class="hire__alt">or write to <a class="ulink" href="mailto:hr@janyutech.com">hr@janyutech.com</a></span></div>
+</div></section>'''
+
+
 def inner_page(p):
     FLIP[0] = 0
     h1 = page_h1(p)
@@ -729,6 +753,11 @@ def inner_page(p):
     lead = ""
     if secs and secs[0] and secs[0][0]["t"] == "html" and len(strip_tags(secs[0][0]["html"])) < 160 and len(secs[0]) == 1:
         lead = strip_tags(secs[0][0]["html"]); secs = secs[1:]
+    notice = ""
+    if p["path"] == "career" and not CAREER_HIRING:     # drop the "We're hiring" intro and the old openings
+        said = lambda b: " ".join((x.get("text") or "") for x in b).lower()
+        secs = [b for b in secs if "hiring" not in said(b) and "current openings" not in said(b)]
+        notice = not_hiring()
     path = "/" + p["path"] + "/"
     hero_img = CARD_IMG.get(path) or first_media(p)
     if hero_img and not landscape(hero_img): hero_img = ""
@@ -740,7 +769,7 @@ def inner_page(p):
   <div class="phero__meta"><span class="vline"></span></div>
 </section>
 {f'<div class="phero__banner{" phero__banner--contain" if is_cutout(hero_img) else ""}" data-theme="{"light" if is_cutout(hero_img) else "dark"}"><img src="{esc(img(hero_img))}" alt="" decoding="async"></div>' if hero_img else ""}'''
-    body = hero + "".join(f'<section class="sec">{render_blocks(b)}</section>' for b in secs)
+    body = hero + notice + "".join(f'<section class="sec">{render_blocks(b)}</section>' for b in secs)
     og = img(hero_img) if hero_img else ""
     return doc(p["title"], p["desc"] or f"{h1} | JanyuTech", body, og=BASE + og if og.startswith("/") else og, body_cls="inner", canonical=path)
 

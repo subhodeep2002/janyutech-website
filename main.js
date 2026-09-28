@@ -155,8 +155,10 @@
       onUpdate: s => {
         const p = s.progress;
         bar.style.strokeDashoffset = (1 - p).toFixed(4);
+        bar.style.opacity = p > 0.002 ? 1 : 0;              // an empty stroke would still show its round cap as a dot
         num.textContent = String(Math.round(p * 100)).padStart(2, "0");
         if ((p > 0.985) !== top) { top = !top; nut.classList.toggle("is-top", top); nut.setAttribute("aria-label", top ? "Back to top" : "Scroll down"); }
+        nut.classList.toggle("is-start", p < 0.02);          // "Scroll", in rubber letters, until the page moves
       },
     });
     // a press goes down a screen, or back to the top from the end

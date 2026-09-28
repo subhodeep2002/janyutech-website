@@ -427,6 +427,18 @@ picture { display: block; }
 }
 
 .sec { max-width: 80rem; margin: 0 auto; padding: 8rem var(--gut) 0; }
+/* Careers, while there are no openings: a card that still invites a CV */
+.hire { position: relative; display: grid; justify-items: start; gap: 22px; max-width: 58rem; padding: 56px 56px 52px; border-radius: 36px; background: #fff; box-shadow: 0 1px 0 rgba(23, 35, 59, .05), 0 40px 70px -50px rgba(9, 24, 70, .45); }
+.hire__sprig { position: absolute; right: -26px; top: -40px; width: 120px; height: auto; rotate: 18deg; pointer-events: none; filter: drop-shadow(0 8px 10px rgba(9, 24, 70, .22)); }
+.hire__status { display: inline-flex; align-items: center; height: 34px; padding: 0 16px; border-radius: 999px; background: var(--c-pale); color: var(--c-brand); font-size: 13px; font-weight: 600; letter-spacing: .01em; }
+.hire__h { max-width: 16ch; font-size: var(--t5); font-weight: 300; line-height: 1.04; letter-spacing: -.035em; }
+.hire__p { max-width: 36rem; font-size: var(--t1); font-weight: 300; line-height: 1.5; letter-spacing: -.015em; }
+.hire__cta { display: flex; flex-wrap: wrap; align-items: center; gap: 14px 22px; margin-top: 10px; }
+.hire__alt { font-size: 14px; opacity: .7; }
+@media (max-width: 991px) {
+  .hire { gap: 18px; padding: 36px 22px 30px; border-radius: 26px; }
+  .hire__sprig { right: -8px; top: -34px; width: 88px; }
+}
 .sec:last-of-type { padding-bottom: 12rem; }
 .sec-title { max-width: 20ch; margin: 0 0 2.4rem; font-size: var(--t4); font-weight: 300; line-height: 1.08; letter-spacing: -.03em; }
 .sub-title { max-width: 30ch; margin: 3.2rem 0 1.2rem; font-size: var(--t2); font-weight: 400; line-height: 1.2; letter-spacing: -.02em; }

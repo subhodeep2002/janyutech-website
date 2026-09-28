@@ -115,6 +115,7 @@ Then open http://localhost:5190.
 ## Things to know
 
 - **Contact form:** there is no server, so **Submit** opens the visitor's email app with the message addressed to sales@janyutech.com. To receive submissions directly instead, point the form at a service such as Formspree or your own endpoint (`form[data-mailto]` in `main.js`).
+- **Careers:** there are no open positions for now, so the Careers page says so and invites people to email their CV anyway (to the same addresses the old **Apply Now** button used). The old listings are still in `content.json`: set `CAREER_HIRING = True` in `build/build.py` and rebuild to show them again.
 - **Hero parallax:** it needs WebGL. Without it, or with reduced motion, the hero shows the plain renders and still switches between day and night. Its strength is `AMT` in `depthHero()` in `main.js`.
 - **Blossom videos:** only the spray most in view plays at a time, because two transparent videos decoding at once pull Chrome down to 30 frames a second. The others hold still and sway gently.
 - **Links fixed during the rebuild:** a few menu and card links were broken on the old site (wrong page, anchor typos or an old URL). They now point to the right sections. The fixes are listed in `LINK_FIX` in `build/build.py`.
