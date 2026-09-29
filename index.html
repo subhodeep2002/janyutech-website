@@ -13,9 +13,9 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Unbounded:wght@500;700;900&family=Inter+Tight:ital,wght@0,300;0,400;0,500;0,600;0,800;1,800&display=swap" rel="stylesheet">
-<link rel="stylesheet" href="./styles.css?v=12">
-<link rel="stylesheet" href="./site.css?v=12">
-<link rel="stylesheet" href="./world.css?v=12">
+<link rel="stylesheet" href="./styles.css?v=13">
+<link rel="stylesheet" href="./site.css?v=13">
+<link rel="stylesheet" href="./world.css?v=13">
 <script type="importmap">{"imports": {"three": "https://cdn.jsdelivr.net/npm/three@0.186.1/build/three.module.min.js", "three/addons/": "https://cdn.jsdelivr.net/npm/three@0.186.1/examples/jsm/"}}</script>
 <link rel="modulepreload" href="https://cdn.jsdelivr.net/npm/three@0.186.1/build/three.module.min.js">
 <link rel="modulepreload" href="https://cdn.jsdelivr.net/npm/three@0.186.1/build/three.core.min.js">
@@ -84,6 +84,40 @@
       <div class="xp__hud-top">
         <p class="xp__hud-bot"><span class="eyebrow">Driving</span> <b class="xp__hud-name">Defence Bot</b></p>
         <p class="xp__speed" aria-hidden="true"><b class="xp__speed-n">0</b><span class="eyebrow">km/h</span></p>
+        <p class="eyebrow xp__found"><b class="xp__found-n">0</b> of 4 found</p>
+      </div>
+      <div class="xp__finds" aria-live="polite">
+        <article class="xp__find" data-find="intro" hidden>
+          <p class="eyebrow">Explore</p>
+          <h3 class="xp__find-title">4 things are out here</h3>
+          <p class="xp__find-text">Our story, our awards and how to reach us, written in the sand and cut into stone. Start at the top of the hill ahead, then follow the years to the firelight.</p>
+          <button type="button" class="xp__find-x" aria-label="Close">×</button>
+        </article>
+        <article class="xp__find" data-find="contact" data-carve="[[&quot;SALES@JANYUTECH.COM&quot;, &quot;+91 77700 12260&quot;]]" hidden>
+          <p class="eyebrow">Found on the hilltop</p>
+          <h3 class="xp__find-title">Say hello</h3>
+          <p class="xp__find-text">sales@janyutech.com, +91 77700 12260. Vasai East, open Monday to Saturday, 9 am to 6 pm.</p>
+          <a class="xp__find-link" href="./contact-us/">Contact us <i>→</i></a>
+          <button type="button" class="xp__find-x" aria-label="Close">×</button>
+        </article><article class="xp__find" data-find="journey" data-carve="[[&quot;2016&quot;, &quot;INCUBATED AT IIT BOMBAY&quot;], [&quot;2017&quot;, &quot;LANDMINE DETECTION ROBOT, CRPF&quot;], [&quot;2018&quot;, &quot;UGV DEFENCE ROBOT&quot;], [&quot;2019&quot;, &quot;SLUDGE AND SOLAR PANEL CLEANING&quot;], [&quot;2020&quot;, &quot;DISINFECTION ROBOT FOR DRDO&quot;], [&quot;2021&quot;, &quot;LEO SATELLITES AND 5G SATCOM&quot;], [&quot;2022&quot;, &quot;ROBOTS AS A SERVICE&quot;], [&quot;2023&quot;, &quot;HEAVY ENGINEERING AND NDT&quot;], [&quot;2024&quot;, &quot;RHINO · FLOAT · MATSYA · VARAHA&quot;], [&quot;TODAY&quot;, &quot;DEFENCE · NUCLEAR · AEROSPACE · CEMENT · MINING&quot;]]" hidden>
+          <p class="eyebrow">Found in the sand</p>
+          <h3 class="xp__find-title">The road so far</h3>
+          <p class="xp__find-text">A year at a time along the trail, from IIT Bombay in 2016 to robots for defence, nuclear, aerospace, cement and mining today. Follow it to the firelight.</p>
+          <a class="xp__find-link" href="./about-us/">Our story <i>→</i></a>
+          <button type="button" class="xp__find-x" aria-label="Close">×</button>
+        </article><article class="xp__find" data-find="origin" data-carve="[[&quot;JANYU TECH&quot;, &quot;SINCE 2016&quot;, &quot;INCUBATED AT NCETIS · IIT BOMBAY&quot;]]" hidden>
+          <p class="eyebrow">Found by the fire</p>
+          <h3 class="xp__find-title">Where it started</h3>
+          <p class="xp__find-text">Janyu Tech began in 2016, incubated at NCETIS, IIT Bombay.</p>
+          <a class="xp__find-link" href="./about-us/">About us <i>→</i></a>
+          <button type="button" class="xp__find-x" aria-label="Close">×</button>
+        </article><article class="xp__find" data-find="awards" data-carve="[[&quot;AWARDS&quot;, &quot;UDYAM SAMAN 2.0&quot;, &quot;IAC 2024&quot;, &quot;STARTUP TRAILBLAZERS&quot;], [&quot;AWARDS&quot;, &quot;IPS 2025 TECHNO GALAXY&quot;, &quot;TÜV RHEINLAND&quot;, &quot;ISO CERTIFIED&quot;]]" hidden>
+          <p class="eyebrow">Found by the fire</p>
+          <h3 class="xp__find-title">Awards</h3>
+          <p class="xp__find-text">Udyam Saman 2.0, IAC 2024, Startup Trailblazers and IPS 2025 Techno Galaxy. TÜV Rheinland and ISO certified.</p>
+          <a class="xp__find-link" href="./awards-and-certificates/">All awards and certificates <i>→</i></a>
+          <button type="button" class="xp__find-x" aria-label="Close">×</button>
+        </article>
       </div>
       <div class="xp__keys" aria-hidden="true">
         <span class="xp__pad"><kbd data-k="up">W</kbd><kbd data-k="left">A</kbd><kbd data-k="down">S</kbd><kbd data-k="right">D</kbd></span><span class="xp__keys-t">Drive</span>
@@ -343,8 +377,8 @@
 <script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.5/gsap.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.5/ScrollTrigger.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/lenis@1.1.13/dist/lenis.min.js"></script>
-<script src="./fluid.js?v=12"></script>
-<script src="./main.js?v=12"></script>
-<script type="module">import("./world.js?v=12").catch(e => { console.warn("world:", e); document.querySelector("[data-xp]")?.classList.add("is-flat"); });</script>
+<script src="./fluid.js?v=13"></script>
+<script src="./main.js?v=13"></script>
+<script type="module">import("./world.js?v=13").catch(e => { console.warn("world:", e); document.querySelector("[data-xp]")?.classList.add("is-flat"); });</script>
 </body>
 </html>

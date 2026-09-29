@@ -13,7 +13,7 @@ import { EffectComposer } from "three/addons/postprocessing/EffectComposer.js";
 import { RenderPass } from "three/addons/postprocessing/RenderPass.js";
 import { OutputPass } from "three/addons/postprocessing/OutputPass.js";
 import { ShaderPass } from "three/addons/postprocessing/ShaderPass.js";
-import { mergeGeometries } from "three/addons/utils/BufferGeometryUtils.js";
+import { mergeGeometries, mergeVertices } from "three/addons/utils/BufferGeometryUtils.js";
 
 const xp = document.querySelector("[data-xp]");
 
@@ -107,11 +107,46 @@ async function world() {
     return h;
   };
   const PAD = rawH(0, 0);
-  const heightFn = (x, z) => {
+  const baseH = (x, z) => {
     let h = lerp(PAD, rawH(x, z), smooth(10, 46, Math.hypot(x, z)));  // a level start; the hills stand back
     const e = Math.max(Math.abs(x), Math.abs(z));
     h += Math.pow(smooth(HALF - 60, HALF - 4, e), 2) * 48;          // the rim: ridges rise at the edge
     return h;
+  };
+  // Where the finds are (see "things to find" below): a camp in the valley past the western hills, the top of the
+  // big hill ahead, and a trail of years in the sand from near the start to the camp. Each spot is levelled a
+  // little, and sanded where the writing is in the sand.
+  const CAMP = { x: -52, z: 100 }, SUMMIT = { x: 13, z: 61 };
+  const TRAIL = (() => {
+    const A = [-8, 27], C = [-50, 40], B = [-50, 86];
+    const at = t => [(1 - t) ** 2 * A[0] + 2 * (1 - t) * t * C[0] + t * t * B[0], (1 - t) ** 2 * A[1] + 2 * (1 - t) * t * C[1] + t * t * B[1]];
+    const dense = [];
+    for (let i = 0, len = 0, prev = A; i <= 400; i++) { const p = at(i / 400); len += Math.hypot(p[0] - prev[0], p[1] - prev[1]); prev = p; dense.push([p, len]); }
+    const total = dense[dense.length - 1][1];
+    return Array.from({ length: 10 }, (_, k) => {
+      const want = total * k / 9, i = Math.max(1, dense.findIndex(d => d[1] >= want));
+      const [p] = dense[i], [q] = dense[Math.min(i + 4, dense.length - 1)], [o] = dense[Math.max(i - 4, 0)];
+      return { x: p[0], z: p[1], th: Math.atan2(q[0] - o[0], q[1] - o[1]) };   // th: the way the trail runs here
+    });
+  })();
+  const CLEAR = [
+    { x: SUMMIT.x, z: SUMMIT.z, r: 10, k: 0.85, sand: 1 },
+    { x: CAMP.x, z: CAMP.z - 3, r: 17, k: 0.92, sand: 0.45 },
+    ...TRAIL.map(p => ({ x: p.x, z: p.z, r: 7, k: 0.55, sand: 1 })),
+  ];
+  for (const c of CLEAR) c.h = baseH(c.x, c.z);
+  const heightFn = (x, z) => {
+    let h = baseH(x, z);
+    for (const c of CLEAR) {
+      const d = Math.hypot(x - c.x, z - c.z);
+      if (d < c.r) h = lerp(h, c.h, c.k * (1 - smooth(c.r * 0.5, c.r, d)));
+    }
+    return h;
+  };
+  const sandAt = (x, z) => {
+    let s = 0;
+    for (const c of CLEAR) { const d = Math.hypot(x - c.x, z - c.z); if (d < c.r) s = Math.max(s, c.sand * (1 - smooth(c.r * 0.45, c.r * 0.95, d))); }
+    return s;
   };
   const H = new Float32Array(N * N);
   for (let iz = 0; iz < N; iz++) for (let ix = 0; ix < N; ix++) H[iz * N + ix] = heightFn(-HALF + ix * CELL, -HALF + iz * CELL);
@@ -130,7 +165,7 @@ async function world() {
   const zoneAt = (x, z, slope) => {
     const sandN = fbm(nz, x * 0.018 + 71.2, z * 0.018 - 13.8, 3), grassN = fbm(nz, x * 0.034 - 40.1, z * 0.034 + 22.7, 3);
     const flatK = 1 - smooth(0.04, 0.16, slope);
-    const sand = smooth(0.18, 0.42, sandN) * flatK;
+    const sand = Math.max(smooth(0.18, 0.42, sandN) * flatK, sandAt(x, z));
     const grass = smooth(0.08, 0.36, grassN) * (1 - sand) * (1 - smooth(0.22, 0.42, slope));
     return [sand, grass];
   };
@@ -542,6 +577,356 @@ async function world() {
   })();
   setBoot(0.3);
 
+  /* ------------------------------------------------ things to find: in the sand, in the stone, by a fire
+     Four finds, their words taken from the page (XP_FINDS in build/build.py): contact details written in the
+     sand on the hilltop ahead, a trail of years in the sand from near the start to a camp, and at the camp,
+     behind a giant rock, a fire. The rock's face is cut with where it all started, and two standing stones
+     carry the awards. The writing is drawn once into textures (the groove, and in sand the rim it pushes up)
+     and laid on the ground or the stone. When a robot gets close the grooves light up green and a card says
+     what was found. */
+  const fireLight = new THREE.PointLight(0xff7a2e, 0, 36, 1.6);     // always in the scene: a fixed light count
+  fireLight.position.set(CAMP.x, heightAt(CAMP.x, CAMP.z) + 1.3, CAMP.z);
+  scene.add(fireLight);
+  let finds = null, colliders = [];
+  async function buildFinds() {
+    const cards = new Map($$(".xp__find[data-find]").map(el => [el.dataset.find, el]));
+    const carveOf = key => { try { return JSON.parse(cards.get(key)?.dataset.carve || "[]"); } catch (e) { return []; } };
+    const RES = low ? 0.5 : 1;                                       // texture size for the writing
+    const pause = () => new Promise(r => setTimeout(r, 0));          // let the page breathe between textures
+    await Promise.all([document.fonts.load('700 100px "Unbounded"'), document.fonts.load('400 100px "Inter Tight"'),
+      document.fonts.load('600 100px "Inter Tight"')]).catch(() => {});
+
+    // one channel of a blurred copy of a drawing, 0..1 (a box blur where the browser can't filter a canvas)
+    const canBlur = (() => {
+      try {
+        const c = document.createElement("canvas"); c.width = c.height = 9;
+        const x = c.getContext("2d", { willReadFrequently: true }); x.filter = "blur(2px)"; x.fillStyle = "#fff"; x.fillRect(4, 4, 1, 1);
+        return x.getImageData(2, 4, 1, 1).data[0] > 0;
+      } catch (e) { return false; }
+    })();
+    const boxBlur = (a, w, h, r) => {
+      const t = new Float32Array(a.length), n = 2 * r + 1;
+      for (let pass = 0; pass < 2; pass++) {
+        for (let y = 0; y < h; y++) { let s = 0; for (let x = -r; x <= r; x++) s += a[y * w + clamp(x, 0, w - 1)]; for (let x = 0; x < w; x++) { t[y * w + x] = s / n; s += a[y * w + Math.min(x + r + 1, w - 1)] - a[y * w + Math.max(x - r, 0)]; } }
+        for (let x = 0; x < w; x++) { let s = 0; for (let y = -r; y <= r; y++) s += t[clamp(y, 0, h - 1) * w + x]; for (let y = 0; y < h; y++) { a[y * w + x] = s / n; s += t[Math.min(y + r + 1, h - 1) * w + x] - t[Math.max(y - r, 0) * w + x]; } }
+      }
+    };
+    const channel = (src, blur) => {
+      const w = src.width, h = src.height, c = document.createElement("canvas");
+      c.width = w; c.height = h;
+      const x = c.getContext("2d", { willReadFrequently: true });
+      if (canBlur && blur > 0) x.filter = `blur(${blur}px)`;
+      x.drawImage(src, 0, 0);
+      const d = x.getImageData(0, 0, w, h).data, out = new Float32Array(w * h);
+      for (let i = 0; i < out.length; i++) out[i] = d[i * 4] / 255;
+      if (!canBlur && blur > 0) boxBlur(out, w, h, Math.max(1, Math.round(blur)));
+      return out;
+    };
+    // a line of words fitted to maxW; by hand, letter by letter, each a little turned, as if with a stick
+    const write = (x, text, cx, cy, px, font, maxW, hand, rnd) => {
+      x.font = font(px);
+      let w = x.measureText(text).width;
+      if (w > maxW) { px *= maxW / w; x.font = font(px); w = maxW; }
+      if (!hand) { x.textAlign = "center"; x.fillText(text, cx, cy); return; }
+      x.textAlign = "left";
+      let at = cx - w / 2;
+      for (const ch of text) {
+        const cw = x.measureText(ch).width;
+        x.save(); x.translate(at + cw / 2, cy + (rnd() - 0.5) * px * 0.08); x.rotate((rnd() - 0.5) * 0.14);
+        x.fillText(ch, -cw / 2, 0); x.restore();
+        at += cw;
+      }
+    };
+    const SAND_FONT = px => `400 ${px}px "Inter Tight", sans-serif`, CUT_BIG = px => `700 ${px}px "Unbounded", sans-serif`, CUT_TEXT = px => `600 ${px}px "Inter Tight", sans-serif`;
+    // grooves from a white-on-black drawing: in sand a soft groove with a raised rim, in stone a sharp V.
+    // Returns the colour (alpha: where the writing is) and the normal map (alpha: the groove, for the glow).
+    const carve = (W, H, draw, sand) => {
+      const c = document.createElement("canvas"); c.width = W; c.height = H;
+      const x = c.getContext("2d");
+      x.fillStyle = "#000"; x.fillRect(0, 0, W, H); x.fillStyle = "#fff"; x.textBaseline = "middle";
+      draw(x, W, H);
+      const g = channel(c, (sand ? 2.2 : 1.2) * RES), wide = channel(c, (sand ? 7 : 2.6) * RES);
+      const n = W * H, hgt = new Float32Array(n);
+      for (let i = 0; i < n; i++) hgt[i] = sand ? 0.5 * wide[i] - g[i] : -g[i];
+      const color = new Uint8Array(n * 4), normal = new Uint8Array(n * 4), base = sand ? [0.09, 0.068, 0.045] : [0.08, 0.075, 0.07];
+      const k = (sand ? 3.2 : 7) * RES, srgb = v => Math.round(255 * Math.pow(clamp(v, 0, 1), 1 / 2.2));
+      for (let y = 0; y < H; y++) for (let xx = 0; xx < W; xx++) {
+        const i = y * W + xx, j = i * 4;
+        const dx = (hgt[y * W + Math.min(xx + 1, W - 1)] - hgt[y * W + Math.max(xx - 1, 0)]) * 0.5 * k;
+        const dy = (hgt[Math.min(y + 1, H - 1) * W + xx] - hgt[Math.max(y - 1, 0) * W + xx]) * 0.5 * k;
+        const l = Math.hypot(dx, dy, 1);                               // uploaded flipped, so +v runs up the picture
+        normal[j] = Math.round((-dx / l * 0.5 + 0.5) * 255); normal[j + 1] = Math.round((dy / l * 0.5 + 0.5) * 255);
+        normal[j + 2] = Math.round((1 / l * 0.5 + 0.5) * 255); normal[j + 3] = Math.round(Math.min(1, g[i] * 1.4) * 255);
+        const shade = sand ? 1 - 0.5 * g[i] + 0.22 * Math.max(0, wide[i] - g[i]) : 1 - 0.62 * g[i];
+        color[j] = srgb(base[0] * shade); color[j + 1] = srgb(base[1] * shade); color[j + 2] = srgb(base[2] * shade);
+        color[j + 3] = Math.round(Math.min(1, wide[i] * (sand ? 2.4 : 2.2)) * 255);
+      }
+      const tex = (data, srgbSpace) => {
+        const t = new THREE.DataTexture(data, W, H);
+        t.flipY = true; t.generateMipmaps = true; t.minFilter = THREE.LinearMipmapLinearFilter; t.magFilter = THREE.LinearFilter;
+        t.anisotropy = Math.min(8, renderer.capabilities.getMaxAnisotropy());
+        if (srgbSpace) t.colorSpace = THREE.SRGBColorSpace;
+        t.needsUpdate = true;
+        return t;
+      };
+      return { map: tex(color, true), normalMap: tex(normal, false) };
+    };
+    const carvedMaterial = (t, glow, stone) => {
+      const m = new THREE.MeshStandardMaterial({
+        map: t.map, normalMap: t.normalMap, roughness: stone ? 0.86 : 0.97, metalness: 0,
+        transparent: true, depthWrite: false, polygonOffset: true, polygonOffsetFactor: -2, polygonOffsetUnits: -2,
+      });
+      m.onBeforeCompile = sh => {
+        sh.uniforms.uGlow = glow;
+        sh.fragmentShader = sh.fragmentShader
+          .replace("#include <common>", "#include <common>\nuniform float uGlow;")
+          .replace("#include <emissivemap_fragment>", `#include <emissivemap_fragment>
+            totalEmissiveRadiance += vec3(0.12, 0.9, 0.4) * uGlow * texture2D(normalMap, vNormalMapUv).a * ${stone ? "1.0" : "0.7"};`);
+      };
+      m.customProgramCacheKey = () => "jt-carve-" + (stone ? "stone" : "sand");
+      return m;
+    };
+    // a strip of ground to write on, lying on the terrain: centred at (x, z), the tops of the letters towards th
+    const groundStrip = (x, z, th, w, h, uv, sx = 40, sz = 8) => {
+      const fx = Math.sin(th), fz = Math.cos(th), rx = -fz, rz = fx;   // forward, and to the right
+      const pos = [], uvs = [], idx = [];
+      for (let j = 0; j <= sz; j++) for (let i = 0; i <= sx; i++) {
+        const a = i / sx - 0.5, b = j / sz - 0.5, px = x + rx * a * w + fx * b * h, pz = z + rz * a * w + fz * b * h;
+        pos.push(px, heightAt(px, pz) + 0.04, pz);
+        uvs.push(lerp(uv[0], uv[1], i / sx), lerp(uv[2], uv[3], j / sz));
+      }
+      for (let j = 0; j < sz; j++) for (let i = 0; i < sx; i++) { const a = j * (sx + 1) + i, b = a + sx + 1; idx.push(a, a + 1, b, a + 1, b + 1, b); }
+      const g = new THREE.BufferGeometry();
+      g.setAttribute("position", new THREE.Float32BufferAttribute(pos, 3));
+      g.setAttribute("uv", new THREE.Float32BufferAttribute(uvs, 2));
+      g.setIndex(idx); g.computeVertexNormals();
+      return g;
+    };
+    // a rock: a lumpy ellipsoid, darker in its hollows; "cut" flattens its front (+z) where the words go
+    const rockGeometry = (seed, w, h, d, cut, detailLevel) => {
+      let g = new THREE.IcosahedronGeometry(1, detailLevel);
+      g.deleteAttribute("normal"); g.deleteAttribute("uv");
+      g = mergeVertices(g);
+      const r = rng(seed), nzR = simplex(r), o1 = r() * 50, o2 = r() * 50;
+      const pos = g.attributes.position, col = new Float32Array(pos.count * 3);
+      for (let i = 0; i < pos.count; i++) {
+        const x = pos.getX(i), y = pos.getY(i), z = pos.getZ(i);
+        const n = fbm(nzR, x * 1.2 + o1, y * 1.2 + z * 0.8, 4) * 0.2 + fbm(nzR, z * 3.1 + o2, x * 3.1 - y * 0.7, 2) * 0.06;
+        let Z = z * (1 + n) * d / 2;
+        if (cut !== undefined && Z > cut) Z = cut;                     // a clean flat face to carve
+        pos.setXYZ(i, x * (1 + n) * w / 2, y * (1 + n) * h / 2, Z);
+        col[i * 3] = col[i * 3 + 1] = col[i * 3 + 2] = clamp(0.55 + n * 1.8, 0.28, 1);
+      }
+      g.setAttribute("color", new THREE.BufferAttribute(col, 3));
+      g.computeVertexNormals();
+      return g;
+    };
+    const placed = (g, x, y, z, ry) => g.applyMatrix4(new THREE.Matrix4().makeRotationY(ry).setPosition(x, y, z));
+
+    const F = ["contact", "journey", "origin", "awards"].map(key => ({ key, glow: { value: 0 }, found: false }));
+    const glowOf = key => F.find(f => f.key === key).glow;
+
+    // the rocks: the giant one with the fire behind it, two standing stones by the fire, the ring round the fire
+    // and a few boulders, all one mesh
+    const ground = (x, z) => heightAt(x, z);
+    const ROCK = { x: CAMP.x, z: CAMP.z - 7.5, w: 6.4, h: 5.8, d: 4.6 };
+    const STONES = [{ x: CAMP.x - 6.5, z: CAMP.z + 1.5 }, { x: CAMP.x + 6.5, z: CAMP.z + 1.5 }].map(s => ({ ...s, ry: Math.atan2(CAMP.x - s.x, CAMP.z - s.z), w: 3.4, h: 4.6, d: 1.8 }));
+    const rockParts = [];
+    const rockCut = ROCK.d / 2 * 0.6, rockY = ground(ROCK.x, ROCK.z) + ROCK.h * 0.22;
+    rockParts.push(placed(rockGeometry(11, ROCK.w, ROCK.h, ROCK.d, rockCut, low ? 5 : 7), ROCK.x, rockY, ROCK.z, 0));
+    const stoneCut = 1.8 / 2 * 0.45;
+    STONES.forEach((s, i) => { s.y = ground(s.x, s.z) + s.h * 0.36; rockParts.push(placed(rockGeometry(21 + i, s.w, s.h, s.d, stoneCut, low ? 4 : 5), s.x, s.y, s.z, s.ry)); });
+    for (let i = 0; i < 9; i++) {                                    // the ring of stones round the fire
+      const a = i / 9 * TAU, x = CAMP.x + Math.cos(a) * 1.05, z = CAMP.z + Math.sin(a) * 1.05;
+      rockParts.push(placed(rockGeometry(40 + i, 0.55, 0.36, 0.45, undefined, 1), x, ground(x, z) + 0.08, z, a));
+    }
+    const r6 = rng(77);
+    for (const [bx, bz, sz] of [[CAMP.x - 11, CAMP.z - 9, 2.6], [CAMP.x + 10, CAMP.z - 11, 3.4], [CAMP.x + 13, CAMP.z + 7, 2.2], [SUMMIT.x - 9, SUMMIT.z + 6, 2.8], [TRAIL[4].x - 8, TRAIL[4].z + 3, 3.2], [22, 18, 2.4], [-24, -30, 3.6], [48, 30, 3]]) {
+      rockParts.push(placed(rockGeometry(90 + Math.round(bx * 7 + bz), sz * (1.1 + r6() * 0.5), sz, sz * (0.9 + r6() * 0.4), undefined, low ? 3 : 4), bx, ground(bx, bz) + sz * 0.2, bz, r6() * TAU));
+      colliders.push({ x: bx, z: bz, r: sz * 0.55 });
+    }
+    const rockMat = new THREE.MeshStandardMaterial({ color: new THREE.Color(0.085, 0.08, 0.075), vertexColors: true, roughness: 0.92, metalness: 0 });
+    rockMat.onBeforeCompile = sh => {
+      sh.uniforms.tSlope = { value: detail.slope };
+      sh.vertexShader = sh.vertexShader
+        .replace("#include <common>", "#include <common>\nvarying vec3 vW;")
+        .replace("#include <begin_vertex>", "#include <begin_vertex>\nvW = (modelMatrix * vec4(transformed, 1.0)).xyz;");
+      sh.fragmentShader = sh.fragmentShader
+        .replace("#include <common>", "#include <common>\nvarying vec3 vW; uniform sampler2D tSlope;")
+        .replace("#include <normal_fragment_maps>", `#include <normal_fragment_maps>
+          {  // grit, mapped on the three planes and blended by the way the surface faces
+            vec3 wn = normalize((vec4(normal, 0.0) * viewMatrix).xyz);
+            vec3 bw = pow(abs(wn), vec3(4.0)); bw /= bw.x + bw.y + bw.z;
+            vec2 a = texture2D(tSlope, vW.zy / 0.9).xy * 2.0 - 1.0, b = texture2D(tSlope, vW.xz / 0.9).xy * 2.0 - 1.0, c = texture2D(tSlope, vW.xy / 0.9).xy * 2.0 - 1.0;
+            vec3 tw = bw.x * vec3(0.0, a.y, a.x) + bw.y * vec3(b.x, 0.0, b.y) + bw.z * vec3(c.x, c.y, 0.0);
+            normal = normalize(normal - (viewMatrix * vec4(tw * 0.9, 0.0)).xyz);
+          }`);
+    };
+    const rocks = new THREE.Mesh(mergeGeometries(rockParts), rockMat);
+    rocks.castShadow = rocks.receiveShadow = true;
+    scene.add(rocks);
+    colliders.push({ x: ROCK.x, z: ROCK.z, r: 3.1 }, ...STONES.map(s => ({ x: s.x, z: s.z, r: 1.35 })), { x: CAMP.x, z: CAMP.z, r: 1.3 });
+    await pause();
+
+    // the rock's face: where it started
+    const origin = carveOf("origin")[0] || [];
+    const oT = carve(Math.round(1024 * RES), Math.round(768 * RES), (x, W, H) => {
+      write(x, origin[0] || "", W / 2, H * 0.27, 150 * RES, CUT_BIG, W * 0.86);
+      write(x, origin[1] || "", W / 2, H * 0.52, 92 * RES, CUT_BIG, W * 0.7);
+      write(x, origin[2] || "", W / 2, H * 0.74, 50 * RES, CUT_TEXT, W * 0.86);
+    }, false);
+    const oPlane = new THREE.Mesh(new THREE.PlaneGeometry(4.2, 3.15), carvedMaterial(oT, glowOf("origin"), true));
+    oPlane.position.set(ROCK.x, rockY + ROCK.h * 0.12, ROCK.z + rockCut + 0.03);
+    scene.add(oPlane);
+    await pause();
+
+    // the standing stones: the awards, one list on each
+    const awards = carveOf("awards");
+    const split = t => {                                             // a long name on two lines, broken near the middle
+      if (t.length < 15 || !t.includes(" ")) return [t];
+      const mid = t.length / 2, at = [...t].map((c, i) => (c === " " ? i : -1)).filter(i => i > 0).sort((a, b) => Math.abs(a - mid) - Math.abs(b - mid))[0];
+      return [t.slice(0, at), t.slice(at + 1)];
+    };
+    const aT = carve(Math.round(1024 * RES), Math.round(768 * RES), (x, W, H) => {
+      awards.slice(0, 2).forEach((lines, k) => {
+        const cx = W * (0.25 + 0.5 * k), cw = W * 0.44, rows = lines.slice(1).flatMap(split);
+        write(x, lines[0] || "", cx, H * 0.13, 70 * RES, CUT_BIG, cw);
+        rows.forEach((line, i) => write(x, line, cx, H * (0.3 + i * (0.64 / Math.max(rows.length - 1, 1))), 58 * RES, CUT_TEXT, cw));
+      });
+    }, false);
+    const aMat = carvedMaterial(aT, glowOf("awards"), true);
+    STONES.forEach((s, k) => {
+      const g = new THREE.PlaneGeometry(2.5, 3.3), uv = g.attributes.uv;
+      for (let i = 0; i < uv.count; i++) uv.setX(i, uv.getX(i) * 0.5 + 0.5 * k);   // each stone its half of the picture
+      g.translate(0, 0.2, stoneCut + 0.03).rotateY(s.ry).translate(s.x, s.y, s.z);
+      scene.add(new THREE.Mesh(g, aMat));
+    });
+    await pause();
+
+    // in the sand: the contact details on the hilltop, and the years along the trail
+    const contact = carveOf("contact")[0] || [];
+    const cT = carve(Math.round(1024 * RES), Math.round(256 * RES), (x, W, H) => {
+      const rnd = rng(5);
+      write(x, contact[0] || "", W / 2, H * 0.33, 86 * RES, SAND_FONT, W * 0.92, true, rnd);
+      write(x, contact[1] || "", W / 2, H * 0.72, 80 * RES, SAND_FONT, W * 0.7, true, rnd);
+    }, true);
+    scene.add(new THREE.Mesh(groundStrip(SUMMIT.x, SUMMIT.z, 0, 12, 3, [0, 1, 0, 1]), carvedMaterial(cT, glowOf("contact"), false)));
+    await pause();
+    const years = carveOf("journey");
+    const cols = 2, rows = 5, CW = 1024 * RES, CH = 200 * RES;
+    const tT = carve(Math.round(CW * cols), Math.round(1024 * RES), (x) => {
+      const rnd = rng(9);
+      years.slice(0, cols * rows).forEach((lines, k) => {
+        const cx = (k % cols + 0.5) * CW, top = Math.floor(k / cols) * CH;
+        write(x, lines[0] || "", cx, top + CH * 0.34, 96 * RES, SAND_FONT, CW * 0.9, true, rnd);
+        write(x, lines[1] || "", cx, top + CH * 0.76, 52 * RES, SAND_FONT, CW * 0.92, true, rnd);
+      });
+    }, true);
+    const TH = 1024 * RES;
+    const strips = TRAIL.slice(0, years.length).map((p, k) => {
+      const c = k % cols, r = Math.floor(k / cols);
+      return groundStrip(p.x, p.z, p.th, 10.2, 2, [c / cols, (c + 1) / cols, 1 - (r + 1) * CH / TH, 1 - r * CH / TH]);
+    });
+    if (strips.length) scene.add(new THREE.Mesh(mergeGeometries(strips), carvedMaterial(tT, glowOf("journey"), false)));
+    await pause();
+
+    // the fire: logs, flames that always face you, rising embers, and a warm glow that shows from far off
+    const fy = ground(CAMP.x, CAMP.z);
+    const logs = [];
+    for (let i = 0; i < 4; i++) logs.push(new THREE.CylinderGeometry(0.09, 0.11, 1.4, 7).rotateZ(Math.PI / 2 - 0.25).rotateY(i / 4 * Math.PI + 0.3).translate(CAMP.x, fy + 0.2, CAMP.z));
+    const logMat = new THREE.MeshStandardMaterial({ color: new THREE.Color(0.02, 0.014, 0.01), roughness: 0.95, emissive: new THREE.Color(0.9, 0.22, 0.03), emissiveIntensity: 0.25 });
+    scene.add(new THREE.Mesh(mergeGeometries(logs), logMat));
+    const flameMat = new THREE.ShaderMaterial({
+      transparent: true, depthWrite: false, blending: THREE.AdditiveBlending,
+      uniforms: { uTime: { value: 0 } },
+      vertexShader: `attribute float aSeed; uniform float uTime; varying vec2 vUv; varying float vSeed;
+        void main() {
+          vUv = uv; vSeed = aSeed;
+          vec4 mv = modelViewMatrix * vec4(0.0, 0.0, 0.0, 1.0);
+          float s = 1.0 + 0.3 * aSeed;
+          mv.xy += vec2(position.x * 1.25 * s, (position.y + 0.5) * 2.1 * s);
+          gl_Position = projectionMatrix * mv;
+        }`,
+      fragmentShader: `uniform float uTime; varying vec2 vUv; varying float vSeed;
+        float h(vec2 p) { p = fract(p * vec2(123.34, 456.21)); p += dot(p, p + 45.32); return fract(p.x * p.y); }
+        float n(vec2 p) { vec2 i = floor(p), f = fract(p), u = f * f * (3.0 - 2.0 * f);
+          return mix(mix(h(i), h(i + vec2(1.0, 0.0)), u.x), mix(h(i + vec2(0.0, 1.0)), h(i + vec2(1.0, 1.0)), u.x), u.y); }
+        void main() {
+          vec2 p = vUv;
+          float q = n(vec2(p.x * 3.0 + vSeed * 7.0, p.y * 3.4 - uTime * 2.3)) * 0.65 + n(vec2(p.x * 7.0, p.y * 7.0 - uTime * 3.7)) * 0.35;
+          float w = 1.0 - abs(p.x - 0.5) * 2.0;
+          float body = smoothstep(0.0, 0.45, w - p.y * 0.95 + (q - 0.5) * 0.6);
+          float f = body * (1.0 - smoothstep(0.45, 1.0, p.y + (q - 0.5) * 0.35));
+          vec3 col = mix(vec3(0.9, 0.16, 0.02), vec3(1.0, 0.7, 0.28), smoothstep(0.25, 0.95, f));
+          gl_FragColor = vec4(col * f * 2.2, 1.0);
+        }`,
+    });
+    const flameGeo = new THREE.PlaneGeometry(1, 1);
+    for (const seed of [0, 0.6]) {
+      const g = flameGeo.clone();
+      g.setAttribute("aSeed", new THREE.Float32BufferAttribute([seed, seed, seed, seed], 1));
+      const m = new THREE.Mesh(g, flameMat);
+      m.position.set(CAMP.x + (seed - 0.3) * 0.25, fy + 0.15, CAMP.z + (seed - 0.3) * 0.2);
+      m.frustumCulled = false; m.renderOrder = 3;
+      scene.add(m);
+    }
+    const EMB = 36, eSeed = new Float32Array(EMB);
+    for (let i = 0; i < EMB; i++) eSeed[i] = i / EMB;
+    const eGeo = new THREE.BufferGeometry();
+    eGeo.setAttribute("position", new THREE.BufferAttribute(new Float32Array(EMB * 3), 3));
+    eGeo.setAttribute("aSeed", new THREE.BufferAttribute(eSeed, 1));
+    const emberMat = new THREE.ShaderMaterial({
+      transparent: true, depthWrite: false, blending: THREE.AdditiveBlending,
+      uniforms: { uTime: { value: 0 }, uScale: { value: 300 } },
+      vertexShader: `attribute float aSeed; uniform float uTime, uScale; varying float vT;
+        void main() {
+          float t = fract(uTime * (0.16 + fract(aSeed * 7.3) * 0.2) + aSeed * 13.7);
+          vec3 p = vec3(sin(aSeed * 91.0 + t * 5.0) * (0.25 + t * 0.9), 0.3 + t * 5.5, cos(aSeed * 57.0 + t * 4.0) * (0.25 + t * 0.9));
+          vec4 mv = modelViewMatrix * vec4(p, 1.0);
+          gl_Position = projectionMatrix * mv;
+          gl_PointSize = uScale * 0.05 * (1.0 - t) / -mv.z;
+          vT = t;
+        }`,
+      fragmentShader: `varying float vT;
+        void main() { float d = length(gl_PointCoord - 0.5); if (d > 0.5) discard;
+          gl_FragColor = vec4(vec3(1.0, 0.55, 0.15) * (1.0 - smoothstep(0.1, 0.5, d)) * (1.0 - vT) * 1.6, 1.0); }`,
+    });
+    const embers = new THREE.Points(eGeo, emberMat);
+    embers.position.set(CAMP.x, fy, CAMP.z); embers.frustumCulled = false; embers.renderOrder = 3;
+    scene.add(embers);
+    const haloMat = new THREE.ShaderMaterial({
+      transparent: true, depthWrite: false, blending: THREE.AdditiveBlending, fog: false,
+      uniforms: { uI: { value: 1 } },
+      vertexShader: `varying vec2 vUv; void main() { vUv = uv; vec4 mv = modelViewMatrix * vec4(0.0, 0.0, 0.0, 1.0); mv.xy += position.xy * 9.0; gl_Position = projectionMatrix * mv; }`,
+      fragmentShader: `uniform float uI; varying vec2 vUv;
+        void main() { float d = length(vUv - 0.5) * 2.0; gl_FragColor = vec4(vec3(1.0, 0.42, 0.12) * pow(max(0.0, 1.0 - d), 2.4) * 0.34 * uI, 1.0); }`,
+    });
+    const halo = new THREE.Mesh(flameGeo, haloMat);
+    halo.position.set(CAMP.x, fy + 1.4, CAMP.z); halo.frustumCulled = false; halo.renderOrder = 2;
+    scene.add(halo);
+
+    // what counts as found: close to the writing, or at the fire for the rock's face and the stones
+    const near = (x, z, p, r) => (x - p.x) ** 2 + (z - p.z) ** 2 < r * r;
+    const tests = {
+      contact: (x, z) => near(x, z, SUMMIT, 8),
+      journey: (x, z) => TRAIL.some(p => near(x, z, p, 5.5)),
+      origin: (x, z) => near(x, z, CAMP, 8.5),
+      awards: (x, z) => STONES.some(s => near(x, z, s, 6.5)),
+    };
+    return {
+      F, cards, tests,
+      update(t, dt) {
+        const fl = reduce ? 0.9 : 0.8 + 0.1 * Math.sin(t * 9.3) + 0.06 * Math.sin(t * 17.1 + 1.7) + 0.05 * Math.sin(t * 31.7 + 0.4);
+        fireLight.intensity = 75 * fl;
+        haloMat.uniforms.uI.value = fl;
+        logMat.emissiveIntensity = 0.18 + 0.12 * fl;
+        flameMat.uniforms.uTime.value = emberMat.uniforms.uTime.value = t;
+        emberMat.uniforms.uScale.value = Hh * dpr;
+        for (const f of F) f.glow.value += ((f.found ? 1 : 0) - f.glow.value) * damp(1.4, dt);
+      },
+    };
+  }
+
   /* ------------------------------------------------ the robots */
   const BOTS = {
     rover: { key: "rover", name: "Defence Bot", file: "defence-rover", scale: 1.75, vmax: 13.5, vrev: 5, acc: 9.5, brake: 17, turn: 2.2, turnMin: 0.45, grip: 6.5, scrub: 0.8, roll: 0.45, drag: 0.011, hop: 4.8, camD: 5.8, camH: 2.1 },
@@ -769,6 +1154,13 @@ async function world() {
     if (Math.abs(nx) > lim) { nx = Math.sign(nx) * lim; car.vx *= -0.3; }
     if (Math.abs(nz2) > lim) { nz2 = Math.sign(nz2) * lim; car.vz *= -0.3; }
     car.x = nx; car.z = nz2;
+    for (const c of colliders) {                                    // rocks, standing stones and the fire are solid
+      const dx = car.x - c.x, dz = car.z - c.z, d = Math.hypot(dx, dz), min = c.r + 0.85;
+      if (d >= min || d < 1e-4) continue;
+      const ux = dx / d, uz = dz / d, vn = car.vx * ux + car.vz * uz;
+      car.x = c.x + ux * min; car.z = c.z + uz * min;
+      if (vn < 0) { car.vx -= ux * vn * 1.3; car.vz -= uz * vn * 1.3; if (vn < -3) car.shake = Math.min(1, car.shake - vn * 0.05); }
+    }
     const h = heightAt(car.x, car.z);
     if (car.ground) {
       // how fast the ground is rising under it, and whether it falls away ahead faster than gravity could follow
@@ -952,6 +1344,10 @@ async function world() {
       camera.position.x += (Math.random() - 0.5) * s; camera.position.y += (Math.random() - 0.5) * s;
       car.shake *= Math.exp(-dt * 6);
     }
+    for (const c of colliders) {                                    // nor the camera
+      const dx = camera.position.x - c.x, dz = camera.position.z - c.z, d = Math.hypot(dx, dz), min = c.r + 0.6;
+      if (d < min && d > 1e-4) { camera.position.x = c.x + dx / d * min; camera.position.z = c.z + dz / d * min; }
+    }
     camera.position.y = Math.max(camera.position.y, heightAt(camera.position.x, camera.position.z) + 0.6);
     _v.copy(cam.look); _v.y -= S.flood * 2.2;
     camera.lookAt(_v);
@@ -1078,6 +1474,37 @@ async function world() {
     if (a === "swap") swap(); else if (a === "exit") toSelect(); else if (a === "reset") respawn();
   }));
 
+
+  /* ------------------------------------------------ what's been found, and the cards that say so */
+  const foundN = $(".xp__found-n");
+  const seen = (() => { try { return JSON.parse(sessionStorage.getItem("jt-finds") || "{}") || {}; } catch (e) { return {}; } })();
+  const saveFinds = () => { try { sessionStorage.setItem("jt-finds", JSON.stringify(seen)); } catch (e) { /* private mode */ } };
+  const countFinds = () => { if (foundN) foundN.textContent = finds ? finds.F.filter(f => f.found).length : 0; };
+  function restoreFinds() {                                         // already found earlier in this visit: glowing
+    for (const f of finds.F) if (seen[f.key]) { f.found = true; f.glow.value = 1; }
+    countFinds();
+  }
+  function discover(f) {
+    f.found = true; seen[f.key] = true; saveFinds(); countFinds();
+    showCard(f.key);
+  }
+  const cardQueue = [];
+  let cardOn = null, cardTimer = 0;
+  function showCard(key) {
+    const el = xp.querySelector(`.xp__find[data-find="${key}"]`);
+    if (!el) return;
+    if (cardOn) { cardQueue.push(el); return; }
+    cardOn = el; el.hidden = false;
+    requestAnimationFrame(() => requestAnimationFrame(() => el.classList.add("is-in")));
+    clearTimeout(cardTimer); cardTimer = setTimeout(() => hideCard(el), key === "intro" ? 8000 : 10000);
+  }
+  function hideCard(el) {
+    if (cardOn !== el) return;
+    el.classList.remove("is-in"); cardOn = null;
+    setTimeout(() => { if (!el.classList.contains("is-in")) el.hidden = true; if (cardQueue.length && !cardOn) showCard(cardQueue.shift().dataset.find); }, 420);
+  }
+  $$(".xp__find-x").forEach(b => b.addEventListener("click", () => hideCard(b.closest(".xp__find"))));
+
   /* ------------------------------------------------ choosing and driving */
   const SHOW = { rover: { x: -1.1, z: 0.3, th: 0.5 }, quad: { x: 1.1, z: -0.3, th: -0.45 } };   // where each stands to be chosen
   const hudName = $(".xp__hud-name");
@@ -1107,6 +1534,7 @@ async function world() {
     mode = "drive"; xp.dataset.mode = "drive";
     setHover(null); held.clear(); readKeys();
     stage.focus({ preventScroll: true });
+    if (finds && !seen.intro) { seen.intro = true; saveFinds(); showCard("intro"); }
   }
   function toSelect() {
     if (mode !== "drive") return;
@@ -1150,7 +1578,10 @@ async function world() {
 
   /* ------------------------------------------------ load the robots, then boot */
   let loaded = 0;
-  await Promise.all(Object.values(BOTS).map(R => loadBot(R).then(() => setBoot(0.3 + 0.6 * ++loaded / 2))));
+  const botsReady = Promise.all(Object.values(BOTS).map(R => loadBot(R).then(() => setBoot(0.3 + 0.6 * ++loaded / 2))));
+  finds = await buildFinds().catch(e => { console.warn("finds:", e); return null; });   // while the robots download
+  await botsReady;
+  if (finds) restoreFinds();
   for (const R of Object.values(BOTS)) stand(R);
   selectCamera(true);
   updateCamera(0);
@@ -1210,6 +1641,10 @@ async function world() {
       moon.target.position.set(px, py, pz);
       updateCamera(dt);
       if (speedEl && mode === "drive") { const kmh = Math.round(Math.hypot(car.vx, car.vz) * 3.6); if (kmh !== shownSpeed) { speedEl.textContent = kmh; shownSpeed = kmh; } }
+      if (finds) {
+        finds.update(t, dt);
+        if (mode === "drive" && car.R && S.q < 0.05) for (const f of finds.F) if (!f.found && finds.tests[f.key](car.x, car.z)) discover(f);
+      }
     }
     const F = final.uniforms;
     F.uTime.value = t;

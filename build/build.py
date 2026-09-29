@@ -31,7 +31,7 @@ for _p in PAGES.values():
             if b["t"] == "gallery": b["imgs"] = [x for x in b["imgs"] if x["src"] not in GONE]
             if b["t"] == "card" and b.get("img") in GONE: b["img"] = ""
         _s["blocks"] = [b for b in _s["blocks"] if not (b["t"] == "slider" and not b["slides"]) and not (b["t"] == "gallery" and not b["imgs"])]
-VER = "12"
+VER = "13"
 
 # Links that are broken on the live site (anchor id typos) – point them at the real ids.
 LINK_FIX = {
@@ -692,6 +692,32 @@ XP_BOTS = [
 FILM = {"src": "/assets/video/janyu-in-the-field.mp4", "poster": "/assets/video/janyu-in-the-field.webp", "tag": "In the field",
         "title": "Our robots at work", "text": "Robot arms, automated lines, lab automation and all-terrain crawlers, filmed where they work."}
 
+# Four things to find while driving, written in the sand or cut into stone (world.js places them in the world).
+# "carve" is what is written out there, one list of lines per carving; the card shows when a robot reaches it.
+# Every fact here is from the site: the About us timeline, the Awards page, the contact details.
+XP_FINDS = [
+    {"key": "contact", "where": "Found on the hilltop", "title": "Say hello",
+     "text": "sales@janyutech.com, +91 77700 12260. Vasai East, open Monday to Saturday, 9 am to 6 pm.",
+     "link": ("Contact us", "/contact-us/"),
+     "carve": [["SALES@JANYUTECH.COM", "+91 77700 12260"]]},
+    {"key": "journey", "where": "Found in the sand", "title": "The road so far",
+     "text": "A year at a time along the trail, from IIT Bombay in 2016 to robots for defence, nuclear, aerospace, cement and mining today. Follow it to the firelight.",
+     "link": ("Our story", "/about-us/"),
+     "carve": [["2016", "INCUBATED AT IIT BOMBAY"], ["2017", "LANDMINE DETECTION ROBOT, CRPF"], ["2018", "UGV DEFENCE ROBOT"],
+               ["2019", "SLUDGE AND SOLAR PANEL CLEANING"], ["2020", "DISINFECTION ROBOT FOR DRDO"], ["2021", "LEO SATELLITES AND 5G SATCOM"],
+               ["2022", "ROBOTS AS A SERVICE"], ["2023", "HEAVY ENGINEERING AND NDT"], ["2024", "RHINO · FLOAT · MATSYA · VARAHA"],
+               ["TODAY", "DEFENCE · NUCLEAR · AEROSPACE · CEMENT · MINING"]]},
+    {"key": "origin", "where": "Found by the fire", "title": "Where it started",
+     "text": "Janyu Tech began in 2016, incubated at NCETIS, IIT Bombay.",
+     "link": ("About us", "/about-us/"),
+     "carve": [["JANYU TECH", "SINCE 2016", "INCUBATED AT NCETIS · IIT BOMBAY"]]},
+    {"key": "awards", "where": "Found by the fire", "title": "Awards",
+     "text": "Udyam Saman 2.0, IAC 2024, Startup Trailblazers and IPS 2025 Techno Galaxy. TÜV Rheinland and ISO certified.",
+     "link": ("All awards and certificates", "/awards-and-certificates/"),
+     "carve": [["AWARDS", "UDYAM SAMAN 2.0", "IAC 2024", "STARTUP TRAILBLAZERS"], ["AWARDS", "IPS 2025 TECHNO GALAXY", "TÜV RHEINLAND", "ISO CERTIFIED"]]},
+]
+
+
 
 # Product cards whose own photo makes a noisy blueprint use a render from the same product page
 BP_OVERRIDE = {"Varaha Mining Robots": "varah-dozer-a"}
@@ -754,6 +780,14 @@ def home_page():
     logos = "".join(f'<img src="{esc(img(i["src"]))}" alt="{esc(i["alt"].replace("_", " "))}" loading="lazy">' for i in cli_imgs)
     logos_dup = "".join(f'<img src="{esc(img(i["src"]))}" alt="" aria-hidden="true" loading="lazy">' for i in cli_imgs)
 
+    find_cards = "".join(
+        f'''<article class="xp__find" data-find="{f["key"]}" data-carve="{esc(json.dumps(f["carve"], ensure_ascii=False))}" hidden>
+          <p class="eyebrow">{esc(f["where"])}</p>
+          <h3 class="xp__find-title">{esc(f["title"])}</h3>
+          <p class="xp__find-text">{esc(f["text"])}</p>
+          <a class="xp__find-link" href="{f["link"][1]}">{esc(f["link"][0])} <i>→</i></a>
+          <button type="button" class="xp__find-x" aria-label="Close">×</button>
+        </article>''' for f in XP_FINDS)
     bots = "".join(f'''<a class="xp__bot" data-bot="{b["key"]}" href="{b["href"]}">
           <span class="xp__bot-img"><img src="{b["img"]}" alt="" width="288" height="288" decoding="async"></span>
           <span class="xp__bot-n">{b["n"]}</span>
@@ -786,6 +820,16 @@ def home_page():
       <div class="xp__hud-top">
         <p class="xp__hud-bot"><span class="eyebrow">Driving</span> <b class="xp__hud-name">{esc(XP_BOTS[0]["name"])}</b></p>
         <p class="xp__speed" aria-hidden="true"><b class="xp__speed-n">0</b><span class="eyebrow">km/h</span></p>
+        <p class="eyebrow xp__found"><b class="xp__found-n">0</b> of {len(XP_FINDS)} found</p>
+      </div>
+      <div class="xp__finds" aria-live="polite">
+        <article class="xp__find" data-find="intro" hidden>
+          <p class="eyebrow">Explore</p>
+          <h3 class="xp__find-title">{len(XP_FINDS)} things are out here</h3>
+          <p class="xp__find-text">Our story, our awards and how to reach us, written in the sand and cut into stone. Start at the top of the hill ahead, then follow the years to the firelight.</p>
+          <button type="button" class="xp__find-x" aria-label="Close">×</button>
+        </article>
+        {find_cards}
       </div>
       <div class="xp__keys" aria-hidden="true">
         <span class="xp__pad"><kbd data-k="up">W</kbd><kbd data-k="left">A</kbd><kbd data-k="down">S</kbd><kbd data-k="right">D</kbd></span><span class="xp__keys-t">Drive</span>

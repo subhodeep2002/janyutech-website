@@ -112,6 +112,24 @@
 }
 .xp__acts button:hover { background: rgba(255, 255, 255, .1); box-shadow: inset 0 0 0 1px #fff; }
 
+/* things found out there: the count under the speed, and a card for each find */
+.xp__found b { font-weight: 600; color: var(--xp-ink); }
+.xp__finds { position: absolute; left: 50%; bottom: clamp(96px, 14vh, 128px); width: min(440px, calc(100% - 2 * var(--gutter))); transform: translateX(-50%); }
+.xp__find {
+  position: relative; padding: 18px 48px 18px 20px; border-radius: var(--radius); color: var(--xp-ink);
+  background: rgba(3, 7, 13, .82); box-shadow: inset 0 0 0 1px rgba(255, 255, 255, .16), inset 0 2px 0 rgba(61, 255, 142, .6), 0 24px 60px -24px rgba(0, 0, 0, .7);
+  opacity: 0; transform: translate3d(0, 16px, 0); transition: opacity .45s var(--e-out), transform .6s var(--e-out); pointer-events: auto;
+}
+.xp__find[hidden] { display: none; }
+.xp__find.is-in { opacity: 1; transform: none; }
+.xp__find-title { margin: 8px 0 6px; font-family: var(--display); font-weight: 500; font-size: 20px; line-height: 1.2; letter-spacing: -.015em; }
+.xp__find-text { font-size: 14px; line-height: 1.5; color: rgba(255, 255, 255, .74); }
+.xp__find-link { display: inline-flex; gap: 8px; margin-top: 12px; font-size: 14px; font-weight: 600; }
+.xp__find-link i { font-style: normal; transition: transform .4s var(--ease); }
+.xp__find-link:hover i { transform: translateX(5px); }
+.xp__find-x { position: absolute; top: 10px; right: 10px; width: 32px; height: 32px; border-radius: 50%; font-size: 18px; line-height: 1; color: var(--xp-mute); transition: background .3s, color .3s; }
+.xp__find-x:hover { background: rgba(255, 255, 255, .1); color: #fff; }
+
 /* touch: a thumbstick and a hop button instead of keys */
 .xp__touch { display: none; }
 .xp__joy { position: absolute; z-index: 7; left: calc(var(--gutter) + 6px); bottom: calc(env(safe-area-inset-bottom, 0px) + 30px); width: 124px; height: 124px; border-radius: 50%; background: rgba(3, 7, 13, .45); box-shadow: inset 0 0 0 1px rgba(255, 255, 255, .28); touch-action: none; pointer-events: auto; }
@@ -199,6 +217,11 @@ body.xp-keys .cursor, body.xp-keys .cursor-dot { opacity: 0; }
   .xp__acts button { height: 34px; font-size: 13px; padding: 0 14px; }
   .xp__acts kbd { display: none; }
   .xp__two { top: 14%; }
+  .xp__finds { bottom: calc(env(safe-area-inset-bottom, 0px) + 172px); }   /* above the thumbstick, clear of the view ahead */
+  .xp__find { padding: 14px 42px 14px 16px; }
+  .xp__find-title { margin: 6px 0 4px; font-size: 17px; }
+  .xp__find-text { font-size: 13px; }
+  .xp__find-link { margin-top: 8px; }
   .xp__film-cap { align-items: flex-start; flex-direction: column; }
 }
 @media (hover: none), (pointer: coarse) {
