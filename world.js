@@ -23,6 +23,7 @@ function flat() {
   xp.classList.remove("is-gl", "is-booting", "is-ready");
   xp.classList.add("is-flat");
   xp.dataset.mode = "select";
+  dispatchEvent(new Event("jt:world-ready"));
 }
 
 /* ======================================================================== helpers */
@@ -73,6 +74,14 @@ async function world() {
 
   /* ------------------------------------------------ renderer, scene, camera */
   const renderer = new THREE.WebGLRenderer({ canvas, antialias: false, powerPreference: "high-performance" });
+  renderer.debug.checkShaderErrors = false;                        // checking waits for the GPU; the shaders are known good
+  // The world is built in slices of a few milliseconds, so the page keeps drawing (and scrolling) while it's made.
+  let sliceT = performance.now();
+  const breathe = async () => {
+    if (performance.now() - sliceT < 6) return;
+    await new Promise(r => (window.scheduler && scheduler.yield ? scheduler.yield().then(r) : setTimeout(r, 0)));
+    sliceT = performance.now();
+  };
   let dpr = Math.min(devicePixelRatio || 1, low ? 1 : 1.25);
   renderer.setPixelRatio(dpr);
   renderer.toneMapping = THREE.ACESFilmicToneMapping;
@@ -149,7 +158,10 @@ async function world() {
     return s;
   };
   const H = new Float32Array(N * N);
-  for (let iz = 0; iz < N; iz++) for (let ix = 0; ix < N; ix++) H[iz * N + ix] = heightFn(-HALF + ix * CELL, -HALF + iz * CELL);
+  for (let iz = 0; iz < N; iz++) {
+    for (let ix = 0; ix < N; ix++) H[iz * N + ix] = heightFn(-HALF + ix * CELL, -HALF + iz * CELL);
+    await breathe();
+  }
   // exactly the surface that is drawn: each cell is split a-b-d / b-c-d
   function heightAt(x, z) {
     const fx = clamp((x + HALF) / CELL, 0, SEG - 1e-4), fz = clamp((z + HALF) / CELL, 0, SEG - 1e-4);
@@ -169,17 +181,20 @@ async function world() {
     const grass = smooth(0.08, 0.36, grassN) * (1 - sand) * (1 - smooth(0.22, 0.42, slope));
     return [sand, grass];
   };
-  const terrainGeo = (() => {
+  const terrainGeo = await (async () => {
     const pos = new Float32Array(N * N * 3), nrm = new Float32Array(N * N * 3), zone = new Float32Array(N * N * 2);
-    for (let iz = 0; iz < N; iz++) for (let ix = 0; ix < N; ix++) {
-      const i = iz * N + ix, x = -HALF + ix * CELL, z = -HALF + iz * CELL;
-      pos[i * 3] = x; pos[i * 3 + 1] = H[i]; pos[i * 3 + 2] = z;
-      const hl = H[iz * N + Math.max(ix - 1, 0)], hr = H[iz * N + Math.min(ix + 1, SEG)];
-      const hd = H[Math.max(iz - 1, 0) * N + ix], hu = H[Math.min(iz + 1, SEG) * N + ix];
-      _n.set(hl - hr, 2 * CELL, hd - hu).normalize();
-      nrm[i * 3] = _n.x; nrm[i * 3 + 1] = _n.y; nrm[i * 3 + 2] = _n.z;
-      const [s, g] = zoneAt(x, z, 1 - _n.y);
-      zone[i * 2] = s; zone[i * 2 + 1] = g;
+    for (let iz = 0; iz < N; iz++) {
+      for (let ix = 0; ix < N; ix++) {
+        const i = iz * N + ix, x = -HALF + ix * CELL, z = -HALF + iz * CELL;
+        pos[i * 3] = x; pos[i * 3 + 1] = H[i]; pos[i * 3 + 2] = z;
+        const hl = H[iz * N + Math.max(ix - 1, 0)], hr = H[iz * N + Math.min(ix + 1, SEG)];
+        const hd = H[Math.max(iz - 1, 0) * N + ix], hu = H[Math.min(iz + 1, SEG) * N + ix];
+        _n.set(hl - hr, 2 * CELL, hd - hu).normalize();
+        nrm[i * 3] = _n.x; nrm[i * 3 + 1] = _n.y; nrm[i * 3 + 2] = _n.z;
+        const [s, g] = zoneAt(x, z, 1 - _n.y);
+        zone[i * 2] = s; zone[i * 2 + 1] = g;
+      }
+      await breathe();
     }
     const idx = new Uint32Array(SEG * SEG * 6);
     let k = 0;
@@ -199,7 +214,7 @@ async function world() {
   // Surface detail, generated once and tiled across the ground: grit and pebbles for the rock, wind ripples
   // and grains for the sand. Stored as the slope of each (for the light) and a brightness (for the colour),
   // mipmapped so it's crisp underfoot and melts smoothly with distance instead of shimmering.
-  const detail = (() => {
+  const detail = await (async () => {
     const S2 = 256, rnd = rng(4242);
     const lattice = n => { const a = new Float32Array(n * n); for (let i = 0; i < a.length; i++) a[i] = rnd(); return a; };
     const tileNoise = (lat, n, x, y) => {                  // value noise that wraps every S2 pixels
@@ -210,29 +225,35 @@ async function world() {
     };
     const L = [4, 8, 16, 32, 64].map(n => [n, lattice(n)]);
     const rockH = new Float32Array(S2 * S2), sandH = new Float32Array(S2 * S2), grain = new Float32Array(S2 * S2);
-    for (let y = 0; y < S2; y++) for (let x = 0; x < S2; x++) {
-      const i = y * S2 + x;
-      let r = 0, a = 1, n = 0;
-      for (const [k, lat] of L) { r += a * tileNoise(lat, k, x, y); n += a; a *= 0.55; }
-      const g = rnd();
-      grain[i] = g;
-      rockH[i] = r / n + (g > 0.94 ? (g - 0.94) * 4 : 0);   // rough ground with the odd pebble
-      const warp = tileNoise(L[1][1], 8, x, y) * 2.2 + tileNoise(L[2][1], 16, x, y) * 0.6;
-      const ph = (x * 9 + y * 3) / S2 * TAU + warp;          // 9 x 3 whole ripples per tile, so it wraps
-      sandH[i] = Math.pow(0.5 + 0.5 * Math.sin(ph), 1.6) * 0.8 + g * 0.08;
+    for (let y = 0; y < S2; y++) {
+      for (let x = 0; x < S2; x++) {
+        const i = y * S2 + x;
+        let r = 0, a = 1, n = 0;
+        for (const [k, lat] of L) { r += a * tileNoise(lat, k, x, y); n += a; a *= 0.55; }
+        const g = rnd();
+        grain[i] = g;
+        rockH[i] = r / n + (g > 0.94 ? (g - 0.94) * 4 : 0);   // rough ground with the odd pebble
+        const warp = tileNoise(L[1][1], 8, x, y) * 2.2 + tileNoise(L[2][1], 16, x, y) * 0.6;
+        const ph = (x * 9 + y * 3) / S2 * TAU + warp;          // 9 x 3 whole ripples per tile, so it wraps
+        sandH[i] = Math.pow(0.5 + 0.5 * Math.sin(ph), 1.6) * 0.8 + g * 0.08;
+      }
+      await breathe();
     }
     const slope = new Uint8Array(S2 * S2 * 4), tone = new Uint8Array(S2 * S2 * 4);
     const at = (h, x, y) => h[((y + S2) % S2) * S2 + ((x + S2) % S2)];
     const enc = v => Math.max(0, Math.min(255, Math.round(128 + v * 127)));
-    for (let y = 0; y < S2; y++) for (let x = 0; x < S2; x++) {
-      const i = (y * S2 + x) * 4;
-      slope[i] = enc((at(rockH, x + 1, y) - at(rockH, x - 1, y)) * 6);
-      slope[i + 1] = enc((at(rockH, x, y + 1) - at(rockH, x, y - 1)) * 6);
-      slope[i + 2] = enc((at(sandH, x + 1, y) - at(sandH, x - 1, y)) * 2.2);
-      slope[i + 3] = enc((at(sandH, x, y + 1) - at(sandH, x, y - 1)) * 2.2);
-      tone[i] = Math.round(255 * Math.min(1, rockH[y * S2 + x]));
-      tone[i + 1] = Math.round(255 * (0.55 + 0.3 * sandH[y * S2 + x] + 0.15 * grain[y * S2 + x]));
-      tone[i + 3] = 255;
+    for (let y = 0; y < S2; y++) {
+      for (let x = 0; x < S2; x++) {
+        const i = (y * S2 + x) * 4;
+        slope[i] = enc((at(rockH, x + 1, y) - at(rockH, x - 1, y)) * 6);
+        slope[i + 1] = enc((at(rockH, x, y + 1) - at(rockH, x, y - 1)) * 6);
+        slope[i + 2] = enc((at(sandH, x + 1, y) - at(sandH, x - 1, y)) * 2.2);
+        slope[i + 3] = enc((at(sandH, x, y + 1) - at(sandH, x, y - 1)) * 2.2);
+        tone[i] = Math.round(255 * Math.min(1, rockH[y * S2 + x]));
+        tone[i + 1] = Math.round(255 * (0.55 + 0.3 * sandH[y * S2 + x] + 0.15 * grain[y * S2 + x]));
+        tone[i + 3] = 255;
+      }
+      await breathe();
     }
     const tex = data => {
       const t = new THREE.DataTexture(data, S2, S2);
@@ -339,7 +360,7 @@ async function world() {
   scene.add(lamp, lamp.target);
 
   /* ------------------------------------------------ grass: sparse, softly lit tufts */
-  const grass = (() => {
+  const grass = await (async () => {
     const segs = 3, bp = [], bi = [];
     for (let i = 0; i <= segs; i++) { const t = i / segs, w = 0.5 * (1 - t * 0.9); bp.push(-w, t, 0, w, t, 0); }
     for (let i = 0; i < segs; i++) { const a = i * 2; bi.push(a, a + 1, a + 2, a + 1, a + 3, a + 2); }
@@ -350,6 +371,7 @@ async function world() {
     const r3 = rng(99), nn = new THREE.Vector3();
     let tries = 0;
     while (off.length / 3 < want && tries++ < want * 30) {
+      if ((tries & 127) === 0) await breathe();
       const x = (r3() - 0.5) * (WORLD - 70), z = (r3() - 0.5) * (WORLD - 70);
       normalAt(x, z, 1, nn);
       const [, g] = zoneAt(x, z, 1 - nn.y);
@@ -591,37 +613,11 @@ async function world() {
   async function buildFinds() {
     const cards = new Map($$(".xp__find[data-find]").map(el => [el.dataset.find, el]));
     const carveOf = key => { try { return JSON.parse(cards.get(key)?.dataset.carve || "[]"); } catch (e) { return []; } };
-    const RES = low ? 0.5 : 1;                                       // texture size for the writing
-    const pause = () => new Promise(r => setTimeout(r, 0));          // let the page breathe between textures
+    const RES = low ? 0.5 : 0.75;                                    // texture size for the writing
+    const group = new THREE.Group(), textures = [];
     await Promise.all([document.fonts.load('700 100px "Unbounded"'), document.fonts.load('400 100px "Inter Tight"'),
       document.fonts.load('600 100px "Inter Tight"')]).catch(() => {});
 
-    // one channel of a blurred copy of a drawing, 0..1 (a box blur where the browser can't filter a canvas)
-    const canBlur = (() => {
-      try {
-        const c = document.createElement("canvas"); c.width = c.height = 9;
-        const x = c.getContext("2d", { willReadFrequently: true }); x.filter = "blur(2px)"; x.fillStyle = "#fff"; x.fillRect(4, 4, 1, 1);
-        return x.getImageData(2, 4, 1, 1).data[0] > 0;
-      } catch (e) { return false; }
-    })();
-    const boxBlur = (a, w, h, r) => {
-      const t = new Float32Array(a.length), n = 2 * r + 1;
-      for (let pass = 0; pass < 2; pass++) {
-        for (let y = 0; y < h; y++) { let s = 0; for (let x = -r; x <= r; x++) s += a[y * w + clamp(x, 0, w - 1)]; for (let x = 0; x < w; x++) { t[y * w + x] = s / n; s += a[y * w + Math.min(x + r + 1, w - 1)] - a[y * w + Math.max(x - r, 0)]; } }
-        for (let x = 0; x < w; x++) { let s = 0; for (let y = -r; y <= r; y++) s += t[clamp(y, 0, h - 1) * w + x]; for (let y = 0; y < h; y++) { a[y * w + x] = s / n; s += t[Math.min(y + r + 1, h - 1) * w + x] - t[Math.max(y - r, 0) * w + x]; } }
-      }
-    };
-    const channel = (src, blur) => {
-      const w = src.width, h = src.height, c = document.createElement("canvas");
-      c.width = w; c.height = h;
-      const x = c.getContext("2d", { willReadFrequently: true });
-      if (canBlur && blur > 0) x.filter = `blur(${blur}px)`;
-      x.drawImage(src, 0, 0);
-      const d = x.getImageData(0, 0, w, h).data, out = new Float32Array(w * h);
-      for (let i = 0; i < out.length; i++) out[i] = d[i * 4] / 255;
-      if (!canBlur && blur > 0) boxBlur(out, w, h, Math.max(1, Math.round(blur)));
-      return out;
-    };
     // a line of words fitted to maxW; by hand, letter by letter, each a little turned, as if with a stick
     const write = (x, text, cx, cy, px, font, maxW, hand, rnd) => {
       x.font = font(px);
@@ -638,38 +634,43 @@ async function world() {
       }
     };
     const SAND_FONT = px => `400 ${px}px "Inter Tight", sans-serif`, CUT_BIG = px => `700 ${px}px "Unbounded", sans-serif`, CUT_TEXT = px => `600 ${px}px "Inter Tight", sans-serif`;
-    // grooves from a white-on-black drawing: in sand a soft groove with a raised rim, in stone a sharp V.
-    // Returns the colour (alpha: where the writing is) and the normal map (alpha: the groove, for the glow).
-    const carve = (W, H, draw, sand) => {
+    // draw the words here (where the fonts are), then cut the grooves in a worker so the page stays free
+    const carveInWorker = (() => {
+      try {
+        const src = `${carvePixels.toString()}
+          onmessage = e => { const d = e.data, r = carvePixels(d.W, d.H, d.mask, d.sand, d.res);
+            postMessage({ id: d.id, color: r.color, normal: r.normal }, [r.color.buffer, r.normal.buffer]); };`;
+        const w = new Worker(URL.createObjectURL(new Blob([src], { type: "text/javascript" })));
+        const waiting = new Map();
+        let seq = 0, broken = false;
+        w.onmessage = e => { waiting.get(e.data.id)?.resolve(e.data); waiting.delete(e.data.id); };
+        w.onerror = e => { broken = true; for (const p of waiting.values()) p.reject(e); waiting.clear(); };
+        return (W, H, mask, sand) => (broken ? Promise.reject(new Error("worker")) : new Promise((resolve, reject) => {
+          const id = ++seq; waiting.set(id, { resolve, reject });
+          w.postMessage({ id, W, H, mask, sand, res: RES }, [mask.buffer]);
+        }));
+      } catch (e) { return null; }
+    })();
+    const carve = async (W, H, draw, sand) => {
       const c = document.createElement("canvas"); c.width = W; c.height = H;
-      const x = c.getContext("2d");
+      const x = c.getContext("2d", { willReadFrequently: true });
       x.fillStyle = "#000"; x.fillRect(0, 0, W, H); x.fillStyle = "#fff"; x.textBaseline = "middle";
       draw(x, W, H);
-      const g = channel(c, (sand ? 2.2 : 1.2) * RES), wide = channel(c, (sand ? 7 : 2.6) * RES);
-      const n = W * H, hgt = new Float32Array(n);
-      for (let i = 0; i < n; i++) hgt[i] = sand ? 0.5 * wide[i] - g[i] : -g[i];
-      const color = new Uint8Array(n * 4), normal = new Uint8Array(n * 4), base = sand ? [0.09, 0.068, 0.045] : [0.08, 0.075, 0.07];
-      const k = (sand ? 3.2 : 7) * RES, srgb = v => Math.round(255 * Math.pow(clamp(v, 0, 1), 1 / 2.2));
-      for (let y = 0; y < H; y++) for (let xx = 0; xx < W; xx++) {
-        const i = y * W + xx, j = i * 4;
-        const dx = (hgt[y * W + Math.min(xx + 1, W - 1)] - hgt[y * W + Math.max(xx - 1, 0)]) * 0.5 * k;
-        const dy = (hgt[Math.min(y + 1, H - 1) * W + xx] - hgt[Math.max(y - 1, 0) * W + xx]) * 0.5 * k;
-        const l = Math.hypot(dx, dy, 1);                               // uploaded flipped, so +v runs up the picture
-        normal[j] = Math.round((-dx / l * 0.5 + 0.5) * 255); normal[j + 1] = Math.round((dy / l * 0.5 + 0.5) * 255);
-        normal[j + 2] = Math.round((1 / l * 0.5 + 0.5) * 255); normal[j + 3] = Math.round(Math.min(1, g[i] * 1.4) * 255);
-        const shade = sand ? 1 - 0.5 * g[i] + 0.22 * Math.max(0, wide[i] - g[i]) : 1 - 0.62 * g[i];
-        color[j] = srgb(base[0] * shade); color[j + 1] = srgb(base[1] * shade); color[j + 2] = srgb(base[2] * shade);
-        color[j + 3] = Math.round(Math.min(1, wide[i] * (sand ? 2.4 : 2.2)) * 255);
-      }
+      const mask = x.getImageData(0, 0, W, H).data;
+      await breathe();
+      let px = null;
+      if (carveInWorker) try { px = await carveInWorker(W, H, mask.slice(), sand); } catch (e) { px = null; }
+      if (!px) px = carvePixels(W, H, mask, sand, RES);
       const tex = (data, srgbSpace) => {
         const t = new THREE.DataTexture(data, W, H);
         t.flipY = true; t.generateMipmaps = true; t.minFilter = THREE.LinearMipmapLinearFilter; t.magFilter = THREE.LinearFilter;
         t.anisotropy = Math.min(8, renderer.capabilities.getMaxAnisotropy());
         if (srgbSpace) t.colorSpace = THREE.SRGBColorSpace;
         t.needsUpdate = true;
+        textures.push(t);
         return t;
       };
-      return { map: tex(color, true), normalMap: tex(normal, false) };
+      return { map: tex(px.color, true), normalMap: tex(px.normal, false) };
     };
     const carvedMaterial = (t, glow, stone) => {
       const m = new THREE.MeshStandardMaterial({
@@ -741,7 +742,7 @@ async function world() {
       rockParts.push(placed(rockGeometry(40 + i, 0.55, 0.36, 0.45, undefined, 1), x, ground(x, z) + 0.08, z, a));
     }
     const r6 = rng(77);
-    for (const [bx, bz, sz] of [[CAMP.x - 11, CAMP.z - 9, 2.6], [CAMP.x + 10, CAMP.z - 11, 3.4], [CAMP.x + 13, CAMP.z + 7, 2.2], [SUMMIT.x - 9, SUMMIT.z + 6, 2.8], [TRAIL[4].x - 8, TRAIL[4].z + 3, 3.2], [22, 18, 2.4], [-24, -30, 3.6], [48, 30, 3]]) {
+    for (const [bx, bz, sz] of [[CAMP.x - 11, CAMP.z - 9, 2.6], [CAMP.x + 10, CAMP.z - 11, 3.4], [CAMP.x + 13, CAMP.z + 7, 2.2], [SUMMIT.x - 9, SUMMIT.z + 6, 2.8], [TRAIL[4].x - 8, TRAIL[4].z + 3, 3.2], [22, 18, 2.4], [-30, 16, 3.6], [48, 30, 3]]) {  // none of them in front of the camera while choosing
       rockParts.push(placed(rockGeometry(90 + Math.round(bx * 7 + bz), sz * (1.1 + r6() * 0.5), sz, sz * (0.9 + r6() * 0.4), undefined, low ? 3 : 4), bx, ground(bx, bz) + sz * 0.2, bz, r6() * TAU));
       colliders.push({ x: bx, z: bz, r: sz * 0.55 });
     }
@@ -764,21 +765,21 @@ async function world() {
     };
     const rocks = new THREE.Mesh(mergeGeometries(rockParts), rockMat);
     rocks.castShadow = rocks.receiveShadow = true;
-    scene.add(rocks);
+    group.add(rocks);
     colliders.push({ x: ROCK.x, z: ROCK.z, r: 3.1 }, ...STONES.map(s => ({ x: s.x, z: s.z, r: 1.35 })), { x: CAMP.x, z: CAMP.z, r: 1.3 });
-    await pause();
+    await breathe();
 
     // the rock's face: where it started
     const origin = carveOf("origin")[0] || [];
-    const oT = carve(Math.round(1024 * RES), Math.round(768 * RES), (x, W, H) => {
+    const oT = await carve(Math.round(1024 * RES), Math.round(768 * RES), (x, W, H) => {
       write(x, origin[0] || "", W / 2, H * 0.27, 150 * RES, CUT_BIG, W * 0.86);
       write(x, origin[1] || "", W / 2, H * 0.52, 92 * RES, CUT_BIG, W * 0.7);
       write(x, origin[2] || "", W / 2, H * 0.74, 50 * RES, CUT_TEXT, W * 0.86);
     }, false);
     const oPlane = new THREE.Mesh(new THREE.PlaneGeometry(4.2, 3.15), carvedMaterial(oT, glowOf("origin"), true));
     oPlane.position.set(ROCK.x, rockY + ROCK.h * 0.12, ROCK.z + rockCut + 0.03);
-    scene.add(oPlane);
-    await pause();
+    group.add(oPlane);
+    await breathe();
 
     // the standing stones: the awards, one list on each
     const awards = carveOf("awards");
@@ -787,7 +788,7 @@ async function world() {
       const mid = t.length / 2, at = [...t].map((c, i) => (c === " " ? i : -1)).filter(i => i > 0).sort((a, b) => Math.abs(a - mid) - Math.abs(b - mid))[0];
       return [t.slice(0, at), t.slice(at + 1)];
     };
-    const aT = carve(Math.round(1024 * RES), Math.round(768 * RES), (x, W, H) => {
+    const aT = await carve(Math.round(1024 * RES), Math.round(768 * RES), (x, W, H) => {
       awards.slice(0, 2).forEach((lines, k) => {
         const cx = W * (0.25 + 0.5 * k), cw = W * 0.44, rows = lines.slice(1).flatMap(split);
         write(x, lines[0] || "", cx, H * 0.13, 70 * RES, CUT_BIG, cw);
@@ -799,22 +800,22 @@ async function world() {
       const g = new THREE.PlaneGeometry(2.5, 3.3), uv = g.attributes.uv;
       for (let i = 0; i < uv.count; i++) uv.setX(i, uv.getX(i) * 0.5 + 0.5 * k);   // each stone its half of the picture
       g.translate(0, 0.2, stoneCut + 0.03).rotateY(s.ry).translate(s.x, s.y, s.z);
-      scene.add(new THREE.Mesh(g, aMat));
+      group.add(new THREE.Mesh(g, aMat));
     });
-    await pause();
+    await breathe();
 
     // in the sand: the contact details on the hilltop, and the years along the trail
     const contact = carveOf("contact")[0] || [];
-    const cT = carve(Math.round(1024 * RES), Math.round(256 * RES), (x, W, H) => {
+    const cT = await carve(Math.round(1024 * RES), Math.round(256 * RES), (x, W, H) => {
       const rnd = rng(5);
       write(x, contact[0] || "", W / 2, H * 0.33, 86 * RES, SAND_FONT, W * 0.92, true, rnd);
       write(x, contact[1] || "", W / 2, H * 0.72, 80 * RES, SAND_FONT, W * 0.7, true, rnd);
     }, true);
-    scene.add(new THREE.Mesh(groundStrip(SUMMIT.x, SUMMIT.z, 0, 12, 3, [0, 1, 0, 1]), carvedMaterial(cT, glowOf("contact"), false)));
-    await pause();
+    group.add(new THREE.Mesh(groundStrip(SUMMIT.x, SUMMIT.z, 0, 12, 3, [0, 1, 0, 1]), carvedMaterial(cT, glowOf("contact"), false)));
+    await breathe();
     const years = carveOf("journey");
     const cols = 2, rows = 5, CW = 1024 * RES, CH = 200 * RES;
-    const tT = carve(Math.round(CW * cols), Math.round(1024 * RES), (x) => {
+    const tT = await carve(Math.round(CW * cols), Math.round(1024 * RES), (x) => {
       const rnd = rng(9);
       years.slice(0, cols * rows).forEach((lines, k) => {
         const cx = (k % cols + 0.5) * CW, top = Math.floor(k / cols) * CH;
@@ -827,15 +828,15 @@ async function world() {
       const c = k % cols, r = Math.floor(k / cols);
       return groundStrip(p.x, p.z, p.th, 10.2, 2, [c / cols, (c + 1) / cols, 1 - (r + 1) * CH / TH, 1 - r * CH / TH]);
     });
-    if (strips.length) scene.add(new THREE.Mesh(mergeGeometries(strips), carvedMaterial(tT, glowOf("journey"), false)));
-    await pause();
+    if (strips.length) group.add(new THREE.Mesh(mergeGeometries(strips), carvedMaterial(tT, glowOf("journey"), false)));
+    await breathe();
 
     // the fire: logs, flames that always face you, rising embers, and a warm glow that shows from far off
     const fy = ground(CAMP.x, CAMP.z);
     const logs = [];
     for (let i = 0; i < 4; i++) logs.push(new THREE.CylinderGeometry(0.09, 0.11, 1.4, 7).rotateZ(Math.PI / 2 - 0.25).rotateY(i / 4 * Math.PI + 0.3).translate(CAMP.x, fy + 0.2, CAMP.z));
     const logMat = new THREE.MeshStandardMaterial({ color: new THREE.Color(0.02, 0.014, 0.01), roughness: 0.95, emissive: new THREE.Color(0.9, 0.22, 0.03), emissiveIntensity: 0.25 });
-    scene.add(new THREE.Mesh(mergeGeometries(logs), logMat));
+    group.add(new THREE.Mesh(mergeGeometries(logs), logMat));
     const flameMat = new THREE.ShaderMaterial({
       transparent: true, depthWrite: false, blending: THREE.AdditiveBlending,
       uniforms: { uTime: { value: 0 } },
@@ -868,7 +869,7 @@ async function world() {
       const m = new THREE.Mesh(g, flameMat);
       m.position.set(CAMP.x + (seed - 0.3) * 0.25, fy + 0.15, CAMP.z + (seed - 0.3) * 0.2);
       m.frustumCulled = false; m.renderOrder = 3;
-      scene.add(m);
+      group.add(m);
     }
     const EMB = 36, eSeed = new Float32Array(EMB);
     for (let i = 0; i < EMB; i++) eSeed[i] = i / EMB;
@@ -893,7 +894,7 @@ async function world() {
     });
     const embers = new THREE.Points(eGeo, emberMat);
     embers.position.set(CAMP.x, fy, CAMP.z); embers.frustumCulled = false; embers.renderOrder = 3;
-    scene.add(embers);
+    group.add(embers);
     const haloMat = new THREE.ShaderMaterial({
       transparent: true, depthWrite: false, blending: THREE.AdditiveBlending, fog: false,
       uniforms: { uI: { value: 1 } },
@@ -903,7 +904,7 @@ async function world() {
     });
     const halo = new THREE.Mesh(flameGeo, haloMat);
     halo.position.set(CAMP.x, fy + 1.4, CAMP.z); halo.frustumCulled = false; halo.renderOrder = 2;
-    scene.add(halo);
+    group.add(halo);
 
     // what counts as found: close to the writing, or at the fire for the rock's face and the stones
     const near = (x, z, p, r) => (x - p.x) ** 2 + (z - p.z) ** 2 < r * r;
@@ -913,8 +914,11 @@ async function world() {
       origin: (x, z) => near(x, z, CAMP, 8.5),
       awards: (x, z) => STONES.some(s => near(x, z, s, 6.5)),
     };
+    for (const t of textures) { renderer.initTexture(t); await breathe(); }
+    await renderer.compileAsync(group, camera, scene).catch(() => {});
+    scene.add(group);
     return {
-      F, cards, tests,
+      F, cards, tests, group,
       update(t, dt) {
         const fl = reduce ? 0.9 : 0.8 + 0.1 * Math.sin(t * 9.3) + 0.06 * Math.sin(t * 17.1 + 1.7) + 0.05 * Math.sin(t * 31.7 + 0.4);
         fireLight.intensity = 75 * fl;
@@ -1578,24 +1582,37 @@ async function world() {
 
   /* ------------------------------------------------ load the robots, then boot */
   let loaded = 0;
-  const botsReady = Promise.all(Object.values(BOTS).map(R => loadBot(R).then(() => setBoot(0.3 + 0.6 * ++loaded / 2))));
-  finds = await buildFinds().catch(e => { console.warn("finds:", e); return null; });   // while the robots download
-  await botsReady;
-  if (finds) restoreFinds();
+  await Promise.all(Object.values(BOTS).map(R => loadBot(R).then(() => setBoot(0.3 + 0.6 * ++loaded / 2))));
   for (const R of Object.values(BOTS)) stand(R);
   selectCamera(true);
   updateCamera(0);
-  await renderer.compileAsync(scene, camera).catch(() => {});    // build the shaders now, not mid-drive
-  {  // and the flood and film passes, so the first scroll into them doesn't stall on compiling
-    const F = final.uniforms;
-    F.uFlood.value = 0.5; composer.render(0);
-    F.uFlood.value = 1; F.uSurf.value = 0.5; composer.render(0);
-    F.uFlood.value = F.uSurf.value = 0;
+  // Every shader is built in the background before it's needed, so nothing stalls on compiling later: the scene
+  // as drawn to the screen, the scene as drawn into the flood's buffer, and the flood and film passes.
+  const compileFor = (target, obj) => {
+    renderer.setRenderTarget(target);
+    const done = renderer.compileAsync(obj, camera, scene).catch(() => {});
+    renderer.setRenderTarget(null);
+    return done;
+  };
+  await compileFor(null, scene);
+  await compileFor(composer.readBuffer, scene);
+  output.material.defines = { SRGB_TRANSFER: "", ACES_FILMIC_TONE_MAPPING: "" };   // what OutputPass sets for this renderer
+  {
+    const passes = new THREE.Scene(), quad = new THREE.PlaneGeometry(2, 2);
+    passes.add(new THREE.Mesh(quad, output.material), new THREE.Mesh(quad, final.material));
+    await renderer.compileAsync(passes, camera).catch(() => {});
   }
   setBoot(1);
   mode = "select"; xp.dataset.mode = "select";
   xp.classList.remove("is-booting");
   xp.classList.add("is-ready");
+  dispatchEvent(new Event("jt:world-ready"));
+  // The finds only matter once someone drives, so they're made afterwards, while the page is idle.
+  (window.requestIdleCallback || (f => setTimeout(f, 600)))(() => buildFinds().then(async f => {
+    await compileFor(composer.readBuffer, f.group);
+    finds = f; restoreFinds();
+    if (mode === "drive" && !seen.intro) { seen.intro = true; saveFinds(); showCard("intro"); }
+  }).catch(e => console.warn("finds:", e)), { timeout: 2500 });
 
   /* ------------------------------------------------ the loop */
   let last = performance.now(), acc = 0, frames = 0, slow = 0, menuSince = 0, lastQ = -1;
@@ -1674,6 +1691,49 @@ async function world() {
       slow = 0;
     }
   });
+}
+
+/* ======================================================================== carving, pixel by pixel
+ * From a white-on-black drawing of words: the groove, and in sand the rim it pushes up. Out come a colour picture
+ * (alpha: where the writing is) and a normal map (alpha: the groove, for the glow). Self-contained, so a worker can
+ * be made from its source and do this without holding up the page. */
+function carvePixels(W, H, mask, sand, res) {
+  const n = W * H, m = new Float32Array(n);
+  for (let i = 0; i < n; i++) m[i] = mask[i * 4] / 255;
+  const blur = (src, r) => {                                   // two box passes each way: close to a gaussian
+    const a = src.slice(), t = new Float32Array(n), k = 2 * r + 1;
+    for (let pass = 0; pass < 2; pass++) {
+      for (let y = 0; y < H; y++) {
+        const o = y * W;
+        let s = 0;
+        for (let x = -r; x <= r; x++) s += a[o + Math.min(Math.max(x, 0), W - 1)];
+        for (let x = 0; x < W; x++) { t[o + x] = s / k; s += a[o + Math.min(x + r + 1, W - 1)] - a[o + Math.max(x - r, 0)]; }
+      }
+      for (let x = 0; x < W; x++) {
+        let s = 0;
+        for (let y = -r; y <= r; y++) s += t[Math.min(Math.max(y, 0), H - 1) * W + x];
+        for (let y = 0; y < H; y++) { a[y * W + x] = s / k; s += t[Math.min(y + r + 1, H - 1) * W + x] - t[Math.max(y - r, 0) * W + x]; }
+      }
+    }
+    return a;
+  };
+  const g = blur(m, Math.max(1, Math.round((sand ? 2.2 : 1.2) * res))), wide = blur(m, Math.max(1, Math.round((sand ? 7 : 2.6) * res)));
+  const hgt = new Float32Array(n);
+  for (let i = 0; i < n; i++) hgt[i] = sand ? 0.5 * wide[i] - g[i] : -g[i];
+  const color = new Uint8Array(n * 4), normal = new Uint8Array(n * 4), base = sand ? [0.09, 0.068, 0.045] : [0.08, 0.075, 0.07];
+  const k = (sand ? 3.2 : 7) * res, srgb = v => Math.round(255 * Math.pow(Math.min(1, Math.max(0, v)), 1 / 2.2));
+  for (let y = 0; y < H; y++) for (let x = 0; x < W; x++) {
+    const i = y * W + x, j = i * 4;
+    const dx = (hgt[y * W + Math.min(x + 1, W - 1)] - hgt[y * W + Math.max(x - 1, 0)]) * 0.5 * k;
+    const dy = (hgt[Math.min(y + 1, H - 1) * W + x] - hgt[Math.max(y - 1, 0) * W + x]) * 0.5 * k;
+    const l = Math.hypot(dx, dy, 1);                            // uploaded flipped, so +v runs up the picture
+    normal[j] = Math.round((-dx / l * 0.5 + 0.5) * 255); normal[j + 1] = Math.round((dy / l * 0.5 + 0.5) * 255);
+    normal[j + 2] = Math.round((1 / l * 0.5 + 0.5) * 255); normal[j + 3] = Math.round(Math.min(1, g[i] * 1.4) * 255);
+    const shade = sand ? 1 - 0.5 * g[i] + 0.22 * Math.max(0, wide[i] - g[i]) : 1 - 0.62 * g[i];
+    color[j] = srgb(base[0] * shade); color[j + 1] = srgb(base[1] * shade); color[j + 2] = srgb(base[2] * shade);
+    color[j + 3] = Math.round(Math.min(1, wide[i] * (sand ? 2.4 : 2.2)) * 255);
+  }
+  return { color, normal };
 }
 
 /* ======================================================================== the final pass

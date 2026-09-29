@@ -18,15 +18,22 @@
 
   /* ---------- Smooth scroll ----------
      Wheel input eases on every page (touch stays native). The ease is short, so the page glides
-     without trailing the hand; the landing's world renders cheaply enough to keep up with it. */
+     without trailing the hand. On the landing it starts once the world has been built: until then
+     the page scrolls natively, which never stalls, however busy the page is while it loads. */
   const headerOffset = () => -(($("[data-header]")?.offsetHeight || 80) + 12);
   let lenis = null;
-  if (!reduce && window.Lenis) {
+  const onLenis = [];                                       // things that follow the eased scroll once it starts
+  const startLenis = () => {
+    if (lenis || reduce || !window.Lenis) return;
     lenis = new Lenis({ lerp: 0.13, smoothWheel: true, wheelMultiplier: 1 });
     lenis.on("scroll", ScrollTrigger.update);
     gsap.ticker.add(t => lenis.raf(t * 1000));
     gsap.ticker.lagSmoothing(0);
-  }
+    if (document.body.classList.contains("is-locked") || document.querySelector("dialog[open]")) lenis.stop();
+    onLenis.forEach(f => f(lenis));
+  };
+  if (isHome && $("[data-xp]")) { addEventListener("jt:world-ready", startLenis, { once: true }); setTimeout(startLenis, 6000); }
+  else startLenis();
   const scrollToEl = (el, immediate) => {
     if (!el) return;
     if (lenis) lenis.scrollTo(el, { offset: headerOffset(), duration: immediate ? 0 : 1.4, immediate });
@@ -56,7 +63,7 @@
     if (up || y < 240) header.classList.remove("is-hidden");
     lastY = y;
   };
-  lenis ? lenis.on("scroll", e => onScroll(e.scroll)) : addEventListener("scroll", () => onScroll(scrollY), { passive: true });
+  addEventListener("scroll", () => onScroll(scrollY), { passive: true });   // also fires as the eased scroll moves
   onScroll(scrollY);
   header?.addEventListener("mouseenter", () => header.classList.remove("is-hidden"));
 
@@ -104,7 +111,7 @@
       headerHeight = header?.offsetHeight || 80;
       schedule();
     };
-    if (lenis) lenis.on("scroll", xpRead);                  // same frame as the eased scroll
+    onLenis.push(l => l.on("scroll", xpRead));                // same frame as the eased scroll, once it runs
     addEventListener("scroll", schedule, { passive: true });
     addEventListener("resize", measure, { passive: true });
     addEventListener("load", measure);
@@ -375,11 +382,12 @@
 
   /* ---------- Home ---------- */
   function home() {
-    // The words enter once while the world loads.
-    gsap.timeline({ delay: 0.15, onComplete: setupFluid })
+    // The words come in once their fonts are here (so the big title doesn't jump when its font swaps in).
+    const intro = gsap.timeline({ paused: true, delay: 0.1, onComplete: setupFluid })
       .from(".site-header", { yPercent: -100, opacity: 0, duration: 0.9, ease: "expo.out", clearProps: "transform,opacity" })
       .from(".xp__eyebrow, .xp__line, .xp__quote, .xp__pick", { y: 40, opacity: 0, duration: 1.1, stagger: 0.08, ease: "expo.out", clearProps: "transform,opacity" }, "<0.1")
       .from(".xp__cue", { opacity: 0, duration: 1, clearProps: "opacity" }, "<0.4");
+    Promise.race([document.fonts ? document.fonts.ready : Promise.resolve(), new Promise(r => setTimeout(r, 1200))]).then(() => intro.play());
 
     gsap.fromTo(".intro__shot", { yPercent: 8 }, { yPercent: -8, ease: "none", stagger: 0.1, scrollTrigger: { trigger: ".intro__gallery", start: "top bottom", end: "bottom top", scrub: true } });
 
