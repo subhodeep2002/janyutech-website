@@ -5,15 +5,14 @@ Static site generator for the JanyuTech redesign.
   img_map.json  – original image URL → local /assets/img file (see imgs.py)
 
 Run:  python3 build/build.py      (writes index.html + one folder per page into the site root)
-Needs Pillow (pip install Pillow): image sizes decide which pages get a banner and which cards show cutouts.
 """
 import json, os, re, sys, html as H
 from datetime import date
 
-try:
-    import PIL.Image  # noqa: F401  – without it every banner and cutout would silently disappear
+try:        # image sizes decide the page banners and how product renders are framed; without Pillow they'd silently vanish
+    import PIL  # noqa: F401
 except ImportError:
-    sys.exit("build.py needs Pillow – run: pip install Pillow")
+    sys.exit("build.py needs Pillow to read image sizes. Install it with:  python3 -m pip install Pillow")
 
 HERE = os.path.dirname(os.path.abspath(__file__))
 SITE = os.path.dirname(HERE)
@@ -32,7 +31,7 @@ for _p in PAGES.values():
             if b["t"] == "gallery": b["imgs"] = [x for x in b["imgs"] if x["src"] not in GONE]
             if b["t"] == "card" and b.get("img") in GONE: b["img"] = ""
         _s["blocks"] = [b for b in _s["blocks"] if not (b["t"] == "slider" and not b["slides"]) and not (b["t"] == "gallery" and not b["imgs"])]
-VER = "19"
+VER = "11"
 
 # Links that are broken on the live site (anchor id typos) – point them at the real ids.
 LINK_FIX = {
@@ -172,12 +171,12 @@ def btns(bs):
         if not b.get("href") or b["href"] == "#":
             out.append(f'<span class="{cls} is-disabled">{esc(b["text"])}</span>')
         else:
-            out.append(f'<a class="{cls}" {a_attrs(b["href"])}><span>{esc(b["text"])}</span><i>→</i></a>')
+            out.append(f'<a class="{cls}" {a_attrs(b["href"])} data-magnetic><span>{esc(b["text"])}</span><i>→</i></a>')
     return f'<div class="btn-row reveal-up">{"".join(out)}</div>'
 
 
 def picture(src, alt="", cls="", fluid=False, eager=False):
-    f = ""
+    f = ' data-fluid' if fluid else ""
     lz = "" if eager else ' loading="lazy"'
     return f'<div class="media {cls}"{f}><img src="{esc(img(src))}" alt="{esc(alt)}"{lz} decoding="async"></div>'
 
@@ -473,26 +472,6 @@ def render_blocks(blocks):
 MENU = D["menu"]
 
 
-def nav_html():
-    items = []
-    for it in MENU:
-        href = link(it["href"])
-        kids = it["children"]
-        if kids and any(k["children"] for k in kids):   # mega menu (Products)
-            cols = "".join(
-                f'<div class="mega__col"><a class="mega__head" href="{esc(link(k["href"]))}">{esc(k["text"])}</a>'
-                + ("<ul>" + "".join(f'<li><a href="{esc(link(g["href"]))}">{esc(g["text"])}</a></li>' for g in k["children"]) + "</ul>" if k["children"] else "")
-                + "</div>" for k in kids)
-            items.append(f'<li class="has-mega"><a href="{esc(href)}" class="roll"><span data-text="{esc(it["text"])}">{esc(it["text"])}</span></a>'
-                         f'<div class="mega"><div class="mega__inner"><div class="mega__intro"><p class="eyebrow">Explore</p><a href="{esc(href)}" class="mega__all">All products →</a></div><div class="mega__grid">{cols}</div></div></div></li>')
-        elif kids:
-            sub = "".join(f'<li><a href="{esc(link(k["href"]))}">{esc(k["text"])}</a></li>' for k in kids)
-            items.append(f'<li class="has-drop"><a href="{esc(href)}" class="roll"><span data-text="{esc(it["text"])}">{esc(it["text"])}</span></a><div class="drop"><ul>{sub}</ul></div></li>')
-        else:
-            items.append(f'<li><a href="{esc(href)}" class="roll"><span data-text="{esc(it["text"])}">{esc(it["text"])}</span></a></li>')
-    return "".join(items)
-
-
 def overlay_html():
     def walk(items, d=0):
         out = []
@@ -509,104 +488,13 @@ def overlay_html():
     return walk(MENU + extra)
 
 
-import math as _m
-
-def spark(cls="spark"):
-    """our mark: a five-petal blossom round a hex nut – robotics and the blue blossom in one sign"""
-    petal = "M0,-6.2 C-4.6,-7.4 -7,-12.6 -5.6,-16.8 C-4.6,-19.8 -1.9,-20.9 0,-18.7 C1.9,-20.9 4.6,-19.8 5.6,-16.8 C7,-12.6 4.6,-7.4 0,-6.2 Z"
-    petals = "".join(f'<path d="{petal}" transform="rotate({k * 72})"/>' for k in range(5))
-    hexa = " ".join(f"{3.9 * _m.cos(_m.radians(30 + 60 * k)):.2f},{3.9 * _m.sin(_m.radians(30 + 60 * k)):.2f}" for k in range(6))
-    return (f'<svg class="{cls}" viewBox="-22 -22 44 44" aria-hidden="true"><g fill="currentColor">{petals}'
-            f'<polygon points="{hexa}"/></g></svg>')
-
-
-def jt_logo(cls="jt-logo", title=True):
-    """the JanyuTech logo, redrawn: JANYU on steel grey, TECH on the brand blue, and a light that runs across on hover"""
-    n = cls.split()[0]
-    return (f'<svg class="{cls}" viewBox="0 0 200 38"{" role=\"img\" aria-label=\"Janyu Tech\"" if title else " aria-hidden=\"true\""}>'
-            f'<defs><clipPath id="{n}-c"><rect width="200" height="38" rx="8"/></clipPath>'
-            f'<linearGradient id="{n}-g" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#b4b7bd"/><stop offset="1" stop-color="#9a9da4"/></linearGradient>'
-            f'<linearGradient id="{n}-b" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#0a86e2"/><stop offset="1" stop-color="#006ec2"/></linearGradient>'
-            f'<linearGradient id="{n}-s" x1="0" x2="1"><stop offset="0" stop-color="#fff" stop-opacity="0"/><stop offset=".5" stop-color="#fff" stop-opacity=".5"/><stop offset="1" stop-color="#fff" stop-opacity="0"/></linearGradient></defs>'
-            f'<g clip-path="url(#{n}-c)"><rect class="jt-l" width="111" height="38" fill="url(#{n}-g)"/><rect class="jt-r" x="114" width="86" height="38" fill="url(#{n}-b)"/>'
-            f'<g class="jt-shine"><rect x="-70" y="-10" width="46" height="58" fill="url(#{n}-s)" transform="skewX(-18)"/></g></g>'
-            f'<text class="jt-lt" x="55.5" y="28" text-anchor="middle" fill="#1f1d24" textLength="86" lengthAdjust="spacingAndGlyphs">JANYU</text>'
-            f'<text x="157" y="28" text-anchor="middle" fill="#fff" textLength="62" lengthAdjust="spacingAndGlyphs">TECH</text></svg>')
-
-
-def btn_pill(href, label, cls="", attrs=""):
-    """the button: a pill with a round arrow that swells to fill it on hover (and springs back)"""
-    return (f'<a class="pill {cls}" href="{esc(href)}" data-magnetic{attrs}><span class="pill__t">{esc(label)}</span>'
-            f'<span class="pill__i" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M5 12h14M13.5 6.5 19 12l-5.5 5.5"/></svg></span></a>')
-
-
-def flower(name, cls, flip=False, lazy=True):
-    """a spray of blue blossom that sways: a looping video with a transparent background (VP9 for Chrome and
-    Firefox, HEVC for Safari), with its first frame as the poster; it only loads when it comes near"""
-    base = f"/assets/blossom/{name}"
-    return (f'<div class="flower {cls}{" flower--flip" if flip else ""}" aria-hidden="true">'
-            f'<video muted loop playsinline preload="none" poster="{base}.webp" width="960" height="960">'
-            f'<source data-src="{base}.webm" type="video/webm"><source data-src="{base}.mov" type=\'video/mp4; codecs="hvc1"\'>'
-            f'</video></div>')
-
-
-def marquee(items, cls="", speed=1, links=False):
-    """a band of words that runs sideways, faster (and backwards) with the scroll"""
-    if links:
-        row = "".join(f'<a class="marq__it" href="{esc(u)}">{esc(t)}</a>{spark("spark marq__sp")}' for t, u in items)
-    else:
-        row = "".join(f'<span class="marq__it">{esc(t)}</span>{spark("spark marq__sp")}' for t in items)
-    return f'<div class="marq {cls}" data-marq="{speed}"><div class="marq__row">{row}</div></div>'
-
-
-def hex_path(r, rc, c=32):
-    """a hexagon standing on a point (like the nut in our mark), corners rounded by rc, drawn clockwise from the top"""
-    V = [(c + r * _m.cos(_m.radians(-90 + 60 * k)), c + r * _m.sin(_m.radians(-90 + 60 * k))) for k in range(6)]
-    t = rc / r                                     # the hexagon's side equals its circumradius
-    lerp = lambda p, q, u: (p[0] + (q[0] - p[0]) * u, p[1] + (q[1] - p[1]) * u)
-    d = ""
-    for k in range(6):
-        v, nx = V[k], V[(k + 1) % 6]
-        a, b = lerp(v, nx, t), lerp(nx, v, t)      # leave this corner, reach the next one
-        d += (f"M{a[0]:.2f} {a[1]:.2f}" if k == 0 else "") + f"L{b[0]:.2f} {b[1]:.2f}"
-        n2 = V[(k + 2) % 6]
-        e = lerp(nx, n2, t)
-        d += f"Q{nx[0]:.2f} {nx[1]:.2f} {e[0]:.2f} {e[1]:.2f}"
-    return d + "Z"
-
-
-def nut():
-    """the scroll gauge: a hex nut whose outline draws itself as the page goes by, the percentage in its hole;
-    a press scrolls down a screen, or back to the top at the end"""
-    outer, track = hex_path(30.5, 7), hex_path(24.5, 5.5)
-    return (f'<button type="button" class="nut is-start" data-nut aria-label="Scroll down">'
-            f'<svg class="nut__shadow" viewBox="0 0 64 64" aria-hidden="true"><path d="{outer}"/></svg>'
-            f'<span class="nut__glass" style="clip-path: path(\'{outer}\')" aria-hidden="true"></span>'
-            f'<svg class="nut__svg" viewBox="0 0 64 64" aria-hidden="true"><path class="nut__track" d="{track}"/><path class="nut__bar" d="{track}" pathLength="1"/>'
-            f'<circle class="nut__hole" cx="32" cy="32" r="13.5"/></svg>'
-            f'<span class="nut__n" aria-hidden="true">00</span>'
-            f'<svg class="nut__up" viewBox="0 0 24 24" aria-hidden="true"><path d="M12 18.5V6M6.8 11.2 12 6l5.2 5.2"/></svg>'
-            f'<span class="nut__tip" aria-hidden="true"><span class="t-down">{rubber("Scroll")}<svg class="nut__pull" viewBox="0 0 12 18"><path d="M6 1.5v14M1.8 11.4 6 15.6l4.2-4.2"/></svg></span>'
-            f'<span class="t-up">Back to top</span></span></button>')
-
-
-def rubber(word):
-    """a word whose letters squash and stretch in turn, like rubber (the Scroll cue)"""
-    return '<span class="rub">' + "".join(f'<i style="--i:{k}">{esc(ch)}</i>' for k, ch in enumerate(word)) + "</span>"
-
-
 def header():
     return f'''<a class="skip" href="#content">Skip to content</a>
-<header class="hdr" data-hdr>
-  <a href="/" class="hdr__logo chip" aria-label="JanyuTech home">{jt_logo(title=False)}<span class="hdr__sprig" aria-hidden="true"><img src="/assets/blossom/sprig.webp" alt="" width="120" height="107" decoding="async"></span></a>
-  <nav class="hdr__nav chip" aria-label="Main" data-nav>
-    <a class="hdr__link hdr__cta" href="/products/"><span class="hdr__t">Explore our robots</span></a>
-    <a class="hdr__link hdr__book" href="/contact-us/"><span class="hdr__t">Book a demo</span></a>
-    <button type="button" class="hdr__link hdr__menu" data-menu-btn aria-expanded="false" aria-controls="menu"><span class="hdr__t"><span class="hdr__burger" aria-hidden="true"><i></i><i></i></span><span class="hdr__menu-open">Menu</span><span class="hdr__menu-close">Close</span></span></button>
-    <span class="hdr__line" aria-hidden="true"></span>
-  </nav>
+<header class="site-header" data-header>
+  <a href="/" class="site-logo" aria-label="JanyuTech home"><img src="/assets/logo.png" alt="JanyuTech" width="368" height="86"></a>
+  <a href="/contact-us/" class="pill" data-magnetic>Contact Us <i>→</i></a>
+  <button type="button" class="burger" data-menu-btn aria-expanded="false" aria-controls="menu"><span class="burger__lines" aria-hidden="true"><i></i><i></i></span><span class="burger__label"><span class="burger__open">Menu</span><span class="burger__close">Close</span></span></button>
 </header>
-{nut()}
 <div class="menu" id="menu" data-menu>
   <div class="menu__bg" aria-hidden="true"><span class="menu__grid"></span></div>
   <div class="menu__in">
@@ -614,11 +502,11 @@ def header():
     <div class="menu__side">
       <a class="btn-line" href="/contact-us/">Book a demo</a>
       <div class="menu__contact">
-        <p class="l2">Sales</p>
-        <a class="p1" href="mailto:sales@janyutech.com">sales@janyutech.com</a>
-        <a class="p1" href="tel:+917770012260">+91 77700 12260</a>
+        <p class="menu__label">Sales</p>
+        <a href="mailto:sales@janyutech.com">sales@janyutech.com</a>
+        <a href="tel:+917770012260">+91 77700 12260</a>
       </div>
-      <div class="menu__social">{"".join(f'<a class="l2" href="{u}" target="_blank" rel="noopener">{t}</a>' for t, u in SOCIAL)}</div>
+      <div class="menu__social">{"".join(f'<a class="menu__label" href="{u}" target="_blank" rel="noopener">{t}</a>' for t, u in SOCIAL)}</div>
     </div>
   </div>
 </div>
@@ -630,35 +518,43 @@ SOCIAL = [("LinkedIn", "https://www.linkedin.com/company/janyu-tech/"), ("X", "h
 
 
 def footer():
-    explore = [("Products", "/products/"), ("Industries", "/industries/"), ("Services", "/services/"), ("Projects", "/projects/"), ("About us", "/about-us/")]
-    company = [("Careers", "/career/"), ("Events", "/events/"), ("Gallery", "/gallery/"), ("Awards", "/awards-and-certificates/"), ("Contact", "/contact-us/")]
-    col = lambda title, items: f'<nav class="ftr__col" aria-label="{title}"><p class="l2">{title}</p>' + "".join(f'<a href="{u}">{t}</a>' for t, u in items) + "</nav>"
-    return f'''<footer class="ftr" id="contact">
-  <div class="ftr__in">
-    <div class="ftr__top">
-      <p class="ftr__lead h4" data-reveal="h">Let’s put a robot where people shouldn’t go.</p>
-      {btn_pill("/contact-us/", "Book a demo", "pill--light")}
+    useful = [("Home", "/"), ("Products", "/products/"), ("Services", "/services/"), ("About us", "/about-us/"), ("Contact us", "/contact-us/")]
+    quick = [("Careers", "/career/"), ("Events", "/events/"), ("Gallery", "/gallery/"), ("Awards & Certificates", "/awards-and-certificates/"), ("Privacy Policy", "/privacy-policy/")]
+    social = [("LinkedIn", "https://www.linkedin.com/company/janyu-tech/"), ("X / Twitter", "https://twitter.com/janyutech"),
+              ("YouTube", "https://www.youtube.com/@JanyuTechOfficial/videos"), ("Instagram", "https://www.instagram.com/janyutech_?igshid=YmMyMTA2M2Y=")]
+    lis = lambda xs: "".join(f'<li><a href="{u}" class="roll"><span data-text="{esc(t)}">{esc(t)}</span></a></li>' for t, u in xs)
+    return f'''<footer class="site-footer" id="contact">
+  <div class="contact">
+    <p class="eyebrow">For business inquiries, please contact sales@janyutech.com</p>
+    <h2 class="contact__big" aria-label="Let's talk">
+      <span class="line"><span class="split">Let's</span></span>
+      <span class="line line--indent"><span class="split">Talk</span></span>
+    </h2>
+    <div class="contact__row">
+      <a href="mailto:sales@janyutech.com" class="contact__btn" data-magnetic><span>sales@janyutech.com</span></a>
+      <a href="tel:+917770012260" class="contact__btn contact__btn--ghost" data-magnetic><span>+91 77700 12260</span></a>
     </div>
-    <div class="ftr__cols">
-      <div class="ftr__col ftr__col--call"><p class="l2">Talk to us</p><a class="ftr__phone" href="tel:+917770012260">+91 77700 12260</a><a href="mailto:sales@janyutech.com">sales@janyutech.com</a></div>
-      <div class="ftr__col"><p class="l2">Visit</p><address>Unit 1 &amp; 2, Dhuri Industrial Complex No.1, Madhu Vrinda Phase 4, Waliv Phata, Sativali Road, Vasai East 401208, India</address></div>
-      {col("Explore", explore)}
-      {col("Company", company)}
-      {col("Follow", SOCIAL)}
-    </div>
-    <div class="ftr__mark">{jt_logo("jt-logo ftr__logo", title=False)}</div>
-    <div class="ftr__bottom"><span>© {date.today().year} JanyuTech. All rights reserved.</span><a href="/privacy-policy/">Privacy policy</a><a href="#top" class="ftr__top-link">Back to top ↑</a></div>
   </div>
+  <div class="foot-grid">
+    <div class="foot-col foot-col--brand">
+      <img src="/assets/logo.png" alt="JanyuTech" class="foot__logo" width="368" height="86" loading="lazy">
+      <p>Spearheading Robotic Revolution</p>
+      <address>Unit 1 &amp; 2, Dhuri Industrial Complex No.1, Madhu Vrinda Phase 4, Waliv Phata, Sativali Road, Vasai East 401208.</address>
+    </div>
+    <div class="foot-col"><h3>Useful Links</h3><ul>{lis(useful)}</ul></div>
+    <div class="foot-col"><h3>Quick Links</h3><ul>{lis(quick)}</ul></div>
+    <div class="foot-col"><h3>Contact Us</h3><ul>
+      <li><a href="tel:+917770012260">+91 77700 12260</a></li><li><a href="mailto:sales@janyutech.com">sales@janyutech.com</a></li></ul>
+      <div class="social">{"".join(f'<a href="{u}" target="_blank" rel="noopener">{t} ↗</a>' for t, u in social)}</div>
+    </div>
+  </div>
+  <div class="foot-bottom"><span>Copyright © {date.today().year} JanyuTech All Rights Reserved.</span><a href="#top" class="to-top">Back to top ↑</a></div>
 </footer>'''
 
 
-FONTS = "https://fonts.googleapis.com/css2?family=Inter+Tight:ital,wght@0,300..800;1,300..500&display=swap"
-GSAP = "https://cdn.jsdelivr.net/npm/gsap@3.15.0/dist/"
-
-
-def doc(title, desc, body, og="", body_cls="", canonical="/", after_main=""):
+def doc(title, desc, body, og="", body_cls="", canonical="/"):
     return f'''<!DOCTYPE html>
-<html lang="en" class="no-js">
+<html lang="en">
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
@@ -668,31 +564,43 @@ def doc(title, desc, body, og="", body_cls="", canonical="/", after_main=""):
 <meta property="og:title" content="{esc(title)}">
 <meta property="og:description" content="{esc(desc)}">
 {f'<meta property="og:image" content="{esc(og)}">' if og else ""}
-<meta name="theme-color" content="#0e2566">
 <link rel="icon" href="/assets/favicon.png">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link rel="preconnect" href="https://cdn.jsdelivr.net" crossorigin>
-<link href="{FONTS}" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Unbounded:wght@500;700;900&family=Inter+Tight:ital,wght@0,300;0,400;0,500;0,600;0,800;1,800&display=swap" rel="stylesheet">
 <link rel="stylesheet" href="/styles.css?v={VER}">
 <link rel="stylesheet" href="/site.css?v={VER}">
-<script>try{{if(sessionStorage.getItem("pt")==="1"){{document.documentElement.classList.add("pt-in");sessionStorage.setItem("pt","0")}}}}catch(e){{}}</script>
-<style>.pt-in .curtain{{opacity:1}}</style>
+{WORLD_HEAD if body_cls == "home" else ""}
 </head>
 <body class="{body_cls}" id="top">
+<div class="cursor" aria-hidden="true"><span class="cursor__label">View</span></div>
+<div class="cursor-dot" aria-hidden="true"></div>
 {header()}
 <main id="content">
 {body}
 </main>
-{after_main or footer()}
-<div class="lightbox" hidden><button class="lightbox__close" aria-label="Close">×</button><button class="lightbox__prev" aria-label="Previous">←</button><figure><img alt=""><figcaption class="p1"></figcaption></figure><button class="lightbox__next" aria-label="Next">→</button></div>
-<script src="{GSAP}gsap.min.js"></script>
-<script src="{GSAP}ScrollTrigger.min.js"></script>
-<script src="{GSAP}SplitText.min.js"></script>
-<script src="https://cdn.jsdelivr.net/npm/lenis@1.3.26/dist/lenis.min.js"></script>
+{footer()}
+<div class="lightbox" hidden><button class="lightbox__close" aria-label="Close">×</button><button class="lightbox__prev" aria-label="Previous">←</button><figure><img alt=""><figcaption></figcaption></figure><button class="lightbox__next" aria-label="Next">→</button></div>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.5/gsap.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.5/ScrollTrigger.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/lenis@1.1.13/dist/lenis.min.js"></script>
+<script src="/fluid.js?v={VER}"></script>
 <script src="/main.js?v={VER}"></script>
+{WORLD_JS if body_cls == "home" else ""}
 </body>
 </html>'''
+
+
+# The landing's first screen is a 3D world (world.js, three.js from jsDelivr). If three.js can't be fetched the
+# import fails and the section keeps its flat look: the title, the robots as links, the film as a video.
+THREE = "https://cdn.jsdelivr.net/npm/three@0.186.1"
+WORLD_HEAD = f'''<link rel="stylesheet" href="/world.css?v={VER}">
+<script type="importmap">{{"imports": {{"three": "{THREE}/build/three.module.min.js", "three/addons/": "{THREE}/examples/jsm/"}}}}</script>
+<link rel="modulepreload" href="{THREE}/build/three.module.min.js">
+<link rel="modulepreload" href="{THREE}/build/three.core.min.js">
+<link rel="preload" href="/assets/models/defence-rover.glb" as="fetch" crossorigin>
+<link rel="preload" href="/assets/models/quadruped-robot.glb" as="fetch" crossorigin>'''
+WORLD_JS = f'''<script type="module">import("./world.js?v={VER}").catch(e => {{ console.warn("world:", e); document.querySelector("[data-xp]")?.classList.add("is-flat"); }});</script>'''
 
 
 # ---------------------------------------------------------------- inner pages
@@ -705,7 +613,7 @@ def crumbs(path):
         slug = acc.strip("/").replace("/", "__")
         name = page_h1(PAGES[slug]) if slug in PAGES else p.replace("-", " ").title()
         out.append(f'<a href="{acc}/">{esc(name)}</a>' if i < len(parts) - 1 else f'<span aria-current="page">{esc(name)}</span>')
-    return '<nav class="crumbs l2" aria-label="Breadcrumb">' + '<i>/</i>'.join(out) + "</nav>"
+    return '<nav class="crumbs" aria-label="Breadcrumb">' + '<i>/</i>'.join(out) + "</nav>"
 
 
 def page_h1(p):
@@ -728,12 +636,11 @@ CAREER_MAIL = "hr@janyutech.com,nitin.nair@janyutech.com"
 def not_hiring():
     from urllib.parse import quote
     href = f"mailto:{CAREER_MAIL}?subject={quote('I would like to work at JanyuTech')}"
-    return f'''<section class="sec sec--hire"><div class="hire" data-reveal-w>
-  <img class="hire__sprig" src="/assets/blossom/sprig.webp" alt="" width="120" height="107" loading="lazy">
-  <p class="hire__status" data-reveal="label">No open positions right now</p>
-  <h2 class="hire__h" data-reveal="h">Want to work with us?</h2>
-  <p class="hire__p" data-reveal="p">We aren’t hiring at the moment, but we’d still love to hear from you. If you want to build robots that keep people out of harm’s way, send us your CV and a few lines about the work you’d like to do. We’ll get in touch when a role opens up.</p>
-  <div class="hire__cta" data-reveal="ctn">{btn_pill(href, "Let us know you’re interested", "pill--blue")}<span class="hire__alt">or write to <a class="ulink" href="mailto:hr@janyutech.com">hr@janyutech.com</a></span></div>
+    return f'''<section class="sec sec--hire"><div class="hire">
+  <p class="eyebrow hire__status reveal-up">No open positions right now</p>
+  <h2 class="sec-title reveal-up">Want to work with us?</h2>
+  <p class="lead-p reveal-up">We aren’t hiring at the moment, but we’d still love to hear from you. If you want to build robots that keep people out of harm’s way, send us your CV and a few lines about the work you’d like to do. We’ll get in touch when a role opens up.</p>
+  <div class="btn-row reveal-up"><a class="btn" href="{esc(href)}" data-magnetic><span>Let us know you’re interested</span><i>→</i></a><span class="hire__alt">or write to <a class="ulink" href="mailto:hr@janyutech.com">hr@janyutech.com</a></span></div>
 </div></section>'''
 
 
@@ -753,385 +660,232 @@ def inner_page(p):
     lead = ""
     if secs and secs[0] and secs[0][0]["t"] == "html" and len(strip_tags(secs[0][0]["html"])) < 160 and len(secs[0]) == 1:
         lead = strip_tags(secs[0][0]["html"]); secs = secs[1:]
-    notice = ""
-    if p["path"] == "career" and not CAREER_HIRING:     # drop the "We're hiring" intro and the old openings
-        said = lambda b: " ".join((x.get("text") or "") for x in b).lower()
-        secs = [b for b in secs if "hiring" not in said(b) and "current openings" not in said(b)]
-        notice = not_hiring()
     path = "/" + p["path"] + "/"
     hero_img = CARD_IMG.get(path) or first_media(p)
     if hero_img and not landscape(hero_img): hero_img = ""
-    hero = f'''<section class="phero" data-theme="light">
-  {flower("bl-rise", "flower--phero", flip=True)}
+    hero = f'''<section class="phero">
   {crumbs(p["path"])}
-  <h1 class="phero__title h3">{split_words(h1)}</h1>
-  {f'<p class="phero__lead p1">{esc(lead)}</p>' if lead else ""}
-  <div class="phero__meta"><span class="vline"></span></div>
+  <h1 class="phero__title">{split_words(h1)}</h1>
+  {f'<p class="phero__lead">{esc(lead)}</p>' if lead else ""}
+  <div class="phero__meta"><span class="phero__scroll">Scroll <span class="hero__scroll-line"></span></span></div>
 </section>
-{f'<div class="phero__banner{" phero__banner--contain" if is_cutout(hero_img) else ""}" data-theme="{"light" if is_cutout(hero_img) else "dark"}"><img src="{esc(img(hero_img))}" alt="" decoding="async"></div>' if hero_img else ""}'''
+{f'<div class="phero__banner{" phero__banner--contain" if is_cutout(hero_img) else ""}"{"" if is_cutout(hero_img) else " data-fluid"}><img src="{esc(img(hero_img))}" alt="" decoding="async"></div>' if hero_img else ""}'''
+    notice = ""
+    if p["path"] == "career" and not CAREER_HIRING:     # drop the "We're hiring" intro and the old openings
+        said = lambda bl: " ".join((x.get("text") or "") for x in bl).lower()
+        secs = [b for b in secs if "hiring" not in said(b) and "current openings" not in said(b)]
+        notice = not_hiring()
     body = hero + notice + "".join(f'<section class="sec">{render_blocks(b)}</section>' for b in secs)
     og = img(hero_img) if hero_img else ""
     return doc(p["title"], p["desc"] or f"{h1} | JanyuTech", body, og=BASE + og if og.startswith("/") else og, body_cls="inner", canonical=path)
 
 
 # ---------------------------------------------------------------- home
-# The rendered views of the terrace (see README): the hero by day and by night (and portrait crops for phones),
-# the depth of the hero (for the cursor parallax), the section views, and the aerial view drawn as a blueprint.
-SCENE = "/assets/scene/"
-PINS = [  # hotspots: where each robot stands in the hero render (and how near it is), from build/pins.json
-    ("quad", "Varaha quadruped", "Four legs for rough ground", "/products/defence-robots/"),
-    ("rover", "Varaha UGV", "Surveillance and inspection", "/products/defence-robots/"),
-    ("arm", "Kara robotic arm", "Pick, place and palletise", "/products/kara-robotic-arm/"),
+# The landing's first screen: drive one of two robots through a small dark world (world.js).
+# "img" is a render of the same model; "href" is where the card goes when the 3D world can't run.
+XP_BOTS = [
+    {"key": "rover", "n": "01", "name": "Defence Bot", "kind": "Four-wheel UGV", "trait": "Quick, and drifts on sand",
+     "img": "/assets/models/defence-rover.webp", "href": "/products/defence-robots/"},
+    {"key": "quad", "n": "02", "name": "Quad Bot", "kind": "Four-legged robot", "trait": "Sure-footed, turns on the spot",
+     "img": "/assets/models/quadruped-robot.webp", "href": "/industries/dna/#legged"},
 ]
-PIN_POS = json.load(open(os.path.join(HERE, "pins.json"))) if os.path.exists(os.path.join(HERE, "pins.json")) else {}
-AERIAL_NOTES = [  # (left %, top %, name, what, (dx, dy, tag side) on desktop, the same on phones)
-    (40.4, 75.5, "Varaha quadruped", "Rough-ground inspection", (-80, 70, "l"), (46, 78, "r")),
-    (54.7, 73.8, "Varaha UGV", "Surveillance", (96, 74, "r"), (-30, -96, "l")),
-    (62.7, 40.3, "Kara robotic arm", "Pick, place, palletise", (-110, -70, "l"), (-40, 86, "l")),
-]
-def note_vars(pre, dx, dy, side):
-    ang = _m.degrees(_m.atan2(dy, dx))
-    return f"--{pre}dx:{dx}px;--{pre}dy:{dy}px;--{pre}tx:{'-100%' if side == 'l' else '0%'};--{pre}len:{_m.hypot(dx, dy):.0f}px;--{pre}ang:{ang:.1f}deg"
-
-WHY = [  # the five reasons: the icon from janyutech.com, and a photo from the field
-    ("core", "Built for the core", "Every robot is designed around the plant it serves: the process, the heat, the dust and the people who run it.",
-     "Custom-designed for the core industry", "2024-04-Robotic-Material-Handling-1.webp"),
-    ("downtime", "Less downtime", "Robots clean, inspect and repair while the plant keeps running, so shutdowns get shorter and fewer.",
-     "Reduction in shutdown time", "2024-07-47.webp"),
-    ("safety", "No human entry", "Our robots go into tanks, kilns, silos and sewers so that people don't have to.",
-     "Risk mitigation and accident prevention", "2024-04-VARAHA-SC-E-INDUSTRIAL-TANK-CLEANING-ROBOT-1.webp"),
-    ("standards", "Global standards", "Engineered, built and tested to international standards, and documented for the audits that follow.",
-     "International standards", "2025-05-163.webp"),
-    ("legacy", "New life", "We automate legacy plants instead of replacing them: retrofits that give old systems years more work.",
-     "Rejuvenating the legacy systems", "2024-04-Heavy-Engineering-2.webp"),
-]
-
-PRODUCTS = [
-    ("Varaha sludge cleaner", "/products/varaha-sludge-cleaning/", "sludge-cleaning-robot", False, ("Oil, gas & chemicals", "Tanks & reactors"),
-     "A remotely operated tank-cleaning robot that cuts and pumps out sludge from crude, chemical and water tanks. Hydraulic, and at home under water."),
-    ("Kara robotic arm", "/products/kara-robotic-arm/", "denka-arm-robot", True, ("Manufacturing", "Lines & warehouses"),
-     "Pick-and-place and palletising arms that lift what people shouldn't, faster and more precisely, built into the line you already run."),
-    ("Cement cube robot", "/products/cement-automation/", "cement-industry", True, ("Cement & construction", "Quality labs"),
-     "Robotic concrete cube making and cement cube testing: the lab's heavy, repetitive work, automated and recorded."),
-    ("Varaha quadruped", "/products/defence-robots/", "varaha-four-legged-robot", False, ("Defence & security", "Rough ground"),
-     "A four-legged robot for surveillance and inspection where wheels can't go: stairs, rubble and broken ground."),
-    ("Solar panel cleaner", "/products/solar-panel-cleaner/", "solar-panel-cleaning-robot", False, ("Renewable energy", "Solar arrays"),
-     "A vehicle-mounted robotic arm that cleans large arrays gently on uneven ground, with no rails to install."),
-    ("Magnetic NDT crawler", "/products/heavy-engineering-metals/", "varaha-magnetic-crawler-for-ndt-testing", False, ("Heavy engineering", "Steel structures"),
-     "A magnetic crawler that climbs steel to carry the sensors for non-destructive testing, so inspection needs no scaffolding."),
-    ("Varaha mining robot", "/products/varaha-mining-robots/", "varah-dozer-a", False, ("Mining", "Underground"),
-     "Remotely operated hydraulic vehicles that break, cut and move ore, keeping miners away from the most dangerous faces."),
-]
-
-# stops along the circuit trace: industries, and how many of our solutions each has (from the menu)
-def _count(name):
-    for it in MENU:
-        for k in it["children"]:
-            if k["text"].lower().startswith(name.lower()): return len(k["children"]), link(k["href"])
-    return 0, "/products/"
-PATH_STOPS = [("Cement", "Cement & Construction", 0.06, 0.62), ("Steel", "Steel Industry", 0.2, 0.36), ("Aluminium", "Aluminium Industry", 0.35, 0.66),
-              (None, None, 0.5, 0.5), ("Mining", "Mining Industry", 0.64, 0.3), ("Thermal & power", "Thermal and Power Industry", 0.79, 0.6), ("Chemical", "Chemical Industry", 0.93, 0.4)]
-
-def trace_path(dy=0.0, w=1000, h=150):
-    """a circuit trace through the stops: level runs joined by chamfered (45°-ish) steps, like a PCB track"""
-    pts = [(0, PATH_STOPS[0][3])] + [(x, y) for _, _, x, y in PATH_STOPS] + [(1, PATH_STOPS[-1][3])]
-    d = f"M 0 {pts[0][1] * h + dy:.1f}"
-    for (x1, y1), (x2, y2) in zip(pts, pts[1:]):
-        if abs(y2 - y1) < 1e-6:
-            d += f" L {x2 * w:.1f} {y2 * h + dy:.1f}"; continue
-        mid = (x1 + x2) / 2 * w
-        run = min(abs(y2 - y1) * h * 1.2, (x2 - x1) * w * 0.4)
-        d += f" L {mid - run / 2 + dy * 0.4:.1f} {y1 * h + dy:.1f} L {mid + run / 2 + dy * 0.4:.1f} {y2 * h + dy:.1f} L {x2 * w:.1f} {y2 * h + dy:.1f}"
-    return d
-
-# the industries, running in two bands
-def _ind(slug, name=None):
-    p = PAGES.get("industries__" + slug)
-    return (name or (page_h1(p) if p else slug.replace("-", " ").title()), f"/industries/{slug}/")
-IND_A = [_ind(*a) for a in [("cement-construction", "Cement & construction"), ("steel-industry", "Steel"), ("aluminium-industry", "Aluminium"), ("copper-industry", "Copper"),
-                            ("mining-industry", "Mining"), ("glass-industry", "Glass"), ("chemical-industry", "Chemicals"), ("thermal-and-power-industry", "Thermal & power")]]
-IND_B = [_ind(*a) for a in [("defence-security", "Defence & security"), ("aerospace", "Aerospace"), ("renewable-energy", "Renewable energy"), ("chemicals-oil-gas", "Oil & gas"),
-                            ("pharma-fb-and-fmcg", "Pharma, F&B & FMCG"), ("heavy-engineering", "Heavy engineering"), ("telecommunication-satcom", "Telecom & satcom"),
-                            ("industry-4-0", "Industry 4.0"), ("raas", "Robotics as a service")]]
-
-CLIENTS = ["UltraTech Cement", "Tata Steel", "Hindalco", "Grasim", "Vedanta", "ISRO", "DRDO", "Indian Oil", "JSW", "Cairn", "Voltas", "Owens Corning"]
+FILM = {"src": "/assets/video/janyu-in-the-field.mp4", "poster": "/assets/video/janyu-in-the-field.webp", "tag": "In the field",
+        "title": "Our robots at work", "text": "Robot arms, automated lines, lab automation and all-terrain crawlers, filmed where they work."}
 
 
-def scene_img(name, alt="", eager=False, cls="", mobile=None):
-    src = f"{SCENE}{name}.webp"
-    m = f'<source media="(max-width: 991px)" srcset="{SCENE}{mobile}.webp">' if mobile else ""
-    return f'<picture{f" class=\"{cls}\"" if cls else ""}>{m}<img src="{src}" alt="{esc(alt)}"{"" if eager else " loading=\"lazy\""} decoding="async"></picture>'
+# Product cards whose own photo makes a noisy blueprint use a render from the same product page
+BP_OVERRIDE = {"Varaha Mining Robots": "varah-dozer-a"}
 
 
-ARROW_L = '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M19 12H5M10.5 6.5 5 12l5.5 5.5"/></svg>'
-ARROW_R = '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M5 12h14M13.5 6.5 19 12l-5.5 5.5"/></svg>'
+def bp_key(c):
+    if c["title"] in BP_OVERRIDE: return BP_OVERRIDE[c["title"]]
+    local = IMG.get(c.get("img", ""), "")
+    key = re.sub(r"^\d{4}-\d{2}-", "", os.path.splitext(local)[0]).lower()
+    return key if key and os.path.exists(os.path.join(SITE, "assets", "bp", key + "-bp.webp")) else ""
 
-def sl_ui(n, cls=""):
-    """a slider's controls: 01 / 05, a segment per slide (the current one fills), and the arrows"""
-    return (f'<div class="sl-ui {cls}"><span class="sl-ui__n"><b data-sl-cur>01</b><i>/</i>{n:02d}</span>'
-            f'<span class="sl-ui__segs" aria-hidden="true">{"".join("<i data-sl-seg><b></b></i>" for _ in range(n))}</span>'
-            f'<span class="sl-ui__btns"><button type="button" data-sl-prev aria-label="Previous">{ARROW_L}</button><button type="button" data-sl-nextbtn aria-label="Next">{ARROW_R}</button></span></div>')
+
+def bpx(c):
+    k = bp_key(c)
+    if not k:
+        return f'<img src="{esc(img(c["img"]))}" alt="{esc(c["title"])}" loading="lazy">'
+    return (f'<img class="bpx__bp" src="/assets/bp/{k}-bp.webp" alt="" loading="lazy" decoding="async">'
+            f'<img class="bpx__photo" src="/assets/bp/{k}.webp" alt="{esc(c["title"])}" loading="lazy" decoding="async"><span class="bpx__scan"></span>')
 
 
 def home_page():
     p = PAGES["home"]
     S = [s["blocks"] for s in p["sections"]]
     get = lambda s, t: [b for b in s if b["t"] == t]
-    seo = [b["text"] for b in get(S[0], "h")]
-    about_p = get(S[2], "h")[1]["text"]
+    seo_h2 = [b["text"] for b in get(S[0], "h")]
+    hero_eyebrow = get(S[1], "eyebrow")[0]["text"]
+    hero_sub = [b["text"] for b in get(S[1], "h") if b["lvl"] == 3][0]
+    hero_btns = get(S[1], "btn")
+    about = S[2]; about_h = get(about, "h"); about_lists = get(about, "list"); about_btn = get(about, "btn"); about_gal = get(about, "gallery")[0]["imgs"]
+    ind = S[3]; ind_h = get(ind, "h"); ind_cards = get(ind, "card")
+    biz = S[4]; biz_h = get(biz, "h")[0]["text"]; biz_btn = get(biz, "btn")[0]
+    prod = S[5]; prod_h = get(prod, "h"); prod_cards = get(prod, "card"); prod_all = get(prod, "btn")[0]
+    why = S[6]; why_h = get(why, "h")[0]["text"]; why_cards = get(why, "card")
+    cli = S[7]; cli_h = get(cli, "h")[0]["text"]; cli_imgs = get(cli, "gallery")[0]["imgs"]
 
-    pins = []
-    for key, name, what, href in PINS:
-        if key not in PIN_POS: continue
-        x, y, z = (PIN_POS[key] + [0.5])[:3]
-        pins.append(f'<a class="pin" href="{href}" style="left:{x}%;top:{y}%" data-z="{z}"><span class="pin__pulse"></span><span class="pin__dot"></span>'
-                    f'<span class="pin__tip"><b>{esc(name)}</b><span>{esc(what)}</span></span><span class="sr-only">{esc(name)}</span></a>')
+    chips = "".join(f'<li><a {a_attrs(it["href"])}>{esc(it["text"])}</a></li>' if it.get("href") else f"<li><span>{esc(it['text'])}</span></li>" for l in about_lists for it in l["items"])
+    panels = []
+    for k, c in enumerate(ind_cards):
+        panels.append(f'''<article class="panel">
+        <div class="panel__bg" data-fluid-panel><img src="{esc(img(c["img"]))}" alt="" loading="{"eager" if k == 0 else "lazy"}"></div>
+        <div class="panel__body">
+          <span class="panel__num">{k+1:02d} / {len(ind_cards):02d}</span>
+          <h3>{esc(c["title"])}</h3>
+          <p>{esc(c["text"])}</p>
+          <a {a_attrs(c["href"])} class="reach">{esc(c["btn"] or "View Products")} <b>✦</b></a>
+        </div>
+      </article>''')
+    plist = []
+    for k, c in enumerate(prod_cards):
+        bpk = bp_key(c)
+        plist.append(f'''<li class="pitem" data-img="{esc(img(c["img"]))}"{f' data-bp="/assets/bp/{bpk}-bp.webp" data-photo="/assets/bp/{bpk}.webp"' if bpk else ""}>
+        <a {a_attrs(c["href"])}>
+          <div class="pitem__img bpx">{bpx(c)}</div>
+          <span class="pitem__n">{k+1:02d}</span>
+          <h3>{esc(c["title"])}</h3>
+          <span class="pitem__meta">{esc(c["btn"] or "View Product")} →</span>
+        </a>
+      </li>''')
+    whys = "".join(f'<li class="reveal-up"><span>{k+1:02d}</span><h3>{esc(c["title"])}</h3></li>' for k, c in enumerate(why_cards))
+    logos = "".join(f'<img src="{esc(img(i["src"]))}" alt="{esc(i["alt"].replace("_", " "))}" loading="lazy">' for i in cli_imgs)
+    logos_dup = "".join(f'<img src="{esc(img(i["src"]))}" alt="" aria-hidden="true" loading="lazy">' for i in cli_imgs)
 
-    why = "".join(f'''<article class="why__slide" data-sl-slide>
-          <div class="why__text">
-            <div class="why__top" data-part-c><svg class="why__icon" viewBox="106 106 288 288" aria-hidden="true"><use href="/assets/icons/{ic}.svg#i"/></svg><span class="why__n">Reason {k + 1:02d}</span></div>
-            <h3 class="why__h h3" data-part-h>{esc(h)}</h3>
-            <p class="why__p p1" data-part-p>{esc(t)}</p>
-            <p class="why__l l2" data-part-c>{esc(lab)}</p>
-          </div>
-          <div class="why__img" data-part-img><img src="/assets/img/{im}" alt="" loading="lazy" decoding="async"></div>
-        </article>''' for k, (ic, h, t, lab, im) in enumerate(WHY))
-
-    prods = "".join(f'''<article class="prod__slide" data-sl-slide>
-          <div class="prod__text">
-            <p class="prod__n l2" data-part-c>Robot {k + 1:02d}</p>
-            <h3 class="prod__name h3" data-part-h>{esc(name)}</h3>
-            <dl class="prod__meta" data-part-c><div><dt class="l2">Industry</dt><dd>{esc(m[0])}</dd></div><div><dt class="l2">Works in</dt><dd>{esc(m[1])}</dd></div></dl>
-            <p class="prod__p p1" data-part-p>{esc(txt)}</p>
-            <div data-part-c>{btn_pill(href, "Explore the robot", "pill--blue")}</div>
-          </div>
-          <div class="prod__img{" prod__img--photo" if photo else ""}" data-part-img data-scan>
-            <img class="prod__bp" src="/assets/bp/{key}-bp.webp" alt="" loading="lazy" decoding="async">
-            <img class="prod__ph" src="/assets/bp/{key}.webp" alt="{esc(name)}" loading="lazy" decoding="async">
-            <span class="prod__scan" aria-hidden="true"></span>
-          </div>
-        </article>''' for k, (name, href, key, photo, m, txt) in enumerate(PRODUCTS))
-
-    stops = []
-    for label, menu_name, x, y in PATH_STOPS:
-        if label is None:
-            stops.append(f'<span class="loc__stop loc__stop--mark" style="left:{x*100:.1f}%;top:{y*100:.1f}%">{spark()}</span>'); continue
-        n, href = _count(menu_name)
-        stops.append(f'<a class="loc__stop" href="{esc(href)}" style="left:{x*100:.1f}%;top:{y*100:.1f}%"><b>{esc(label)}</b><span>{n} solution{"s" if n != 1 else ""}</span></a>')
-
-    notes = "".join(f'<span class="aerial__note" style="left:{x}%;top:{y}%;{note_vars("d", *dk)};{note_vars("m", *mb)}" data-y="{y}"><i></i><span class="aerial__tag"><b>{esc(t)}</b><span>{esc(w)}</span></span></span>'
-                    for x, y, t, w, dk, mb in AERIAL_NOTES)
-
-    logos = "".join(f'<img src="{esc(img(i["src"]))}" alt="{esc(i["alt"].replace("_", " "))}" loading="lazy">' for i in get(S[7], "gallery")[0]["imgs"][:14])
+    bots = "".join(f'''<a class="xp__bot" data-bot="{b["key"]}" href="{b["href"]}">
+          <span class="xp__bot-img"><img src="{b["img"]}" alt="" width="288" height="288" decoding="async"></span>
+          <span class="xp__bot-txt"><span class="xp__bot-n">{b["n"]}</span><span class="xp__bot-name">{esc(b["name"])}</span><span class="xp__bot-kind">{esc(b["kind"])} · {esc(b["trait"])}</span></span>
+          <span class="xp__bot-go" aria-hidden="true"><span class="xp__if-gl">Drive</span><span class="xp__if-flat">View</span> <i>→</i></span>
+        </a>''' for b in XP_BOTS)
 
     body = f'''
-<div class="pre" data-pre aria-hidden="true">
-  <div class="pre__iris"></div>
-  <div class="pre__decor"><span class="pre__grid"></span></div>
-  <div class="pre__ctn">
-    {spark("spark pre__mark")}
-    {jt_logo("pre__logo jt-logo", title=False)}
-    <div class="pre__bar"><i></i></div>
-    <p class="pre__count"><span data-pre-count>0</span>%</p>
-  </div>
-</div>
+<section class="xp" data-xp data-mode="boot" aria-labelledby="xp-title">
+  <div class="xp__stage" tabindex="-1">
+    <div class="xp__backdrop" aria-hidden="true"><span class="xp__contours"></span><span class="xp__grid"></span></div>
+    <canvas class="xp__gl" aria-hidden="true"></canvas>
+    <video class="xp__film" src="{FILM["src"]}" poster="{FILM["poster"]}" muted loop playsinline preload="none" width="960" height="540" aria-hidden="true" tabindex="-1"></video>
+    <div class="xp__water" aria-hidden="true"></div>
+    <div class="xp__shade" aria-hidden="true"></div>
 
-<section class="hero" data-theme="dark" aria-label="JanyuTech">
-  <div class="hero__sticky">
-    <div class="hero__bg" data-depth="{SCENE}hero-depth.webp" data-depth-m="{SCENE}hero-m-depth.webp">
-      <div class="hero__img is-on" data-tab="day">{scene_img("hero-day", "JanyuTech's quadruped, rover and robot arm on a terrace above the sea, under blue cherry blossom", eager=True, mobile="hero-m-day")}</div>
-      <div class="hero__img" data-tab="night">{scene_img("hero-night", "The same terrace at blue hour, the pool lit and the blossom glowing", mobile="hero-m-night")}</div>
-      <div class="hero__shade"></div>
-      {"".join(pins)}
-    </div>
-    <div class="hero__dim" aria-hidden="true"></div>
-    <div class="hero__ctn"><div class="hero__in">
-      <p class="hero__kicker l2" data-part="label">Robotics · Made in India</p>
-      <h1 class="hero__title"><span class="sr-only">JanyuTech: robotics that take people out of hazardous work</span><span class="h1" data-part="h" aria-hidden="true">Janyu Tech</span></h1>
-      <div class="hero__row">
-        <span class="hero__side" data-part="ctn">Engineering safety</span>
-        <div class="hero__switch chip" data-tabs-hero role="group" aria-label="Show the terrace by day or by night"><i class="hero__thumb" aria-hidden="true"></i><button type="button" class="is-active" data-tab="day" aria-pressed="true">Day</button><button type="button" data-tab="night" aria-pressed="false">Night</button></div>
-        <span class="hero__side" data-part="ctn">Innovating industry</span>
+    <div class="xp__one">
+      <p class="eyebrow xp__eyebrow">{esc(hero_eyebrow)}</p>
+      <h1 class="xp__title" id="xp-title" aria-label="Janyu Tech"><span class="xp__line" data-text="Janyu">Janyu</span> <span class="xp__line" data-text="Tech">Tech</span></h1>
+      <p class="xp__quote">“{esc(hero_sub)}”</p>
+      <div class="xp__pick">
+        <p class="xp__pick-label" id="xp-pick"><span class="xp__if-gl">Choose a robot to drive</span><span class="xp__if-flat">Two of our robots</span></p>
+        <div class="xp__bots" role="group" aria-labelledby="xp-pick">{bots}</div>
+        <p class="xp__hint"><kbd>W</kbd><kbd>A</kbd><kbd>S</kbd><kbd>D</kbd> to drive, <kbd>Space</kbd> to hop</p>
       </div>
-      <div class="sr-only">{"".join(f"<{'h2' if k == 0 else 'p'}>{esc(t)}</{'h2' if k == 0 else 'p'}>" for k, t in enumerate(seo))}</div>
-    </div></div>
-    <div class="hero__foot" data-part="ctn"><div class="hero__foot-in">{btn_pill("/products/", "View products", "pill--light hero__btn")}</div></div>
-  </div>
-</section>
-
-<section class="intro" data-theme="light" aria-label="Why JanyuTech">
-  {marquee(["Five reasons to choose JanyuTech", "Safety first", "Robots that go first", "Made in India"], "intro__marq")}
-  <div class="intro__mid" data-reveal-w>
-    <p class="l2" data-reveal="label">Safety first</p>
-    <h2 class="intro__h h4" data-reveal="h">Leading the way in human risk mitigation robotics</h2>
-    <span class="vline" data-reveal="line"></span>
-  </div>
-</section>
-<section class="why" data-theme="light" aria-label="Five reasons">
-  <div class="why__slider" data-sl="why">
-    <div class="why__slides">{why}</div>
-    {sl_ui(len(WHY))}
-  </div>
-</section>
-
-<section class="quote" data-theme="dark">
-  <div class="quote__bg">{scene_img("quote", "The orange Varaha sludge-cleaning robot on the terrace, the pool and the sea behind it")}</div>
-  <figure class="quote__card chip" data-reveal-w>
-    <svg class="quote__mark" viewBox="0 0 40 30" aria-hidden="true" data-reveal="ctn"><path d="M0 30V17C0 7.6 4.6 1.9 13.8 0l1.6 4.4C10.4 6 8.2 9 8 13.2h7.4V30H0Zm22.6 0V17c0-9.4 4.6-15.1 13.8-17L38 4.4C33 6 30.8 9 30.6 13.2H38V30H22.6Z"/></svg>
-    <blockquote><p class="h6" data-reveal="p">Instead of sending people into sewers, silos and kilns, we send robots, so every worker goes home safe.</p></blockquote>
-    <figcaption class="quote__by" data-reveal="ctn"><b>JanyuTech team</b><span>Vasai, India</span></figcaption>
-  </figure>
-</section>
-
-<section class="concept" data-theme="light">
-  {flower("bl-corner-a", "flower--concept-tl")}
-  {flower("bl-rise", "flower--concept-br", flip=True)}
-  <div class="concept__in">
-    <p class="l2" data-reveal="label">The concept</p>
-    <h2 class="concept__h h4" data-fill>JanyuTech is an Indian OEM building custom robots that take people out of hazardous work in the core industries that build the nation.</h2>
-    <p class="concept__p p1" data-reveal="p">{esc(about_p)}</p>
-  </div>
-</section>
-
-<section class="loc" data-theme="light" aria-label="Make in India">
-  <div class="loc__sticky"><div class="loc__track">
-    <div class="loc__panel loc__intro">
-      <span class="l2" data-reveal="label">India</span>
-      <h2 class="loc__title h1"><span class="loc__line">Make</span><span class="loc__line">in</span><span class="loc__line">India</span></h2>
-      {flower("bl-side", "flower--loc-a")}
     </div>
-    <div class="loc__panel loc__info">
-      <div class="loc__img">{scene_img("horizontal", "The quadruped under a blossoming tree on the terrace")}</div>
-      <div class="loc__text" data-reveal-w><h3 class="h5" data-reveal="h">From Vasai to the world</h3><p class="p1" data-reveal="p">Designed, engineered and built at our own works in Vasai, Maharashtra: hydraulics, electronics and software under one roof, so a robot can go from a sketch to a plant floor in months, not years.</p><div data-reveal="ctn">{btn_pill("/products/", "View products", "pill--blue")}</div></div>
-    </div>
-    <div class="loc__panel loc__path-w">
-      <h3 class="loc__h h3">The plants you run, <em>safer</em> this year</h3>
-      <div class="loc__path"><div class="loc__path-in">
-        <svg viewBox="0 0 1000 150" preserveAspectRatio="none" aria-hidden="true"><path class="loc__bus" d="{trace_path(9)}"/><path class="loc__trace" d="{trace_path()}"/></svg>
-        {"".join(stops)}
-      </div></div>
-      {flower("bl-hang", "flower--loc-b", flip=True)}
-    </div>
-  </div></div>
-</section>
 
-<section class="aerial" data-theme="dark" aria-label="The terrace, drawn and then built">
-  <div class="aerial__sticky">
-    <div class="aerial__pic">
-      {scene_img("aerial-bp", "The terrace drawn as a blueprint: the pool, the planters, the bare trees and the three robots", cls="aerial__bp")}
-      {scene_img("aerial", "The terrace from the air: the pool, the robots and the blossoming trees above the sea", cls="aerial__real")}
-      <span class="aerial__scan" aria-hidden="true"></span>
-      <div class="aerial__notes" aria-hidden="true">{notes}</div>
+    <div class="xp__hud">
+      <div class="xp__hud-top">
+        <p class="xp__hud-bot"><span>Driving</span> <b class="xp__hud-name">{esc(XP_BOTS[0]["name"])}</b></p>
+        <p class="xp__speed" aria-hidden="true"><b class="xp__speed-n">0</b><span>km/h</span></p>
+      </div>
+      <div class="xp__keys" aria-hidden="true">
+        <span class="xp__pad"><kbd data-k="up">W</kbd><kbd data-k="left">A</kbd><kbd data-k="down">S</kbd><kbd data-k="right">D</kbd></span><span class="xp__keys-t">Drive</span>
+        <kbd data-k="hop" class="xp__space">Space</kbd><span class="xp__keys-t">Hop</span>
+      </div>
+      <div class="xp__acts">
+        <button type="button" data-act="swap">Swap robot <kbd>Q</kbd></button>
+        <button type="button" data-act="reset">Start again <kbd>R</kbd></button>
+        <button type="button" data-act="exit">Back <kbd>Esc</kbd></button>
+      </div>
     </div>
-    <div class="aerial__grid" aria-hidden="true"></div>
-    <p class="aerial__cap chip"><b>Drawn in Vasai.</b> <span>Built for the plant.</span></p>
+    <div class="xp__touch" aria-hidden="true">
+      <div class="xp__joy"><span class="xp__joy-knob"></span></div>
+      <button type="button" class="xp__hop" tabindex="-1">Hop</button>
+    </div>
+
+    <div class="xp__two">
+      <p class="xp__chap"><span>#02</span> {esc(FILM["tag"])}</p>
+      <h2 class="xp__two-title">{esc(FILM["title"])}</h2>
+      <p class="xp__two-lead">{esc(FILM["text"])}</p>
+    </div>
+    <div class="xp__film-cap">
+      <p class="xp__chap"><span>#02</span> {esc(FILM["tag"])}</p>
+      <button type="button" class="xp__watch" data-film-open><span class="xp__watch-ring" aria-hidden="true"><i>▶</i></span><span>Watch the film</span></button>
+    </div>
+
+    <div class="xp__foot">
+      <p class="xp__seo">{esc(seo_h2[0] if seo_h2 else "")}</p>
+      <p class="xp__cue" aria-hidden="true"><span>Scroll to dive</span><i></i></p>
+    </div>
+    <div class="xp__boot" aria-hidden="true"><span>JT / world</span><b class="xp__boot-n">000</b></div>
   </div>
 </section>
 
-<section class="prod" id="products" data-theme="light" aria-label="Products" data-snap>
-  {flower("bl-rise", "flower--prod")}
-  <div class="prod__head" data-reveal-w><p class="l2" data-reveal="label">Our robots</p><h2 class="h4" data-reveal="h">Robots for the work nobody should do</h2></div>
-  <div class="prod__slider" data-sl="prod">
-    <div class="prod__slides">{prods}</div>
-    {sl_ui(len(PRODUCTS))}
-  </div>
-</section>
+<dialog class="filmbox" aria-label="{esc(FILM["title"])}">
+  <button type="button" class="filmbox__close" aria-label="Close the film">×</button>
+  <video src="{FILM["src"]}" poster="{FILM["poster"]}" controls playsinline preload="none" width="960" height="540"></video>
+</dialog>
 
-<section class="state" data-theme="light">
-  {flower("bl-side", "flower--state-l")}
-  {flower("bl-corner-b", "flower--state-r", flip=True)}
-  <div class="state__head" data-reveal-w>
-    <p class="l2" data-reveal="label">Where we work</p>
-    <h2 class="state__h h4" data-reveal="h">Our robots work where people shouldn’t: inside kilns, smelters, sewers, silos and mines.</h2>
+<section class="intro">
+  <div class="lede">
+    <p class="lede__text reveal">{esc(seo_h2[1] if len(seo_h2) > 1 else "")}</p>
+    {btns(hero_btns)}
   </div>
-  {marquee(IND_A, "state__marq", 1, links=True)}
-  {marquee(IND_B, "state__marq", -1, links=True)}
-</section>
-
-<section class="amen" data-theme="dark" aria-label="What we do">
-  <div class="amen__sticky">
-    {scene_img("amen", "The terrace at blue hour: the rover and the arm by the lit pool", cls="amen__bg")}
-    <div class="amen__w">
-      <p class="amen__label l2">What we do</p>
-      <div class="amen__listw"><span class="amen__hl" aria-hidden="true"></span><ol class="amen__list">
-        <li class="is-on"><a href="/industries/"><span class="amen__n">01</span>Custom robotics</a></li>
-        <li><a href="/industries/industry-4-0/"><span class="amen__n">02</span>Industry 4.0</a></li>
-        <li><a href="/industries/raas/"><span class="amen__n">03</span>Robotics as a service</a></li>
-        <li><a href="/industries/software-solutions/"><span class="amen__n">04</span>Software solutions</a></li>
-        <li><a href="/industries/dna/"><span class="amen__n">05</span>Defence, nuclear, aerospace</a></li>
-      </ol></div>
-      <div class="amen__q chip"><p class="p1">We don’t sell machines off a shelf. We engineer the robot your plant needs, then stay to run it with you.</p>{btn_pill("/contact-us/", "Book a demo", "pill--blue")}</div>
+  <div class="intro__inner">
+    <h2 class="display reveal-lines"><span>{esc(about_h[0]["text"])}</span></h2>
+    <div class="intro__copy">
+      <p class="reveal">{esc(about_h[1]["text"]) if len(about_h) > 1 else ""}</p>
+      <ul class="chips reveal">{chips}</ul>
+      {btns(about_btn)}
     </div>
   </div>
+  <div class="intro__gallery">{"".join(f'<div class="intro__shot" data-fluid><img src="{esc(img(g["src"]))}" alt="{esc(g["alt"])}" loading="lazy"></div>' for g in about_gal)}</div>
 </section>
 
-<section class="rely" data-theme="light" aria-label="Built to rely on">
-  <div class="rely__sheet">
-    {flower("bl-side", "flower--arch-l")}
-    {flower("bl-side", "flower--arch-r", flip=True)}
-    <div class="rely__in" data-reveal-w>
-      <p class="l2" data-reveal="label">Built to last</p>
-      <h2 class="rely__h h1" data-reveal="h">The robots to rely on</h2>
-    </div>
+<section class="marquee" aria-label="Safety, Robotics, ESG, Automation, Industry 4.0">
+  <div class="marquee__track">
+    <div class="marquee__row"><span>SAFETY</span><i>✦</i><span>ROBOTICS</span><i>✦</i><span>ESG</span><i>✦</i><span>AUTOMATION</span><i>✦</i><span>INDUSTRY 4.0</span><i>✦</i></div>
+    <div class="marquee__row" aria-hidden="true"><span>SAFETY</span><i>✦</i><span>ROBOTICS</span><i>✦</i><span>ESG</span><i>✦</i><span>AUTOMATION</span><i>✦</i><span>INDUSTRY 4.0</span><i>✦</i></div>
   </div>
 </section>
 
-<section class="inter" data-theme="light">
-  <div class="inter__top">
-    <div class="inter__panel" data-theme="dark">
-      <div class="inter__panel-img">{scene_img("panel", "The rover on the terrace")}</div>
-      <ul class="inter__also" data-reveal-w><li class="l2" data-reveal="label">Also available</li><li data-reveal="ctn">Robotics as a service (RaaS)</li><li data-reveal="ctn">Annual maintenance</li><li data-reveal="ctn">Operator training</li></ul>
-    </div>
-    <div class="inter__text" data-reveal-w>
-      <h2 class="h4" data-reveal="h">Every robot is built around the plant it serves, and engineered, manufactured and tested in India</h2>
-      <p class="p1" data-reveal="p">Remote operation from a safe distance, live cameras and sensors, rugged hydraulics and our own control software: each robot is made for one job, in one kind of plant, and supported for as long as it runs.</p>
-      <div data-reveal="ctn">{btn_pill("/products/", "View products", "pill--blue")}</div>
-    </div>
+<section id="industries" class="industries">
+  <div class="sec-head">
+    <h2 class="display reveal-lines"><span>{esc(ind_h[0]["text"])}</span></h2>
+    <div>{"".join(f'<p class="reveal">{esc(h["text"])}</p>' for h in ind_h[1:])}</div>
   </div>
-  <figure class="field" data-field>
-    <div class="field__frame">
-      <video class="field__vid" muted loop playsinline preload="none" poster="/assets/video/janyu-in-the-field.webp" width="960" height="540"><source data-src="/assets/video/janyu-in-the-field.mp4" type="video/mp4"></video>
-      <span class="field__tag chip">In the field</span>
-    </div>
-    <figcaption class="field__cap"><span class="l2">Our robots at work</span><span class="p2">Robot arms, automated lines, lab automation and all-terrain crawlers, filmed where they work.</span></figcaption>
-  </figure>
-  <div class="duo" aria-hidden="true">
-    <div class="duo__img">{scene_img("split-a", "")}</div>
-    <div class="duo__img">{scene_img("split-b", "")}</div>
-  </div>
+  <div class="panels">{"".join(panels)}</div>
 </section>
 
-<section class="eng" data-theme="dark" aria-label="Engineering">
-  <div class="eng__bg">{scene_img("engineering", "The Kara robotic arm on the terrace, the sea behind it")}</div>
-  <div class="eng__shade"></div>
-  {marquee(["Engineering", "Robotics", "Automation"], "eng__marq", 1)}
-  <div class="eng__q chip" data-reveal-w><p class="h6" data-reveal="p">Every JanyuTech robot balances rugged hardware with smart software, built to work where people shouldn’t.</p><p class="l2" data-reveal="label">JanyuTech R&amp;D · Vasai</p></div>
-  {btn_pill("/contact-us/", "Book a demo", "pill--light eng__btn")}
+<section class="biz">
+  <h2 class="biz__title reveal-up">{esc(biz_h)}</h2>
+  {btns([biz_btn])}
 </section>
 
-<section class="cred" data-theme="light" aria-label="Credentials">
-  <div class="cred__head" data-reveal-w><p class="l2" data-reveal="label">Leading the way</p><h2 class="h4" data-reveal="h">In human risk mitigation robotics</h2></div>
-  <ul class="cred__grid" data-reveal-w>
-    <li class="cred__card" data-reveal="ctn"><div class="cred__in"><span class="cred__plus" aria-hidden="true">+</span><h3 class="h5">Trusted by</h3><p class="p2">{", ".join(CLIENTS)} and many more across India.</p></div></li>
-    <li class="cred__card" data-reveal="ctn"><div class="cred__in"><span class="cred__plus" aria-hidden="true">+</span><h3 class="h5">Awarded</h3><p class="p2">Recognised by industry and academia for robotics that reduce human risk. <a class="ulink" href="/awards-and-certificates/">See them all</a></p></div></li>
-    <li class="cred__card" data-reveal="ctn"><div class="cred__in"><span class="cred__plus" aria-hidden="true">+</span><h3 class="h5">Made in India</h3><p class="p2">Designed, engineered and manufactured at our works in Vasai, Maharashtra.</p></div></li>
-    <li class="cred__card" data-reveal="ctn"><div class="cred__in"><span class="cred__plus" aria-hidden="true">+</span><h3 class="h5">{date.today().year}</h3><p class="p2">New robots in the field every quarter, for cement, steel, aluminium, mining, power and defence.</p></div></li>
-  </ul>
-  <div class="cred__logos" data-marq="0.6"><div class="marq__row">{logos}</div></div>
-</section>
-
-<section class="cta" data-theme="dark">
-  <div class="cta__in">
-    <div class="cta__bg">{scene_img("cta", "The terrace at blue hour, the robots by the pool")}</div>
-    <div class="cta__ctn" data-reveal-w>
-      <p class="l2" data-reveal="label">From sewers to smelters</p>
-      <h2 class="cta__h h1" data-reveal="h">Safer by design</h2>
-      <p class="cta__small p1" data-reveal="p">A short conversation is enough to know which robot fits your plant: a cleaning robot, an inspection crawler or a fully automated line.</p>
-      <div data-reveal="ctn">{btn_pill("/contact-us/", "Book a demo", "pill--light")}</div>
+<section id="products" class="products">
+  <div class="products__head">
+    <div>
+      <h2 class="display reveal-lines"><span>{esc(prod_h[0]["text"])}</span></h2>
+      {"".join(f'<p class="products__lead reveal">{esc(h["text"])}</p>' for h in prod_h[1:])}
+    </div>
+    <div class="toggle" role="tablist" aria-label="Product layout">
+      <button class="toggle__btn is-active" data-view="list" role="tab" aria-selected="true">List View</button>
+      <button class="toggle__btn" data-view="card" role="tab" aria-selected="false">Card View</button>
+      <span class="toggle__pill"></span>
     </div>
   </div>
+  <ul class="plist is-list" id="plist">{"".join(plist)}</ul>
+  {btns([prod_all])}
+  <div class="hover-img bpx" aria-hidden="true"><img class="bpx__bp" src="" alt=""><img class="bpx__photo" src="" alt=""><span class="bpx__scan"></span></div>
+</section>
+
+<section id="why" class="why">
+  <h2 class="display reveal-lines"><span>{esc(why_h)}</span></h2>
+  <ol class="why__list">{whys}</ol>
+</section>
+
+<section class="clients">
+  <p class="eyebrow reveal">{esc(cli_h)}</p>
+  <div class="clients__track"><div class="clients__row">{logos}{logos_dup}</div></div>
 </section>'''
-    return doc(p["title"], p["desc"], body, og=BASE + SCENE + "hero-day.webp", body_cls="home", canonical="/")
+    return doc(p["title"], p["desc"], body, og=p.get("og", ""), body_cls="home", canonical="/")
 
 
 # ---------------------------------------------------------------- write
@@ -1143,7 +897,7 @@ def relativize(html, depth):
         attr, q, url = m.group(1), m.group(2), m.group(3)
         if url.startswith("//"): return m.group(0)
         return f"{attr}={q}{pre}{url[1:]}"
-    return re.sub(r'\b(href|src|srcset|poster|data-src|data-depth|data-depth-m)=(["\'])(/[^"\']*)', fix, html)
+    return re.sub(r'\b(href|src|poster|data-img|data-bp|data-photo)=(["\'])(/[^"\']*)', fix, html)
 
 
 def write(path, html):
@@ -1159,7 +913,7 @@ for slug, p in PAGES.items():
     write(p["path"], inner_page(p))
 
 nf = doc("Page not found | JanyuTech", "This page does not exist.",
-         '<section class="phero" data-theme="light">' + flower("bl-rise", "flower--phero", flip=True) + '<p class="crumbs l2">Error 404</p><h1 class="phero__title h3">' + split_words("Page not found") + '</h1><p class="phero__lead p1">The page you are looking for has moved or no longer exists.</p><div class="btn-row"><a class="btn" href="/"><span>Back to home</span><i>→</i></a><a class="btn btn--ghost" href="/products/"><span>Browse products</span><i>→</i></a></div></section>',
+         '<section class="phero"><h1 class="phero__title">' + split_words("Page not found") + '</h1><p class="phero__lead">The page you are looking for has moved or no longer exists.</p><div class="btn-row"><a class="btn" href="/"><span>Back to home</span><i>→</i></a><a class="btn btn--ghost" href="/products/"><span>Browse products</span><i>→</i></a></div></section>',
          body_cls="inner", canonical="/404/")
 open(os.path.join(SITE, "404.html"), "w").write(nf)
 

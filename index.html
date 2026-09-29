@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html lang="en" class="no-js">
+<html lang="en">
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
@@ -8,30 +8,29 @@
 <link rel="canonical" href="https://janyutech.com/">
 <meta property="og:title" content="JanyuTech - Best Robotics Solutions Provider in India">
 <meta property="og:description" content="JanyuTech, an Indian OEM, provides software solutions &amp; Robotics as a Service (RaaS) for defence, nuclear, aerospace, cement &amp; construction &amp; mining industries">
-<meta property="og:image" content="https://janyutech.com/assets/scene/hero-day.webp">
-<meta name="theme-color" content="#0e2566">
+
 <link rel="icon" href="./assets/favicon.png">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link rel="preconnect" href="https://cdn.jsdelivr.net" crossorigin>
-<link href="https://fonts.googleapis.com/css2?family=Inter+Tight:ital,wght@0,300..800;1,300..500&display=swap" rel="stylesheet">
-<link rel="stylesheet" href="./styles.css?v=19">
-<link rel="stylesheet" href="./site.css?v=19">
-<script>try{if(sessionStorage.getItem("pt")==="1"){document.documentElement.classList.add("pt-in");sessionStorage.setItem("pt","0")}}catch(e){}</script>
-<style>.pt-in .curtain{opacity:1}</style>
+<link href="https://fonts.googleapis.com/css2?family=Unbounded:wght@500;700;900&family=Inter+Tight:ital,wght@0,300;0,400;0,500;0,600;0,800;1,800&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="./styles.css?v=11">
+<link rel="stylesheet" href="./site.css?v=11">
+<link rel="stylesheet" href="./world.css?v=11">
+<script type="importmap">{"imports": {"three": "https://cdn.jsdelivr.net/npm/three@0.186.1/build/three.module.min.js", "three/addons/": "https://cdn.jsdelivr.net/npm/three@0.186.1/examples/jsm/"}}</script>
+<link rel="modulepreload" href="https://cdn.jsdelivr.net/npm/three@0.186.1/build/three.module.min.js">
+<link rel="modulepreload" href="https://cdn.jsdelivr.net/npm/three@0.186.1/build/three.core.min.js">
+<link rel="preload" href="./assets/models/defence-rover.glb" as="fetch" crossorigin>
+<link rel="preload" href="./assets/models/quadruped-robot.glb" as="fetch" crossorigin>
 </head>
 <body class="home" id="top">
+<div class="cursor" aria-hidden="true"><span class="cursor__label">View</span></div>
+<div class="cursor-dot" aria-hidden="true"></div>
 <a class="skip" href="#content">Skip to content</a>
-<header class="hdr" data-hdr>
-  <a href="./" class="hdr__logo chip" aria-label="JanyuTech home"><svg class="jt-logo" viewBox="0 0 200 38" aria-hidden="true"><defs><clipPath id="jt-logo-c"><rect width="200" height="38" rx="8"/></clipPath><linearGradient id="jt-logo-g" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#b4b7bd"/><stop offset="1" stop-color="#9a9da4"/></linearGradient><linearGradient id="jt-logo-b" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#0a86e2"/><stop offset="1" stop-color="#006ec2"/></linearGradient><linearGradient id="jt-logo-s" x1="0" x2="1"><stop offset="0" stop-color="#fff" stop-opacity="0"/><stop offset=".5" stop-color="#fff" stop-opacity=".5"/><stop offset="1" stop-color="#fff" stop-opacity="0"/></linearGradient></defs><g clip-path="url(#jt-logo-c)"><rect class="jt-l" width="111" height="38" fill="url(#jt-logo-g)"/><rect class="jt-r" x="114" width="86" height="38" fill="url(#jt-logo-b)"/><g class="jt-shine"><rect x="-70" y="-10" width="46" height="58" fill="url(#jt-logo-s)" transform="skewX(-18)"/></g></g><text class="jt-lt" x="55.5" y="28" text-anchor="middle" fill="#1f1d24" textLength="86" lengthAdjust="spacingAndGlyphs">JANYU</text><text x="157" y="28" text-anchor="middle" fill="#fff" textLength="62" lengthAdjust="spacingAndGlyphs">TECH</text></svg><span class="hdr__sprig" aria-hidden="true"><img src="./assets/blossom/sprig.webp" alt="" width="120" height="107" decoding="async"></span></a>
-  <nav class="hdr__nav chip" aria-label="Main" data-nav>
-    <a class="hdr__link hdr__cta" href="./products/"><span class="hdr__t">Explore our robots</span></a>
-    <a class="hdr__link hdr__book" href="./contact-us/"><span class="hdr__t">Book a demo</span></a>
-    <button type="button" class="hdr__link hdr__menu" data-menu-btn aria-expanded="false" aria-controls="menu"><span class="hdr__t"><span class="hdr__burger" aria-hidden="true"><i></i><i></i></span><span class="hdr__menu-open">Menu</span><span class="hdr__menu-close">Close</span></span></button>
-    <span class="hdr__line" aria-hidden="true"></span>
-  </nav>
+<header class="site-header" data-header>
+  <a href="./" class="site-logo" aria-label="JanyuTech home"><img src="./assets/logo.png" alt="JanyuTech" width="368" height="86"></a>
+  <a href="./contact-us/" class="pill" data-magnetic>Contact Us <i>→</i></a>
+  <button type="button" class="burger" data-menu-btn aria-expanded="false" aria-controls="menu"><span class="burger__lines" aria-hidden="true"><i></i><i></i></span><span class="burger__label"><span class="burger__open">Menu</span><span class="burger__close">Close</span></span></button>
 </header>
-<button type="button" class="nut is-start" data-nut aria-label="Scroll down"><svg class="nut__shadow" viewBox="0 0 64 64" aria-hidden="true"><path d="M38.06 5.00L52.35 13.25Q58.41 16.75 58.41 23.75L58.41 40.25Q58.41 47.25 52.35 50.75L38.06 59.00Q32.00 62.50 25.94 59.00L11.65 50.75Q5.59 47.25 5.59 40.25L5.59 23.75Q5.59 16.75 11.65 13.25L25.94 5.00Q32.00 1.50 38.06 5.00Z"/></svg><span class="nut__glass" style="clip-path: path('M38.06 5.00L52.35 13.25Q58.41 16.75 58.41 23.75L58.41 40.25Q58.41 47.25 52.35 50.75L38.06 59.00Q32.00 62.50 25.94 59.00L11.65 50.75Q5.59 47.25 5.59 40.25L5.59 23.75Q5.59 16.75 11.65 13.25L25.94 5.00Q32.00 1.50 38.06 5.00Z')" aria-hidden="true"></span><svg class="nut__svg" viewBox="0 0 64 64" aria-hidden="true"><path class="nut__track" d="M36.76 10.25L48.45 17.00Q53.22 19.75 53.22 25.25L53.22 38.75Q53.22 44.25 48.45 47.00L36.76 53.75Q32.00 56.50 27.24 53.75L15.55 47.00Q10.78 44.25 10.78 38.75L10.78 25.25Q10.78 19.75 15.55 17.00L27.24 10.25Q32.00 7.50 36.76 10.25Z"/><path class="nut__bar" d="M36.76 10.25L48.45 17.00Q53.22 19.75 53.22 25.25L53.22 38.75Q53.22 44.25 48.45 47.00L36.76 53.75Q32.00 56.50 27.24 53.75L15.55 47.00Q10.78 44.25 10.78 38.75L10.78 25.25Q10.78 19.75 15.55 17.00L27.24 10.25Q32.00 7.50 36.76 10.25Z" pathLength="1"/><circle class="nut__hole" cx="32" cy="32" r="13.5"/></svg><span class="nut__n" aria-hidden="true">00</span><svg class="nut__up" viewBox="0 0 24 24" aria-hidden="true"><path d="M12 18.5V6M6.8 11.2 12 6l5.2 5.2"/></svg><span class="nut__tip" aria-hidden="true"><span class="t-down"><span class="rub"><i style="--i:0">S</i><i style="--i:1">c</i><i style="--i:2">r</i><i style="--i:3">o</i><i style="--i:4">l</i><i style="--i:5">l</i></span><svg class="nut__pull" viewBox="0 0 12 18"><path d="M6 1.5v14M1.8 11.4 6 15.6l4.2-4.2"/></svg></span><span class="t-up">Back to top</span></span></button>
 <div class="menu" id="menu" data-menu>
   <div class="menu__bg" aria-hidden="true"><span class="menu__grid"></span></div>
   <div class="menu__in">
@@ -39,377 +38,312 @@
     <div class="menu__side">
       <a class="btn-line" href="./contact-us/">Book a demo</a>
       <div class="menu__contact">
-        <p class="l2">Sales</p>
-        <a class="p1" href="mailto:sales@janyutech.com">sales@janyutech.com</a>
-        <a class="p1" href="tel:+917770012260">+91 77700 12260</a>
+        <p class="menu__label">Sales</p>
+        <a href="mailto:sales@janyutech.com">sales@janyutech.com</a>
+        <a href="tel:+917770012260">+91 77700 12260</a>
       </div>
-      <div class="menu__social"><a class="l2" href="https://www.linkedin.com/company/janyu-tech/" target="_blank" rel="noopener">LinkedIn</a><a class="l2" href="https://twitter.com/janyutech" target="_blank" rel="noopener">X</a><a class="l2" href="https://www.youtube.com/@JanyuTechOfficial/videos" target="_blank" rel="noopener">YouTube</a><a class="l2" href="https://www.instagram.com/janyutech_?igshid=YmMyMTA2M2Y=" target="_blank" rel="noopener">Instagram</a></div>
+      <div class="menu__social"><a class="menu__label" href="https://www.linkedin.com/company/janyu-tech/" target="_blank" rel="noopener">LinkedIn</a><a class="menu__label" href="https://twitter.com/janyutech" target="_blank" rel="noopener">X</a><a class="menu__label" href="https://www.youtube.com/@JanyuTechOfficial/videos" target="_blank" rel="noopener">YouTube</a><a class="menu__label" href="https://www.instagram.com/janyutech_?igshid=YmMyMTA2M2Y=" target="_blank" rel="noopener">Instagram</a></div>
     </div>
   </div>
 </div>
 <div class="curtain" aria-hidden="true"></div>
 <main id="content">
 
-<div class="pre" data-pre aria-hidden="true">
-  <div class="pre__iris"></div>
-  <div class="pre__decor"><span class="pre__grid"></span></div>
-  <div class="pre__ctn">
-    <svg class="spark pre__mark" viewBox="-22 -22 44 44" aria-hidden="true"><g fill="currentColor"><path d="M0,-6.2 C-4.6,-7.4 -7,-12.6 -5.6,-16.8 C-4.6,-19.8 -1.9,-20.9 0,-18.7 C1.9,-20.9 4.6,-19.8 5.6,-16.8 C7,-12.6 4.6,-7.4 0,-6.2 Z" transform="rotate(0)"/><path d="M0,-6.2 C-4.6,-7.4 -7,-12.6 -5.6,-16.8 C-4.6,-19.8 -1.9,-20.9 0,-18.7 C1.9,-20.9 4.6,-19.8 5.6,-16.8 C7,-12.6 4.6,-7.4 0,-6.2 Z" transform="rotate(72)"/><path d="M0,-6.2 C-4.6,-7.4 -7,-12.6 -5.6,-16.8 C-4.6,-19.8 -1.9,-20.9 0,-18.7 C1.9,-20.9 4.6,-19.8 5.6,-16.8 C7,-12.6 4.6,-7.4 0,-6.2 Z" transform="rotate(144)"/><path d="M0,-6.2 C-4.6,-7.4 -7,-12.6 -5.6,-16.8 C-4.6,-19.8 -1.9,-20.9 0,-18.7 C1.9,-20.9 4.6,-19.8 5.6,-16.8 C7,-12.6 4.6,-7.4 0,-6.2 Z" transform="rotate(216)"/><path d="M0,-6.2 C-4.6,-7.4 -7,-12.6 -5.6,-16.8 C-4.6,-19.8 -1.9,-20.9 0,-18.7 C1.9,-20.9 4.6,-19.8 5.6,-16.8 C7,-12.6 4.6,-7.4 0,-6.2 Z" transform="rotate(288)"/><polygon points="3.38,1.95 0.00,3.90 -3.38,1.95 -3.38,-1.95 -0.00,-3.90 3.38,-1.95"/></g></svg>
-    <svg class="pre__logo jt-logo" viewBox="0 0 200 38" aria-hidden="true"><defs><clipPath id="pre__logo-c"><rect width="200" height="38" rx="8"/></clipPath><linearGradient id="pre__logo-g" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#b4b7bd"/><stop offset="1" stop-color="#9a9da4"/></linearGradient><linearGradient id="pre__logo-b" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#0a86e2"/><stop offset="1" stop-color="#006ec2"/></linearGradient><linearGradient id="pre__logo-s" x1="0" x2="1"><stop offset="0" stop-color="#fff" stop-opacity="0"/><stop offset=".5" stop-color="#fff" stop-opacity=".5"/><stop offset="1" stop-color="#fff" stop-opacity="0"/></linearGradient></defs><g clip-path="url(#pre__logo-c)"><rect class="jt-l" width="111" height="38" fill="url(#pre__logo-g)"/><rect class="jt-r" x="114" width="86" height="38" fill="url(#pre__logo-b)"/><g class="jt-shine"><rect x="-70" y="-10" width="46" height="58" fill="url(#pre__logo-s)" transform="skewX(-18)"/></g></g><text class="jt-lt" x="55.5" y="28" text-anchor="middle" fill="#1f1d24" textLength="86" lengthAdjust="spacingAndGlyphs">JANYU</text><text x="157" y="28" text-anchor="middle" fill="#fff" textLength="62" lengthAdjust="spacingAndGlyphs">TECH</text></svg>
-    <div class="pre__bar"><i></i></div>
-    <p class="pre__count"><span data-pre-count>0</span>%</p>
-  </div>
-</div>
+<section class="xp" data-xp data-mode="boot" aria-labelledby="xp-title">
+  <div class="xp__stage" tabindex="-1">
+    <div class="xp__backdrop" aria-hidden="true"><span class="xp__contours"></span><span class="xp__grid"></span></div>
+    <canvas class="xp__gl" aria-hidden="true"></canvas>
+    <video class="xp__film" src="./assets/video/janyu-in-the-field.mp4" poster="./assets/video/janyu-in-the-field.webp" muted loop playsinline preload="none" width="960" height="540" aria-hidden="true" tabindex="-1"></video>
+    <div class="xp__water" aria-hidden="true"></div>
+    <div class="xp__shade" aria-hidden="true"></div>
 
-<section class="hero" data-theme="dark" aria-label="JanyuTech">
-  <div class="hero__sticky">
-    <div class="hero__bg" data-depth="./assets/scene/hero-depth.webp" data-depth-m="./assets/scene/hero-m-depth.webp">
-      <div class="hero__img is-on" data-tab="day"><picture><source media="(max-width: 991px)" srcset="./assets/scene/hero-m-day.webp"><img src="./assets/scene/hero-day.webp" alt="JanyuTech&#x27;s quadruped, rover and robot arm on a terrace above the sea, under blue cherry blossom" decoding="async"></picture></div>
-      <div class="hero__img" data-tab="night"><picture><source media="(max-width: 991px)" srcset="./assets/scene/hero-m-night.webp"><img src="./assets/scene/hero-night.webp" alt="The same terrace at blue hour, the pool lit and the blossom glowing" loading="lazy" decoding="async"></picture></div>
-      <div class="hero__shade"></div>
-      <a class="pin" href="./products/defence-robots/" style="left:28.4%;top:58.1%" data-z="0.6"><span class="pin__pulse"></span><span class="pin__dot"></span><span class="pin__tip"><b>Varaha quadruped</b><span>Four legs for rough ground</span></span><span class="sr-only">Varaha quadruped</span></a><a class="pin" href="./products/defence-robots/" style="left:70.4%;top:60.9%" data-z="0.518"><span class="pin__pulse"></span><span class="pin__dot"></span><span class="pin__tip"><b>Varaha UGV</b><span>Surveillance and inspection</span></span><span class="sr-only">Varaha UGV</span></a><a class="pin" href="./products/kara-robotic-arm/" style="left:74.1%;top:43.9%" data-z="0.396"><span class="pin__pulse"></span><span class="pin__dot"></span><span class="pin__tip"><b>Kara robotic arm</b><span>Pick, place and palletise</span></span><span class="sr-only">Kara robotic arm</span></a>
-    </div>
-    <div class="hero__dim" aria-hidden="true"></div>
-    <div class="hero__ctn"><div class="hero__in">
-      <p class="hero__kicker l2" data-part="label">Robotics · Made in India</p>
-      <h1 class="hero__title"><span class="sr-only">JanyuTech: robotics that take people out of hazardous work</span><span class="h1" data-part="h" aria-hidden="true">Janyu Tech</span></h1>
-      <div class="hero__row">
-        <span class="hero__side" data-part="ctn">Engineering safety</span>
-        <div class="hero__switch chip" data-tabs-hero role="group" aria-label="Show the terrace by day or by night"><i class="hero__thumb" aria-hidden="true"></i><button type="button" class="is-active" data-tab="day" aria-pressed="true">Day</button><button type="button" data-tab="night" aria-pressed="false">Night</button></div>
-        <span class="hero__side" data-part="ctn">Innovating industry</span>
+    <div class="xp__one">
+      <p class="eyebrow xp__eyebrow">Engineering Safety, Innovating Industry</p>
+      <h1 class="xp__title" id="xp-title" aria-label="Janyu Tech"><span class="xp__line" data-text="Janyu">Janyu</span> <span class="xp__line" data-text="Tech">Tech</span></h1>
+      <p class="xp__quote">“Leading the Way in Human Risk Mitigation Robotics”</p>
+      <div class="xp__pick">
+        <p class="xp__pick-label" id="xp-pick"><span class="xp__if-gl">Choose a robot to drive</span><span class="xp__if-flat">Two of our robots</span></p>
+        <div class="xp__bots" role="group" aria-labelledby="xp-pick"><a class="xp__bot" data-bot="rover" href="./products/defence-robots/">
+          <span class="xp__bot-img"><img src="./assets/models/defence-rover.webp" alt="" width="288" height="288" decoding="async"></span>
+          <span class="xp__bot-txt"><span class="xp__bot-n">01</span><span class="xp__bot-name">Defence Bot</span><span class="xp__bot-kind">Four-wheel UGV · Quick, and drifts on sand</span></span>
+          <span class="xp__bot-go" aria-hidden="true"><span class="xp__if-gl">Drive</span><span class="xp__if-flat">View</span> <i>→</i></span>
+        </a><a class="xp__bot" data-bot="quad" href="./industries/dna/#legged">
+          <span class="xp__bot-img"><img src="./assets/models/quadruped-robot.webp" alt="" width="288" height="288" decoding="async"></span>
+          <span class="xp__bot-txt"><span class="xp__bot-n">02</span><span class="xp__bot-name">Quad Bot</span><span class="xp__bot-kind">Four-legged robot · Sure-footed, turns on the spot</span></span>
+          <span class="xp__bot-go" aria-hidden="true"><span class="xp__if-gl">Drive</span><span class="xp__if-flat">View</span> <i>→</i></span>
+        </a></div>
+        <p class="xp__hint"><kbd>W</kbd><kbd>A</kbd><kbd>S</kbd><kbd>D</kbd> to drive, <kbd>Space</kbd> to hop</p>
       </div>
-      <div class="sr-only"><h2>Janyu Tech - Best Robotics Solutions Provider in India</h2><p>Janyu Tech, an Indian OEM, provides software solutions &amp; Robotics as a Service (RaaS) for defence, nuclear, aerospace, cement &amp; construction &amp; mining industries</p></div>
-    </div></div>
-    <div class="hero__foot" data-part="ctn"><div class="hero__foot-in"><a class="pill pill--light hero__btn" href="./products/" data-magnetic><span class="pill__t">View products</span><span class="pill__i" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M5 12h14M13.5 6.5 19 12l-5.5 5.5"/></svg></span></a></div></div>
-  </div>
-</section>
-
-<section class="intro" data-theme="light" aria-label="Why JanyuTech">
-  <div class="marq intro__marq" data-marq="1"><div class="marq__row"><span class="marq__it">Five reasons to choose JanyuTech</span><svg class="spark marq__sp" viewBox="-22 -22 44 44" aria-hidden="true"><g fill="currentColor"><path d="M0,-6.2 C-4.6,-7.4 -7,-12.6 -5.6,-16.8 C-4.6,-19.8 -1.9,-20.9 0,-18.7 C1.9,-20.9 4.6,-19.8 5.6,-16.8 C7,-12.6 4.6,-7.4 0,-6.2 Z" transform="rotate(0)"/><path d="M0,-6.2 C-4.6,-7.4 -7,-12.6 -5.6,-16.8 C-4.6,-19.8 -1.9,-20.9 0,-18.7 C1.9,-20.9 4.6,-19.8 5.6,-16.8 C7,-12.6 4.6,-7.4 0,-6.2 Z" transform="rotate(72)"/><path d="M0,-6.2 C-4.6,-7.4 -7,-12.6 -5.6,-16.8 C-4.6,-19.8 -1.9,-20.9 0,-18.7 C1.9,-20.9 4.6,-19.8 5.6,-16.8 C7,-12.6 4.6,-7.4 0,-6.2 Z" transform="rotate(144)"/><path d="M0,-6.2 C-4.6,-7.4 -7,-12.6 -5.6,-16.8 C-4.6,-19.8 -1.9,-20.9 0,-18.7 C1.9,-20.9 4.6,-19.8 5.6,-16.8 C7,-12.6 4.6,-7.4 0,-6.2 Z" transform="rotate(216)"/><path d="M0,-6.2 C-4.6,-7.4 -7,-12.6 -5.6,-16.8 C-4.6,-19.8 -1.9,-20.9 0,-18.7 C1.9,-20.9 4.6,-19.8 5.6,-16.8 C7,-12.6 4.6,-7.4 0,-6.2 Z" transform="rotate(288)"/><polygon points="3.38,1.95 0.00,3.90 -3.38,1.95 -3.38,-1.95 -0.00,-3.90 3.38,-1.95"/></g></svg><span class="marq__it">Safety first</span><svg class="spark marq__sp" viewBox="-22 -22 44 44" aria-hidden="true"><g fill="currentColor"><path d="M0,-6.2 C-4.6,-7.4 -7,-12.6 -5.6,-16.8 C-4.6,-19.8 -1.9,-20.9 0,-18.7 C1.9,-20.9 4.6,-19.8 5.6,-16.8 C7,-12.6 4.6,-7.4 0,-6.2 Z" transform="rotate(0)"/><path d="M0,-6.2 C-4.6,-7.4 -7,-12.6 -5.6,-16.8 C-4.6,-19.8 -1.9,-20.9 0,-18.7 C1.9,-20.9 4.6,-19.8 5.6,-16.8 C7,-12.6 4.6,-7.4 0,-6.2 Z" transform="rotate(72)"/><path d="M0,-6.2 C-4.6,-7.4 -7,-12.6 -5.6,-16.8 C-4.6,-19.8 -1.9,-20.9 0,-18.7 C1.9,-20.9 4.6,-19.8 5.6,-16.8 C7,-12.6 4.6,-7.4 0,-6.2 Z" transform="rotate(144)"/><path d="M0,-6.2 C-4.6,-7.4 -7,-12.6 -5.6,-16.8 C-4.6,-19.8 -1.9,-20.9 0,-18.7 C1.9,-20.9 4.6,-19.8 5.6,-16.8 C7,-12.6 4.6,-7.4 0,-6.2 Z" transform="rotate(216)"/><path d="M0,-6.2 C-4.6,-7.4 -7,-12.6 -5.6,-16.8 C-4.6,-19.8 -1.9,-20.9 0,-18.7 C1.9,-20.9 4.6,-19.8 5.6,-16.8 C7,-12.6 4.6,-7.4 0,-6.2 Z" transform="rotate(288)"/><polygon points="3.38,1.95 0.00,3.90 -3.38,1.95 -3.38,-1.95 -0.00,-3.90 3.38,-1.95"/></g></svg><span class="marq__it">Robots that go first</span><svg class="spark marq__sp" viewBox="-22 -22 44 44" aria-hidden="true"><g fill="currentColor"><path d="M0,-6.2 C-4.6,-7.4 -7,-12.6 -5.6,-16.8 C-4.6,-19.8 -1.9,-20.9 0,-18.7 C1.9,-20.9 4.6,-19.8 5.6,-16.8 C7,-12.6 4.6,-7.4 0,-6.2 Z" transform="rotate(0)"/><path d="M0,-6.2 C-4.6,-7.4 -7,-12.6 -5.6,-16.8 C-4.6,-19.8 -1.9,-20.9 0,-18.7 C1.9,-20.9 4.6,-19.8 5.6,-16.8 C7,-12.6 4.6,-7.4 0,-6.2 Z" transform="rotate(72)"/><path d="M0,-6.2 C-4.6,-7.4 -7,-12.6 -5.6,-16.8 C-4.6,-19.8 -1.9,-20.9 0,-18.7 C1.9,-20.9 4.6,-19.8 5.6,-16.8 C7,-12.6 4.6,-7.4 0,-6.2 Z" transform="rotate(144)"/><path d="M0,-6.2 C-4.6,-7.4 -7,-12.6 -5.6,-16.8 C-4.6,-19.8 -1.9,-20.9 0,-18.7 C1.9,-20.9 4.6,-19.8 5.6,-16.8 C7,-12.6 4.6,-7.4 0,-6.2 Z" transform="rotate(216)"/><path d="M0,-6.2 C-4.6,-7.4 -7,-12.6 -5.6,-16.8 C-4.6,-19.8 -1.9,-20.9 0,-18.7 C1.9,-20.9 4.6,-19.8 5.6,-16.8 C7,-12.6 4.6,-7.4 0,-6.2 Z" transform="rotate(288)"/><polygon points="3.38,1.95 0.00,3.90 -3.38,1.95 -3.38,-1.95 -0.00,-3.90 3.38,-1.95"/></g></svg><span class="marq__it">Made in India</span><svg class="spark marq__sp" viewBox="-22 -22 44 44" aria-hidden="true"><g fill="currentColor"><path d="M0,-6.2 C-4.6,-7.4 -7,-12.6 -5.6,-16.8 C-4.6,-19.8 -1.9,-20.9 0,-18.7 C1.9,-20.9 4.6,-19.8 5.6,-16.8 C7,-12.6 4.6,-7.4 0,-6.2 Z" transform="rotate(0)"/><path d="M0,-6.2 C-4.6,-7.4 -7,-12.6 -5.6,-16.8 C-4.6,-19.8 -1.9,-20.9 0,-18.7 C1.9,-20.9 4.6,-19.8 5.6,-16.8 C7,-12.6 4.6,-7.4 0,-6.2 Z" transform="rotate(72)"/><path d="M0,-6.2 C-4.6,-7.4 -7,-12.6 -5.6,-16.8 C-4.6,-19.8 -1.9,-20.9 0,-18.7 C1.9,-20.9 4.6,-19.8 5.6,-16.8 C7,-12.6 4.6,-7.4 0,-6.2 Z" transform="rotate(144)"/><path d="M0,-6.2 C-4.6,-7.4 -7,-12.6 -5.6,-16.8 C-4.6,-19.8 -1.9,-20.9 0,-18.7 C1.9,-20.9 4.6,-19.8 5.6,-16.8 C7,-12.6 4.6,-7.4 0,-6.2 Z" transform="rotate(216)"/><path d="M0,-6.2 C-4.6,-7.4 -7,-12.6 -5.6,-16.8 C-4.6,-19.8 -1.9,-20.9 0,-18.7 C1.9,-20.9 4.6,-19.8 5.6,-16.8 C7,-12.6 4.6,-7.4 0,-6.2 Z" transform="rotate(288)"/><polygon points="3.38,1.95 0.00,3.90 -3.38,1.95 -3.38,-1.95 -0.00,-3.90 3.38,-1.95"/></g></svg></div></div>
-  <div class="intro__mid" data-reveal-w>
-    <p class="l2" data-reveal="label">Safety first</p>
-    <h2 class="intro__h h4" data-reveal="h">Leading the way in human risk mitigation robotics</h2>
-    <span class="vline" data-reveal="line"></span>
-  </div>
-</section>
-<section class="why" data-theme="light" aria-label="Five reasons">
-  <div class="why__slider" data-sl="why">
-    <div class="why__slides"><article class="why__slide" data-sl-slide>
-          <div class="why__text">
-            <div class="why__top" data-part-c><svg class="why__icon" viewBox="106 106 288 288" aria-hidden="true"><use href="./assets/icons/core.svg#i"/></svg><span class="why__n">Reason 01</span></div>
-            <h3 class="why__h h3" data-part-h>Built for the core</h3>
-            <p class="why__p p1" data-part-p>Every robot is designed around the plant it serves: the process, the heat, the dust and the people who run it.</p>
-            <p class="why__l l2" data-part-c>Custom-designed for the core industry</p>
-          </div>
-          <div class="why__img" data-part-img><img src="./assets/img/2024-04-Robotic-Material-Handling-1.webp" alt="" loading="lazy" decoding="async"></div>
-        </article><article class="why__slide" data-sl-slide>
-          <div class="why__text">
-            <div class="why__top" data-part-c><svg class="why__icon" viewBox="106 106 288 288" aria-hidden="true"><use href="./assets/icons/downtime.svg#i"/></svg><span class="why__n">Reason 02</span></div>
-            <h3 class="why__h h3" data-part-h>Less downtime</h3>
-            <p class="why__p p1" data-part-p>Robots clean, inspect and repair while the plant keeps running, so shutdowns get shorter and fewer.</p>
-            <p class="why__l l2" data-part-c>Reduction in shutdown time</p>
-          </div>
-          <div class="why__img" data-part-img><img src="./assets/img/2024-07-47.webp" alt="" loading="lazy" decoding="async"></div>
-        </article><article class="why__slide" data-sl-slide>
-          <div class="why__text">
-            <div class="why__top" data-part-c><svg class="why__icon" viewBox="106 106 288 288" aria-hidden="true"><use href="./assets/icons/safety.svg#i"/></svg><span class="why__n">Reason 03</span></div>
-            <h3 class="why__h h3" data-part-h>No human entry</h3>
-            <p class="why__p p1" data-part-p>Our robots go into tanks, kilns, silos and sewers so that people don&#x27;t have to.</p>
-            <p class="why__l l2" data-part-c>Risk mitigation and accident prevention</p>
-          </div>
-          <div class="why__img" data-part-img><img src="./assets/img/2024-04-VARAHA-SC-E-INDUSTRIAL-TANK-CLEANING-ROBOT-1.webp" alt="" loading="lazy" decoding="async"></div>
-        </article><article class="why__slide" data-sl-slide>
-          <div class="why__text">
-            <div class="why__top" data-part-c><svg class="why__icon" viewBox="106 106 288 288" aria-hidden="true"><use href="./assets/icons/standards.svg#i"/></svg><span class="why__n">Reason 04</span></div>
-            <h3 class="why__h h3" data-part-h>Global standards</h3>
-            <p class="why__p p1" data-part-p>Engineered, built and tested to international standards, and documented for the audits that follow.</p>
-            <p class="why__l l2" data-part-c>International standards</p>
-          </div>
-          <div class="why__img" data-part-img><img src="./assets/img/2025-05-163.webp" alt="" loading="lazy" decoding="async"></div>
-        </article><article class="why__slide" data-sl-slide>
-          <div class="why__text">
-            <div class="why__top" data-part-c><svg class="why__icon" viewBox="106 106 288 288" aria-hidden="true"><use href="./assets/icons/legacy.svg#i"/></svg><span class="why__n">Reason 05</span></div>
-            <h3 class="why__h h3" data-part-h>New life</h3>
-            <p class="why__p p1" data-part-p>We automate legacy plants instead of replacing them: retrofits that give old systems years more work.</p>
-            <p class="why__l l2" data-part-c>Rejuvenating the legacy systems</p>
-          </div>
-          <div class="why__img" data-part-img><img src="./assets/img/2024-04-Heavy-Engineering-2.webp" alt="" loading="lazy" decoding="async"></div>
-        </article></div>
-    <div class="sl-ui "><span class="sl-ui__n"><b data-sl-cur>01</b><i>/</i>05</span><span class="sl-ui__segs" aria-hidden="true"><i data-sl-seg><b></b></i><i data-sl-seg><b></b></i><i data-sl-seg><b></b></i><i data-sl-seg><b></b></i><i data-sl-seg><b></b></i></span><span class="sl-ui__btns"><button type="button" data-sl-prev aria-label="Previous"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M19 12H5M10.5 6.5 5 12l5.5 5.5"/></svg></button><button type="button" data-sl-nextbtn aria-label="Next"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M5 12h14M13.5 6.5 19 12l-5.5 5.5"/></svg></button></span></div>
-  </div>
-</section>
-
-<section class="quote" data-theme="dark">
-  <div class="quote__bg"><picture><img src="./assets/scene/quote.webp" alt="The orange Varaha sludge-cleaning robot on the terrace, the pool and the sea behind it" loading="lazy" decoding="async"></picture></div>
-  <figure class="quote__card chip" data-reveal-w>
-    <svg class="quote__mark" viewBox="0 0 40 30" aria-hidden="true" data-reveal="ctn"><path d="M0 30V17C0 7.6 4.6 1.9 13.8 0l1.6 4.4C10.4 6 8.2 9 8 13.2h7.4V30H0Zm22.6 0V17c0-9.4 4.6-15.1 13.8-17L38 4.4C33 6 30.8 9 30.6 13.2H38V30H22.6Z"/></svg>
-    <blockquote><p class="h6" data-reveal="p">Instead of sending people into sewers, silos and kilns, we send robots, so every worker goes home safe.</p></blockquote>
-    <figcaption class="quote__by" data-reveal="ctn"><b>JanyuTech team</b><span>Vasai, India</span></figcaption>
-  </figure>
-</section>
-
-<section class="concept" data-theme="light">
-  <div class="flower flower--concept-tl" aria-hidden="true"><video muted loop playsinline preload="none" poster="./assets/blossom/bl-corner-a.webp" width="960" height="960"><source data-src="./assets/blossom/bl-corner-a.webm" type="video/webm"><source data-src="./assets/blossom/bl-corner-a.mov" type='video/mp4; codecs="hvc1"'></video></div>
-  <div class="flower flower--concept-br flower--flip" aria-hidden="true"><video muted loop playsinline preload="none" poster="./assets/blossom/bl-rise.webp" width="960" height="960"><source data-src="./assets/blossom/bl-rise.webm" type="video/webm"><source data-src="./assets/blossom/bl-rise.mov" type='video/mp4; codecs="hvc1"'></video></div>
-  <div class="concept__in">
-    <p class="l2" data-reveal="label">The concept</p>
-    <h2 class="concept__h h4" data-fill>JanyuTech is an Indian OEM building custom robots that take people out of hazardous work in the core industries that build the nation.</h2>
-    <p class="concept__p p1" data-reveal="p">We specialize in pioneering custom-designed robotics and cutting-edge solutions to reduce human risk in the core manufacturing sector. Our products are expertly crafted to enhance compliance with ESG commitments and the principles of Industry 4.0, ensuring a safer, more efficient, and environmentally conscious manufacturing environment.</p>
-  </div>
-</section>
-
-<section class="loc" data-theme="light" aria-label="Make in India">
-  <div class="loc__sticky"><div class="loc__track">
-    <div class="loc__panel loc__intro">
-      <span class="l2" data-reveal="label">India</span>
-      <h2 class="loc__title h1"><span class="loc__line">Make</span><span class="loc__line">in</span><span class="loc__line">India</span></h2>
-      <div class="flower flower--loc-a" aria-hidden="true"><video muted loop playsinline preload="none" poster="./assets/blossom/bl-side.webp" width="960" height="960"><source data-src="./assets/blossom/bl-side.webm" type="video/webm"><source data-src="./assets/blossom/bl-side.mov" type='video/mp4; codecs="hvc1"'></video></div>
     </div>
-    <div class="loc__panel loc__info">
-      <div class="loc__img"><picture><img src="./assets/scene/horizontal.webp" alt="The quadruped under a blossoming tree on the terrace" loading="lazy" decoding="async"></picture></div>
-      <div class="loc__text" data-reveal-w><h3 class="h5" data-reveal="h">From Vasai to the world</h3><p class="p1" data-reveal="p">Designed, engineered and built at our own works in Vasai, Maharashtra: hydraulics, electronics and software under one roof, so a robot can go from a sketch to a plant floor in months, not years.</p><div data-reveal="ctn"><a class="pill pill--blue" href="./products/" data-magnetic><span class="pill__t">View products</span><span class="pill__i" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M5 12h14M13.5 6.5 19 12l-5.5 5.5"/></svg></span></a></div></div>
-    </div>
-    <div class="loc__panel loc__path-w">
-      <h3 class="loc__h h3">The plants you run, <em>safer</em> this year</h3>
-      <div class="loc__path"><div class="loc__path-in">
-        <svg viewBox="0 0 1000 150" preserveAspectRatio="none" aria-hidden="true"><path class="loc__bus" d="M 0 102.0 L 60.0 102.0 L 110.2 102.0 L 157.0 63.0 L 200.0 63.0 L 251.6 63.0 L 305.6 108.0 L 350.0 108.0 L 414.2 108.0 L 443.0 84.0 L 500.0 84.0 L 555.6 84.0 L 591.6 54.0 L 640.0 54.0 L 691.6 54.0 L 745.6 99.0 L 790.0 99.0 L 845.6 99.0 L 881.6 69.0 L 930.0 69.0 L 1000.0 69.0"/><path class="loc__trace" d="M 0 93.0 L 60.0 93.0 L 106.6 93.0 L 153.4 54.0 L 200.0 54.0 L 248.0 54.0 L 302.0 99.0 L 350.0 99.0 L 410.6 99.0 L 439.4 75.0 L 500.0 75.0 L 552.0 75.0 L 588.0 45.0 L 640.0 45.0 L 688.0 45.0 L 742.0 90.0 L 790.0 90.0 L 842.0 90.0 L 878.0 60.0 L 930.0 60.0 L 1000.0 60.0"/></svg>
-        <a class="loc__stop" href="./industries/cement-construction/" style="left:6.0%;top:62.0%"><b>Cement</b><span>5 solutions</span></a><a class="loc__stop" href="./industries/steel-industry/" style="left:20.0%;top:36.0%"><b>Steel</b><span>5 solutions</span></a><a class="loc__stop" href="./industries/aluminium-industry/" style="left:35.0%;top:66.0%"><b>Aluminium</b><span>7 solutions</span></a><span class="loc__stop loc__stop--mark" style="left:50.0%;top:50.0%"><svg class="spark" viewBox="-22 -22 44 44" aria-hidden="true"><g fill="currentColor"><path d="M0,-6.2 C-4.6,-7.4 -7,-12.6 -5.6,-16.8 C-4.6,-19.8 -1.9,-20.9 0,-18.7 C1.9,-20.9 4.6,-19.8 5.6,-16.8 C7,-12.6 4.6,-7.4 0,-6.2 Z" transform="rotate(0)"/><path d="M0,-6.2 C-4.6,-7.4 -7,-12.6 -5.6,-16.8 C-4.6,-19.8 -1.9,-20.9 0,-18.7 C1.9,-20.9 4.6,-19.8 5.6,-16.8 C7,-12.6 4.6,-7.4 0,-6.2 Z" transform="rotate(72)"/><path d="M0,-6.2 C-4.6,-7.4 -7,-12.6 -5.6,-16.8 C-4.6,-19.8 -1.9,-20.9 0,-18.7 C1.9,-20.9 4.6,-19.8 5.6,-16.8 C7,-12.6 4.6,-7.4 0,-6.2 Z" transform="rotate(144)"/><path d="M0,-6.2 C-4.6,-7.4 -7,-12.6 -5.6,-16.8 C-4.6,-19.8 -1.9,-20.9 0,-18.7 C1.9,-20.9 4.6,-19.8 5.6,-16.8 C7,-12.6 4.6,-7.4 0,-6.2 Z" transform="rotate(216)"/><path d="M0,-6.2 C-4.6,-7.4 -7,-12.6 -5.6,-16.8 C-4.6,-19.8 -1.9,-20.9 0,-18.7 C1.9,-20.9 4.6,-19.8 5.6,-16.8 C7,-12.6 4.6,-7.4 0,-6.2 Z" transform="rotate(288)"/><polygon points="3.38,1.95 0.00,3.90 -3.38,1.95 -3.38,-1.95 -0.00,-3.90 3.38,-1.95"/></g></svg></span><a class="loc__stop" href="./industries/mining-industry/" style="left:64.0%;top:30.0%"><b>Mining</b><span>6 solutions</span></a><a class="loc__stop" href="./industries/thermal-and-power-industry/" style="left:79.0%;top:60.0%"><b>Thermal &amp; power</b><span>5 solutions</span></a><a class="loc__stop" href="./industries/chemical-industry/" style="left:93.0%;top:40.0%"><b>Chemical</b><span>3 solutions</span></a>
-      </div></div>
-      <div class="flower flower--loc-b flower--flip" aria-hidden="true"><video muted loop playsinline preload="none" poster="./assets/blossom/bl-hang.webp" width="960" height="960"><source data-src="./assets/blossom/bl-hang.webm" type="video/webm"><source data-src="./assets/blossom/bl-hang.mov" type='video/mp4; codecs="hvc1"'></video></div>
-    </div>
-  </div></div>
-</section>
 
-<section class="aerial" data-theme="dark" aria-label="The terrace, drawn and then built">
-  <div class="aerial__sticky">
-    <div class="aerial__pic">
-      <picture class="aerial__bp"><img src="./assets/scene/aerial-bp.webp" alt="The terrace drawn as a blueprint: the pool, the planters, the bare trees and the three robots" loading="lazy" decoding="async"></picture>
-      <picture class="aerial__real"><img src="./assets/scene/aerial.webp" alt="The terrace from the air: the pool, the robots and the blossoming trees above the sea" loading="lazy" decoding="async"></picture>
-      <span class="aerial__scan" aria-hidden="true"></span>
-      <div class="aerial__notes" aria-hidden="true"><span class="aerial__note" style="left:40.4%;top:75.5%;--ddx:-80px;--ddy:70px;--dtx:-100%;--dlen:106px;--dang:138.8deg;--mdx:46px;--mdy:78px;--mtx:0%;--mlen:91px;--mang:59.5deg" data-y="75.5"><i></i><span class="aerial__tag"><b>Varaha quadruped</b><span>Rough-ground inspection</span></span></span><span class="aerial__note" style="left:54.7%;top:73.8%;--ddx:96px;--ddy:74px;--dtx:0%;--dlen:121px;--dang:37.6deg;--mdx:-30px;--mdy:-96px;--mtx:-100%;--mlen:101px;--mang:-107.4deg" data-y="73.8"><i></i><span class="aerial__tag"><b>Varaha UGV</b><span>Surveillance</span></span></span><span class="aerial__note" style="left:62.7%;top:40.3%;--ddx:-110px;--ddy:-70px;--dtx:-100%;--dlen:130px;--dang:-147.5deg;--mdx:-40px;--mdy:86px;--mtx:-100%;--mlen:95px;--mang:114.9deg" data-y="40.3"><i></i><span class="aerial__tag"><b>Kara robotic arm</b><span>Pick, place, palletise</span></span></span></div>
+    <div class="xp__hud">
+      <div class="xp__hud-top">
+        <p class="xp__hud-bot"><span>Driving</span> <b class="xp__hud-name">Defence Bot</b></p>
+        <p class="xp__speed" aria-hidden="true"><b class="xp__speed-n">0</b><span>km/h</span></p>
+      </div>
+      <div class="xp__keys" aria-hidden="true">
+        <span class="xp__pad"><kbd data-k="up">W</kbd><kbd data-k="left">A</kbd><kbd data-k="down">S</kbd><kbd data-k="right">D</kbd></span><span class="xp__keys-t">Drive</span>
+        <kbd data-k="hop" class="xp__space">Space</kbd><span class="xp__keys-t">Hop</span>
+      </div>
+      <div class="xp__acts">
+        <button type="button" data-act="swap">Swap robot <kbd>Q</kbd></button>
+        <button type="button" data-act="reset">Start again <kbd>R</kbd></button>
+        <button type="button" data-act="exit">Back <kbd>Esc</kbd></button>
+      </div>
     </div>
-    <div class="aerial__grid" aria-hidden="true"></div>
-    <p class="aerial__cap chip"><b>Drawn in Vasai.</b> <span>Built for the plant.</span></p>
+    <div class="xp__touch" aria-hidden="true">
+      <div class="xp__joy"><span class="xp__joy-knob"></span></div>
+      <button type="button" class="xp__hop" tabindex="-1">Hop</button>
+    </div>
+
+    <div class="xp__two">
+      <p class="xp__chap"><span>#02</span> In the field</p>
+      <h2 class="xp__two-title">Our robots at work</h2>
+      <p class="xp__two-lead">Robot arms, automated lines, lab automation and all-terrain crawlers, filmed where they work.</p>
+    </div>
+    <div class="xp__film-cap">
+      <p class="xp__chap"><span>#02</span> In the field</p>
+      <button type="button" class="xp__watch" data-film-open><span class="xp__watch-ring" aria-hidden="true"><i>▶</i></span><span>Watch the film</span></button>
+    </div>
+
+    <div class="xp__foot">
+      <p class="xp__seo">Janyu Tech - Best Robotics Solutions Provider in India</p>
+      <p class="xp__cue" aria-hidden="true"><span>Scroll to dive</span><i></i></p>
+    </div>
+    <div class="xp__boot" aria-hidden="true"><span>JT / world</span><b class="xp__boot-n">000</b></div>
   </div>
 </section>
 
-<section class="prod" id="products" data-theme="light" aria-label="Products" data-snap>
-  <div class="flower flower--prod" aria-hidden="true"><video muted loop playsinline preload="none" poster="./assets/blossom/bl-rise.webp" width="960" height="960"><source data-src="./assets/blossom/bl-rise.webm" type="video/webm"><source data-src="./assets/blossom/bl-rise.mov" type='video/mp4; codecs="hvc1"'></video></div>
-  <div class="prod__head" data-reveal-w><p class="l2" data-reveal="label">Our robots</p><h2 class="h4" data-reveal="h">Robots for the work nobody should do</h2></div>
-  <div class="prod__slider" data-sl="prod">
-    <div class="prod__slides"><article class="prod__slide" data-sl-slide>
-          <div class="prod__text">
-            <p class="prod__n l2" data-part-c>Robot 01</p>
-            <h3 class="prod__name h3" data-part-h>Varaha sludge cleaner</h3>
-            <dl class="prod__meta" data-part-c><div><dt class="l2">Industry</dt><dd>Oil, gas &amp; chemicals</dd></div><div><dt class="l2">Works in</dt><dd>Tanks &amp; reactors</dd></div></dl>
-            <p class="prod__p p1" data-part-p>A remotely operated tank-cleaning robot that cuts and pumps out sludge from crude, chemical and water tanks. Hydraulic, and at home under water.</p>
-            <div data-part-c><a class="pill pill--blue" href="./products/varaha-sludge-cleaning/" data-magnetic><span class="pill__t">Explore the robot</span><span class="pill__i" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M5 12h14M13.5 6.5 19 12l-5.5 5.5"/></svg></span></a></div>
-          </div>
-          <div class="prod__img" data-part-img data-scan>
-            <img class="prod__bp" src="./assets/bp/sludge-cleaning-robot-bp.webp" alt="" loading="lazy" decoding="async">
-            <img class="prod__ph" src="./assets/bp/sludge-cleaning-robot.webp" alt="Varaha sludge cleaner" loading="lazy" decoding="async">
-            <span class="prod__scan" aria-hidden="true"></span>
-          </div>
-        </article><article class="prod__slide" data-sl-slide>
-          <div class="prod__text">
-            <p class="prod__n l2" data-part-c>Robot 02</p>
-            <h3 class="prod__name h3" data-part-h>Kara robotic arm</h3>
-            <dl class="prod__meta" data-part-c><div><dt class="l2">Industry</dt><dd>Manufacturing</dd></div><div><dt class="l2">Works in</dt><dd>Lines &amp; warehouses</dd></div></dl>
-            <p class="prod__p p1" data-part-p>Pick-and-place and palletising arms that lift what people shouldn&#x27;t, faster and more precisely, built into the line you already run.</p>
-            <div data-part-c><a class="pill pill--blue" href="./products/kara-robotic-arm/" data-magnetic><span class="pill__t">Explore the robot</span><span class="pill__i" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M5 12h14M13.5 6.5 19 12l-5.5 5.5"/></svg></span></a></div>
-          </div>
-          <div class="prod__img prod__img--photo" data-part-img data-scan>
-            <img class="prod__bp" src="./assets/bp/denka-arm-robot-bp.webp" alt="" loading="lazy" decoding="async">
-            <img class="prod__ph" src="./assets/bp/denka-arm-robot.webp" alt="Kara robotic arm" loading="lazy" decoding="async">
-            <span class="prod__scan" aria-hidden="true"></span>
-          </div>
-        </article><article class="prod__slide" data-sl-slide>
-          <div class="prod__text">
-            <p class="prod__n l2" data-part-c>Robot 03</p>
-            <h3 class="prod__name h3" data-part-h>Cement cube robot</h3>
-            <dl class="prod__meta" data-part-c><div><dt class="l2">Industry</dt><dd>Cement &amp; construction</dd></div><div><dt class="l2">Works in</dt><dd>Quality labs</dd></div></dl>
-            <p class="prod__p p1" data-part-p>Robotic concrete cube making and cement cube testing: the lab&#x27;s heavy, repetitive work, automated and recorded.</p>
-            <div data-part-c><a class="pill pill--blue" href="./products/cement-automation/" data-magnetic><span class="pill__t">Explore the robot</span><span class="pill__i" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M5 12h14M13.5 6.5 19 12l-5.5 5.5"/></svg></span></a></div>
-          </div>
-          <div class="prod__img prod__img--photo" data-part-img data-scan>
-            <img class="prod__bp" src="./assets/bp/cement-industry-bp.webp" alt="" loading="lazy" decoding="async">
-            <img class="prod__ph" src="./assets/bp/cement-industry.webp" alt="Cement cube robot" loading="lazy" decoding="async">
-            <span class="prod__scan" aria-hidden="true"></span>
-          </div>
-        </article><article class="prod__slide" data-sl-slide>
-          <div class="prod__text">
-            <p class="prod__n l2" data-part-c>Robot 04</p>
-            <h3 class="prod__name h3" data-part-h>Varaha quadruped</h3>
-            <dl class="prod__meta" data-part-c><div><dt class="l2">Industry</dt><dd>Defence &amp; security</dd></div><div><dt class="l2">Works in</dt><dd>Rough ground</dd></div></dl>
-            <p class="prod__p p1" data-part-p>A four-legged robot for surveillance and inspection where wheels can&#x27;t go: stairs, rubble and broken ground.</p>
-            <div data-part-c><a class="pill pill--blue" href="./products/defence-robots/" data-magnetic><span class="pill__t">Explore the robot</span><span class="pill__i" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M5 12h14M13.5 6.5 19 12l-5.5 5.5"/></svg></span></a></div>
-          </div>
-          <div class="prod__img" data-part-img data-scan>
-            <img class="prod__bp" src="./assets/bp/varaha-four-legged-robot-bp.webp" alt="" loading="lazy" decoding="async">
-            <img class="prod__ph" src="./assets/bp/varaha-four-legged-robot.webp" alt="Varaha quadruped" loading="lazy" decoding="async">
-            <span class="prod__scan" aria-hidden="true"></span>
-          </div>
-        </article><article class="prod__slide" data-sl-slide>
-          <div class="prod__text">
-            <p class="prod__n l2" data-part-c>Robot 05</p>
-            <h3 class="prod__name h3" data-part-h>Solar panel cleaner</h3>
-            <dl class="prod__meta" data-part-c><div><dt class="l2">Industry</dt><dd>Renewable energy</dd></div><div><dt class="l2">Works in</dt><dd>Solar arrays</dd></div></dl>
-            <p class="prod__p p1" data-part-p>A vehicle-mounted robotic arm that cleans large arrays gently on uneven ground, with no rails to install.</p>
-            <div data-part-c><a class="pill pill--blue" href="./products/solar-panel-cleaner/" data-magnetic><span class="pill__t">Explore the robot</span><span class="pill__i" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M5 12h14M13.5 6.5 19 12l-5.5 5.5"/></svg></span></a></div>
-          </div>
-          <div class="prod__img" data-part-img data-scan>
-            <img class="prod__bp" src="./assets/bp/solar-panel-cleaning-robot-bp.webp" alt="" loading="lazy" decoding="async">
-            <img class="prod__ph" src="./assets/bp/solar-panel-cleaning-robot.webp" alt="Solar panel cleaner" loading="lazy" decoding="async">
-            <span class="prod__scan" aria-hidden="true"></span>
-          </div>
-        </article><article class="prod__slide" data-sl-slide>
-          <div class="prod__text">
-            <p class="prod__n l2" data-part-c>Robot 06</p>
-            <h3 class="prod__name h3" data-part-h>Magnetic NDT crawler</h3>
-            <dl class="prod__meta" data-part-c><div><dt class="l2">Industry</dt><dd>Heavy engineering</dd></div><div><dt class="l2">Works in</dt><dd>Steel structures</dd></div></dl>
-            <p class="prod__p p1" data-part-p>A magnetic crawler that climbs steel to carry the sensors for non-destructive testing, so inspection needs no scaffolding.</p>
-            <div data-part-c><a class="pill pill--blue" href="./products/heavy-engineering-metals/" data-magnetic><span class="pill__t">Explore the robot</span><span class="pill__i" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M5 12h14M13.5 6.5 19 12l-5.5 5.5"/></svg></span></a></div>
-          </div>
-          <div class="prod__img" data-part-img data-scan>
-            <img class="prod__bp" src="./assets/bp/varaha-magnetic-crawler-for-ndt-testing-bp.webp" alt="" loading="lazy" decoding="async">
-            <img class="prod__ph" src="./assets/bp/varaha-magnetic-crawler-for-ndt-testing.webp" alt="Magnetic NDT crawler" loading="lazy" decoding="async">
-            <span class="prod__scan" aria-hidden="true"></span>
-          </div>
-        </article><article class="prod__slide" data-sl-slide>
-          <div class="prod__text">
-            <p class="prod__n l2" data-part-c>Robot 07</p>
-            <h3 class="prod__name h3" data-part-h>Varaha mining robot</h3>
-            <dl class="prod__meta" data-part-c><div><dt class="l2">Industry</dt><dd>Mining</dd></div><div><dt class="l2">Works in</dt><dd>Underground</dd></div></dl>
-            <p class="prod__p p1" data-part-p>Remotely operated hydraulic vehicles that break, cut and move ore, keeping miners away from the most dangerous faces.</p>
-            <div data-part-c><a class="pill pill--blue" href="./products/varaha-mining-robots/" data-magnetic><span class="pill__t">Explore the robot</span><span class="pill__i" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M5 12h14M13.5 6.5 19 12l-5.5 5.5"/></svg></span></a></div>
-          </div>
-          <div class="prod__img" data-part-img data-scan>
-            <img class="prod__bp" src="./assets/bp/varah-dozer-a-bp.webp" alt="" loading="lazy" decoding="async">
-            <img class="prod__ph" src="./assets/bp/varah-dozer-a.webp" alt="Varaha mining robot" loading="lazy" decoding="async">
-            <span class="prod__scan" aria-hidden="true"></span>
-          </div>
-        </article></div>
-    <div class="sl-ui "><span class="sl-ui__n"><b data-sl-cur>01</b><i>/</i>07</span><span class="sl-ui__segs" aria-hidden="true"><i data-sl-seg><b></b></i><i data-sl-seg><b></b></i><i data-sl-seg><b></b></i><i data-sl-seg><b></b></i><i data-sl-seg><b></b></i><i data-sl-seg><b></b></i><i data-sl-seg><b></b></i></span><span class="sl-ui__btns"><button type="button" data-sl-prev aria-label="Previous"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M19 12H5M10.5 6.5 5 12l5.5 5.5"/></svg></button><button type="button" data-sl-nextbtn aria-label="Next"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M5 12h14M13.5 6.5 19 12l-5.5 5.5"/></svg></button></span></div>
-  </div>
-</section>
+<dialog class="filmbox" aria-label="Our robots at work">
+  <button type="button" class="filmbox__close" aria-label="Close the film">×</button>
+  <video src="./assets/video/janyu-in-the-field.mp4" poster="./assets/video/janyu-in-the-field.webp" controls playsinline preload="none" width="960" height="540"></video>
+</dialog>
 
-<section class="state" data-theme="light">
-  <div class="flower flower--state-l" aria-hidden="true"><video muted loop playsinline preload="none" poster="./assets/blossom/bl-side.webp" width="960" height="960"><source data-src="./assets/blossom/bl-side.webm" type="video/webm"><source data-src="./assets/blossom/bl-side.mov" type='video/mp4; codecs="hvc1"'></video></div>
-  <div class="flower flower--state-r flower--flip" aria-hidden="true"><video muted loop playsinline preload="none" poster="./assets/blossom/bl-corner-b.webp" width="960" height="960"><source data-src="./assets/blossom/bl-corner-b.webm" type="video/webm"><source data-src="./assets/blossom/bl-corner-b.mov" type='video/mp4; codecs="hvc1"'></video></div>
-  <div class="state__head" data-reveal-w>
-    <p class="l2" data-reveal="label">Where we work</p>
-    <h2 class="state__h h4" data-reveal="h">Our robots work where people shouldn’t: inside kilns, smelters, sewers, silos and mines.</h2>
+<section class="intro">
+  <div class="lede">
+    <p class="lede__text reveal">Janyu Tech, an Indian OEM, provides software solutions &amp; Robotics as a Service (RaaS) for defence, nuclear, aerospace, cement &amp; construction &amp; mining industries</p>
+    <div class="btn-row reveal-up"><a class="btn" href="./products/" data-magnetic><span>View Products</span><i>→</i></a><a class="btn btn--ghost" href="./contact-us/" data-magnetic><span>Contact Us</span><i>→</i></a></div>
   </div>
-  <div class="marq state__marq" data-marq="1"><div class="marq__row"><a class="marq__it" href="./industries/cement-construction/">Cement &amp; construction</a><svg class="spark marq__sp" viewBox="-22 -22 44 44" aria-hidden="true"><g fill="currentColor"><path d="M0,-6.2 C-4.6,-7.4 -7,-12.6 -5.6,-16.8 C-4.6,-19.8 -1.9,-20.9 0,-18.7 C1.9,-20.9 4.6,-19.8 5.6,-16.8 C7,-12.6 4.6,-7.4 0,-6.2 Z" transform="rotate(0)"/><path d="M0,-6.2 C-4.6,-7.4 -7,-12.6 -5.6,-16.8 C-4.6,-19.8 -1.9,-20.9 0,-18.7 C1.9,-20.9 4.6,-19.8 5.6,-16.8 C7,-12.6 4.6,-7.4 0,-6.2 Z" transform="rotate(72)"/><path d="M0,-6.2 C-4.6,-7.4 -7,-12.6 -5.6,-16.8 C-4.6,-19.8 -1.9,-20.9 0,-18.7 C1.9,-20.9 4.6,-19.8 5.6,-16.8 C7,-12.6 4.6,-7.4 0,-6.2 Z" transform="rotate(144)"/><path d="M0,-6.2 C-4.6,-7.4 -7,-12.6 -5.6,-16.8 C-4.6,-19.8 -1.9,-20.9 0,-18.7 C1.9,-20.9 4.6,-19.8 5.6,-16.8 C7,-12.6 4.6,-7.4 0,-6.2 Z" transform="rotate(216)"/><path d="M0,-6.2 C-4.6,-7.4 -7,-12.6 -5.6,-16.8 C-4.6,-19.8 -1.9,-20.9 0,-18.7 C1.9,-20.9 4.6,-19.8 5.6,-16.8 C7,-12.6 4.6,-7.4 0,-6.2 Z" transform="rotate(288)"/><polygon points="3.38,1.95 0.00,3.90 -3.38,1.95 -3.38,-1.95 -0.00,-3.90 3.38,-1.95"/></g></svg><a class="marq__it" href="./industries/steel-industry/">Steel</a><svg class="spark marq__sp" viewBox="-22 -22 44 44" aria-hidden="true"><g fill="currentColor"><path d="M0,-6.2 C-4.6,-7.4 -7,-12.6 -5.6,-16.8 C-4.6,-19.8 -1.9,-20.9 0,-18.7 C1.9,-20.9 4.6,-19.8 5.6,-16.8 C7,-12.6 4.6,-7.4 0,-6.2 Z" transform="rotate(0)"/><path d="M0,-6.2 C-4.6,-7.4 -7,-12.6 -5.6,-16.8 C-4.6,-19.8 -1.9,-20.9 0,-18.7 C1.9,-20.9 4.6,-19.8 5.6,-16.8 C7,-12.6 4.6,-7.4 0,-6.2 Z" transform="rotate(72)"/><path d="M0,-6.2 C-4.6,-7.4 -7,-12.6 -5.6,-16.8 C-4.6,-19.8 -1.9,-20.9 0,-18.7 C1.9,-20.9 4.6,-19.8 5.6,-16.8 C7,-12.6 4.6,-7.4 0,-6.2 Z" transform="rotate(144)"/><path d="M0,-6.2 C-4.6,-7.4 -7,-12.6 -5.6,-16.8 C-4.6,-19.8 -1.9,-20.9 0,-18.7 C1.9,-20.9 4.6,-19.8 5.6,-16.8 C7,-12.6 4.6,-7.4 0,-6.2 Z" transform="rotate(216)"/><path d="M0,-6.2 C-4.6,-7.4 -7,-12.6 -5.6,-16.8 C-4.6,-19.8 -1.9,-20.9 0,-18.7 C1.9,-20.9 4.6,-19.8 5.6,-16.8 C7,-12.6 4.6,-7.4 0,-6.2 Z" transform="rotate(288)"/><polygon points="3.38,1.95 0.00,3.90 -3.38,1.95 -3.38,-1.95 -0.00,-3.90 3.38,-1.95"/></g></svg><a class="marq__it" href="./industries/aluminium-industry/">Aluminium</a><svg class="spark marq__sp" viewBox="-22 -22 44 44" aria-hidden="true"><g fill="currentColor"><path d="M0,-6.2 C-4.6,-7.4 -7,-12.6 -5.6,-16.8 C-4.6,-19.8 -1.9,-20.9 0,-18.7 C1.9,-20.9 4.6,-19.8 5.6,-16.8 C7,-12.6 4.6,-7.4 0,-6.2 Z" transform="rotate(0)"/><path d="M0,-6.2 C-4.6,-7.4 -7,-12.6 -5.6,-16.8 C-4.6,-19.8 -1.9,-20.9 0,-18.7 C1.9,-20.9 4.6,-19.8 5.6,-16.8 C7,-12.6 4.6,-7.4 0,-6.2 Z" transform="rotate(72)"/><path d="M0,-6.2 C-4.6,-7.4 -7,-12.6 -5.6,-16.8 C-4.6,-19.8 -1.9,-20.9 0,-18.7 C1.9,-20.9 4.6,-19.8 5.6,-16.8 C7,-12.6 4.6,-7.4 0,-6.2 Z" transform="rotate(144)"/><path d="M0,-6.2 C-4.6,-7.4 -7,-12.6 -5.6,-16.8 C-4.6,-19.8 -1.9,-20.9 0,-18.7 C1.9,-20.9 4.6,-19.8 5.6,-16.8 C7,-12.6 4.6,-7.4 0,-6.2 Z" transform="rotate(216)"/><path d="M0,-6.2 C-4.6,-7.4 -7,-12.6 -5.6,-16.8 C-4.6,-19.8 -1.9,-20.9 0,-18.7 C1.9,-20.9 4.6,-19.8 5.6,-16.8 C7,-12.6 4.6,-7.4 0,-6.2 Z" transform="rotate(288)"/><polygon points="3.38,1.95 0.00,3.90 -3.38,1.95 -3.38,-1.95 -0.00,-3.90 3.38,-1.95"/></g></svg><a class="marq__it" href="./industries/copper-industry/">Copper</a><svg class="spark marq__sp" viewBox="-22 -22 44 44" aria-hidden="true"><g fill="currentColor"><path d="M0,-6.2 C-4.6,-7.4 -7,-12.6 -5.6,-16.8 C-4.6,-19.8 -1.9,-20.9 0,-18.7 C1.9,-20.9 4.6,-19.8 5.6,-16.8 C7,-12.6 4.6,-7.4 0,-6.2 Z" transform="rotate(0)"/><path d="M0,-6.2 C-4.6,-7.4 -7,-12.6 -5.6,-16.8 C-4.6,-19.8 -1.9,-20.9 0,-18.7 C1.9,-20.9 4.6,-19.8 5.6,-16.8 C7,-12.6 4.6,-7.4 0,-6.2 Z" transform="rotate(72)"/><path d="M0,-6.2 C-4.6,-7.4 -7,-12.6 -5.6,-16.8 C-4.6,-19.8 -1.9,-20.9 0,-18.7 C1.9,-20.9 4.6,-19.8 5.6,-16.8 C7,-12.6 4.6,-7.4 0,-6.2 Z" transform="rotate(144)"/><path d="M0,-6.2 C-4.6,-7.4 -7,-12.6 -5.6,-16.8 C-4.6,-19.8 -1.9,-20.9 0,-18.7 C1.9,-20.9 4.6,-19.8 5.6,-16.8 C7,-12.6 4.6,-7.4 0,-6.2 Z" transform="rotate(216)"/><path d="M0,-6.2 C-4.6,-7.4 -7,-12.6 -5.6,-16.8 C-4.6,-19.8 -1.9,-20.9 0,-18.7 C1.9,-20.9 4.6,-19.8 5.6,-16.8 C7,-12.6 4.6,-7.4 0,-6.2 Z" transform="rotate(288)"/><polygon points="3.38,1.95 0.00,3.90 -3.38,1.95 -3.38,-1.95 -0.00,-3.90 3.38,-1.95"/></g></svg><a class="marq__it" href="./industries/mining-industry/">Mining</a><svg class="spark marq__sp" viewBox="-22 -22 44 44" aria-hidden="true"><g fill="currentColor"><path d="M0,-6.2 C-4.6,-7.4 -7,-12.6 -5.6,-16.8 C-4.6,-19.8 -1.9,-20.9 0,-18.7 C1.9,-20.9 4.6,-19.8 5.6,-16.8 C7,-12.6 4.6,-7.4 0,-6.2 Z" transform="rotate(0)"/><path d="M0,-6.2 C-4.6,-7.4 -7,-12.6 -5.6,-16.8 C-4.6,-19.8 -1.9,-20.9 0,-18.7 C1.9,-20.9 4.6,-19.8 5.6,-16.8 C7,-12.6 4.6,-7.4 0,-6.2 Z" transform="rotate(72)"/><path d="M0,-6.2 C-4.6,-7.4 -7,-12.6 -5.6,-16.8 C-4.6,-19.8 -1.9,-20.9 0,-18.7 C1.9,-20.9 4.6,-19.8 5.6,-16.8 C7,-12.6 4.6,-7.4 0,-6.2 Z" transform="rotate(144)"/><path d="M0,-6.2 C-4.6,-7.4 -7,-12.6 -5.6,-16.8 C-4.6,-19.8 -1.9,-20.9 0,-18.7 C1.9,-20.9 4.6,-19.8 5.6,-16.8 C7,-12.6 4.6,-7.4 0,-6.2 Z" transform="rotate(216)"/><path d="M0,-6.2 C-4.6,-7.4 -7,-12.6 -5.6,-16.8 C-4.6,-19.8 -1.9,-20.9 0,-18.7 C1.9,-20.9 4.6,-19.8 5.6,-16.8 C7,-12.6 4.6,-7.4 0,-6.2 Z" transform="rotate(288)"/><polygon points="3.38,1.95 0.00,3.90 -3.38,1.95 -3.38,-1.95 -0.00,-3.90 3.38,-1.95"/></g></svg><a class="marq__it" href="./industries/glass-industry/">Glass</a><svg class="spark marq__sp" viewBox="-22 -22 44 44" aria-hidden="true"><g fill="currentColor"><path d="M0,-6.2 C-4.6,-7.4 -7,-12.6 -5.6,-16.8 C-4.6,-19.8 -1.9,-20.9 0,-18.7 C1.9,-20.9 4.6,-19.8 5.6,-16.8 C7,-12.6 4.6,-7.4 0,-6.2 Z" transform="rotate(0)"/><path d="M0,-6.2 C-4.6,-7.4 -7,-12.6 -5.6,-16.8 C-4.6,-19.8 -1.9,-20.9 0,-18.7 C1.9,-20.9 4.6,-19.8 5.6,-16.8 C7,-12.6 4.6,-7.4 0,-6.2 Z" transform="rotate(72)"/><path d="M0,-6.2 C-4.6,-7.4 -7,-12.6 -5.6,-16.8 C-4.6,-19.8 -1.9,-20.9 0,-18.7 C1.9,-20.9 4.6,-19.8 5.6,-16.8 C7,-12.6 4.6,-7.4 0,-6.2 Z" transform="rotate(144)"/><path d="M0,-6.2 C-4.6,-7.4 -7,-12.6 -5.6,-16.8 C-4.6,-19.8 -1.9,-20.9 0,-18.7 C1.9,-20.9 4.6,-19.8 5.6,-16.8 C7,-12.6 4.6,-7.4 0,-6.2 Z" transform="rotate(216)"/><path d="M0,-6.2 C-4.6,-7.4 -7,-12.6 -5.6,-16.8 C-4.6,-19.8 -1.9,-20.9 0,-18.7 C1.9,-20.9 4.6,-19.8 5.6,-16.8 C7,-12.6 4.6,-7.4 0,-6.2 Z" transform="rotate(288)"/><polygon points="3.38,1.95 0.00,3.90 -3.38,1.95 -3.38,-1.95 -0.00,-3.90 3.38,-1.95"/></g></svg><a class="marq__it" href="./industries/chemical-industry/">Chemicals</a><svg class="spark marq__sp" viewBox="-22 -22 44 44" aria-hidden="true"><g fill="currentColor"><path d="M0,-6.2 C-4.6,-7.4 -7,-12.6 -5.6,-16.8 C-4.6,-19.8 -1.9,-20.9 0,-18.7 C1.9,-20.9 4.6,-19.8 5.6,-16.8 C7,-12.6 4.6,-7.4 0,-6.2 Z" transform="rotate(0)"/><path d="M0,-6.2 C-4.6,-7.4 -7,-12.6 -5.6,-16.8 C-4.6,-19.8 -1.9,-20.9 0,-18.7 C1.9,-20.9 4.6,-19.8 5.6,-16.8 C7,-12.6 4.6,-7.4 0,-6.2 Z" transform="rotate(72)"/><path d="M0,-6.2 C-4.6,-7.4 -7,-12.6 -5.6,-16.8 C-4.6,-19.8 -1.9,-20.9 0,-18.7 C1.9,-20.9 4.6,-19.8 5.6,-16.8 C7,-12.6 4.6,-7.4 0,-6.2 Z" transform="rotate(144)"/><path d="M0,-6.2 C-4.6,-7.4 -7,-12.6 -5.6,-16.8 C-4.6,-19.8 -1.9,-20.9 0,-18.7 C1.9,-20.9 4.6,-19.8 5.6,-16.8 C7,-12.6 4.6,-7.4 0,-6.2 Z" transform="rotate(216)"/><path d="M0,-6.2 C-4.6,-7.4 -7,-12.6 -5.6,-16.8 C-4.6,-19.8 -1.9,-20.9 0,-18.7 C1.9,-20.9 4.6,-19.8 5.6,-16.8 C7,-12.6 4.6,-7.4 0,-6.2 Z" transform="rotate(288)"/><polygon points="3.38,1.95 0.00,3.90 -3.38,1.95 -3.38,-1.95 -0.00,-3.90 3.38,-1.95"/></g></svg><a class="marq__it" href="./industries/thermal-and-power-industry/">Thermal &amp; power</a><svg class="spark marq__sp" viewBox="-22 -22 44 44" aria-hidden="true"><g fill="currentColor"><path d="M0,-6.2 C-4.6,-7.4 -7,-12.6 -5.6,-16.8 C-4.6,-19.8 -1.9,-20.9 0,-18.7 C1.9,-20.9 4.6,-19.8 5.6,-16.8 C7,-12.6 4.6,-7.4 0,-6.2 Z" transform="rotate(0)"/><path d="M0,-6.2 C-4.6,-7.4 -7,-12.6 -5.6,-16.8 C-4.6,-19.8 -1.9,-20.9 0,-18.7 C1.9,-20.9 4.6,-19.8 5.6,-16.8 C7,-12.6 4.6,-7.4 0,-6.2 Z" transform="rotate(72)"/><path d="M0,-6.2 C-4.6,-7.4 -7,-12.6 -5.6,-16.8 C-4.6,-19.8 -1.9,-20.9 0,-18.7 C1.9,-20.9 4.6,-19.8 5.6,-16.8 C7,-12.6 4.6,-7.4 0,-6.2 Z" transform="rotate(144)"/><path d="M0,-6.2 C-4.6,-7.4 -7,-12.6 -5.6,-16.8 C-4.6,-19.8 -1.9,-20.9 0,-18.7 C1.9,-20.9 4.6,-19.8 5.6,-16.8 C7,-12.6 4.6,-7.4 0,-6.2 Z" transform="rotate(216)"/><path d="M0,-6.2 C-4.6,-7.4 -7,-12.6 -5.6,-16.8 C-4.6,-19.8 -1.9,-20.9 0,-18.7 C1.9,-20.9 4.6,-19.8 5.6,-16.8 C7,-12.6 4.6,-7.4 0,-6.2 Z" transform="rotate(288)"/><polygon points="3.38,1.95 0.00,3.90 -3.38,1.95 -3.38,-1.95 -0.00,-3.90 3.38,-1.95"/></g></svg></div></div>
-  <div class="marq state__marq" data-marq="-1"><div class="marq__row"><a class="marq__it" href="./industries/defence-security/">Defence &amp; security</a><svg class="spark marq__sp" viewBox="-22 -22 44 44" aria-hidden="true"><g fill="currentColor"><path d="M0,-6.2 C-4.6,-7.4 -7,-12.6 -5.6,-16.8 C-4.6,-19.8 -1.9,-20.9 0,-18.7 C1.9,-20.9 4.6,-19.8 5.6,-16.8 C7,-12.6 4.6,-7.4 0,-6.2 Z" transform="rotate(0)"/><path d="M0,-6.2 C-4.6,-7.4 -7,-12.6 -5.6,-16.8 C-4.6,-19.8 -1.9,-20.9 0,-18.7 C1.9,-20.9 4.6,-19.8 5.6,-16.8 C7,-12.6 4.6,-7.4 0,-6.2 Z" transform="rotate(72)"/><path d="M0,-6.2 C-4.6,-7.4 -7,-12.6 -5.6,-16.8 C-4.6,-19.8 -1.9,-20.9 0,-18.7 C1.9,-20.9 4.6,-19.8 5.6,-16.8 C7,-12.6 4.6,-7.4 0,-6.2 Z" transform="rotate(144)"/><path d="M0,-6.2 C-4.6,-7.4 -7,-12.6 -5.6,-16.8 C-4.6,-19.8 -1.9,-20.9 0,-18.7 C1.9,-20.9 4.6,-19.8 5.6,-16.8 C7,-12.6 4.6,-7.4 0,-6.2 Z" transform="rotate(216)"/><path d="M0,-6.2 C-4.6,-7.4 -7,-12.6 -5.6,-16.8 C-4.6,-19.8 -1.9,-20.9 0,-18.7 C1.9,-20.9 4.6,-19.8 5.6,-16.8 C7,-12.6 4.6,-7.4 0,-6.2 Z" transform="rotate(288)"/><polygon points="3.38,1.95 0.00,3.90 -3.38,1.95 -3.38,-1.95 -0.00,-3.90 3.38,-1.95"/></g></svg><a class="marq__it" href="./industries/aerospace/">Aerospace</a><svg class="spark marq__sp" viewBox="-22 -22 44 44" aria-hidden="true"><g fill="currentColor"><path d="M0,-6.2 C-4.6,-7.4 -7,-12.6 -5.6,-16.8 C-4.6,-19.8 -1.9,-20.9 0,-18.7 C1.9,-20.9 4.6,-19.8 5.6,-16.8 C7,-12.6 4.6,-7.4 0,-6.2 Z" transform="rotate(0)"/><path d="M0,-6.2 C-4.6,-7.4 -7,-12.6 -5.6,-16.8 C-4.6,-19.8 -1.9,-20.9 0,-18.7 C1.9,-20.9 4.6,-19.8 5.6,-16.8 C7,-12.6 4.6,-7.4 0,-6.2 Z" transform="rotate(72)"/><path d="M0,-6.2 C-4.6,-7.4 -7,-12.6 -5.6,-16.8 C-4.6,-19.8 -1.9,-20.9 0,-18.7 C1.9,-20.9 4.6,-19.8 5.6,-16.8 C7,-12.6 4.6,-7.4 0,-6.2 Z" transform="rotate(144)"/><path d="M0,-6.2 C-4.6,-7.4 -7,-12.6 -5.6,-16.8 C-4.6,-19.8 -1.9,-20.9 0,-18.7 C1.9,-20.9 4.6,-19.8 5.6,-16.8 C7,-12.6 4.6,-7.4 0,-6.2 Z" transform="rotate(216)"/><path d="M0,-6.2 C-4.6,-7.4 -7,-12.6 -5.6,-16.8 C-4.6,-19.8 -1.9,-20.9 0,-18.7 C1.9,-20.9 4.6,-19.8 5.6,-16.8 C7,-12.6 4.6,-7.4 0,-6.2 Z" transform="rotate(288)"/><polygon points="3.38,1.95 0.00,3.90 -3.38,1.95 -3.38,-1.95 -0.00,-3.90 3.38,-1.95"/></g></svg><a class="marq__it" href="./industries/renewable-energy/">Renewable energy</a><svg class="spark marq__sp" viewBox="-22 -22 44 44" aria-hidden="true"><g fill="currentColor"><path d="M0,-6.2 C-4.6,-7.4 -7,-12.6 -5.6,-16.8 C-4.6,-19.8 -1.9,-20.9 0,-18.7 C1.9,-20.9 4.6,-19.8 5.6,-16.8 C7,-12.6 4.6,-7.4 0,-6.2 Z" transform="rotate(0)"/><path d="M0,-6.2 C-4.6,-7.4 -7,-12.6 -5.6,-16.8 C-4.6,-19.8 -1.9,-20.9 0,-18.7 C1.9,-20.9 4.6,-19.8 5.6,-16.8 C7,-12.6 4.6,-7.4 0,-6.2 Z" transform="rotate(72)"/><path d="M0,-6.2 C-4.6,-7.4 -7,-12.6 -5.6,-16.8 C-4.6,-19.8 -1.9,-20.9 0,-18.7 C1.9,-20.9 4.6,-19.8 5.6,-16.8 C7,-12.6 4.6,-7.4 0,-6.2 Z" transform="rotate(144)"/><path d="M0,-6.2 C-4.6,-7.4 -7,-12.6 -5.6,-16.8 C-4.6,-19.8 -1.9,-20.9 0,-18.7 C1.9,-20.9 4.6,-19.8 5.6,-16.8 C7,-12.6 4.6,-7.4 0,-6.2 Z" transform="rotate(216)"/><path d="M0,-6.2 C-4.6,-7.4 -7,-12.6 -5.6,-16.8 C-4.6,-19.8 -1.9,-20.9 0,-18.7 C1.9,-20.9 4.6,-19.8 5.6,-16.8 C7,-12.6 4.6,-7.4 0,-6.2 Z" transform="rotate(288)"/><polygon points="3.38,1.95 0.00,3.90 -3.38,1.95 -3.38,-1.95 -0.00,-3.90 3.38,-1.95"/></g></svg><a class="marq__it" href="./industries/chemicals-oil-gas/">Oil &amp; gas</a><svg class="spark marq__sp" viewBox="-22 -22 44 44" aria-hidden="true"><g fill="currentColor"><path d="M0,-6.2 C-4.6,-7.4 -7,-12.6 -5.6,-16.8 C-4.6,-19.8 -1.9,-20.9 0,-18.7 C1.9,-20.9 4.6,-19.8 5.6,-16.8 C7,-12.6 4.6,-7.4 0,-6.2 Z" transform="rotate(0)"/><path d="M0,-6.2 C-4.6,-7.4 -7,-12.6 -5.6,-16.8 C-4.6,-19.8 -1.9,-20.9 0,-18.7 C1.9,-20.9 4.6,-19.8 5.6,-16.8 C7,-12.6 4.6,-7.4 0,-6.2 Z" transform="rotate(72)"/><path d="M0,-6.2 C-4.6,-7.4 -7,-12.6 -5.6,-16.8 C-4.6,-19.8 -1.9,-20.9 0,-18.7 C1.9,-20.9 4.6,-19.8 5.6,-16.8 C7,-12.6 4.6,-7.4 0,-6.2 Z" transform="rotate(144)"/><path d="M0,-6.2 C-4.6,-7.4 -7,-12.6 -5.6,-16.8 C-4.6,-19.8 -1.9,-20.9 0,-18.7 C1.9,-20.9 4.6,-19.8 5.6,-16.8 C7,-12.6 4.6,-7.4 0,-6.2 Z" transform="rotate(216)"/><path d="M0,-6.2 C-4.6,-7.4 -7,-12.6 -5.6,-16.8 C-4.6,-19.8 -1.9,-20.9 0,-18.7 C1.9,-20.9 4.6,-19.8 5.6,-16.8 C7,-12.6 4.6,-7.4 0,-6.2 Z" transform="rotate(288)"/><polygon points="3.38,1.95 0.00,3.90 -3.38,1.95 -3.38,-1.95 -0.00,-3.90 3.38,-1.95"/></g></svg><a class="marq__it" href="./industries/pharma-fb-and-fmcg/">Pharma, F&amp;B &amp; FMCG</a><svg class="spark marq__sp" viewBox="-22 -22 44 44" aria-hidden="true"><g fill="currentColor"><path d="M0,-6.2 C-4.6,-7.4 -7,-12.6 -5.6,-16.8 C-4.6,-19.8 -1.9,-20.9 0,-18.7 C1.9,-20.9 4.6,-19.8 5.6,-16.8 C7,-12.6 4.6,-7.4 0,-6.2 Z" transform="rotate(0)"/><path d="M0,-6.2 C-4.6,-7.4 -7,-12.6 -5.6,-16.8 C-4.6,-19.8 -1.9,-20.9 0,-18.7 C1.9,-20.9 4.6,-19.8 5.6,-16.8 C7,-12.6 4.6,-7.4 0,-6.2 Z" transform="rotate(72)"/><path d="M0,-6.2 C-4.6,-7.4 -7,-12.6 -5.6,-16.8 C-4.6,-19.8 -1.9,-20.9 0,-18.7 C1.9,-20.9 4.6,-19.8 5.6,-16.8 C7,-12.6 4.6,-7.4 0,-6.2 Z" transform="rotate(144)"/><path d="M0,-6.2 C-4.6,-7.4 -7,-12.6 -5.6,-16.8 C-4.6,-19.8 -1.9,-20.9 0,-18.7 C1.9,-20.9 4.6,-19.8 5.6,-16.8 C7,-12.6 4.6,-7.4 0,-6.2 Z" transform="rotate(216)"/><path d="M0,-6.2 C-4.6,-7.4 -7,-12.6 -5.6,-16.8 C-4.6,-19.8 -1.9,-20.9 0,-18.7 C1.9,-20.9 4.6,-19.8 5.6,-16.8 C7,-12.6 4.6,-7.4 0,-6.2 Z" transform="rotate(288)"/><polygon points="3.38,1.95 0.00,3.90 -3.38,1.95 -3.38,-1.95 -0.00,-3.90 3.38,-1.95"/></g></svg><a class="marq__it" href="./industries/heavy-engineering/">Heavy engineering</a><svg class="spark marq__sp" viewBox="-22 -22 44 44" aria-hidden="true"><g fill="currentColor"><path d="M0,-6.2 C-4.6,-7.4 -7,-12.6 -5.6,-16.8 C-4.6,-19.8 -1.9,-20.9 0,-18.7 C1.9,-20.9 4.6,-19.8 5.6,-16.8 C7,-12.6 4.6,-7.4 0,-6.2 Z" transform="rotate(0)"/><path d="M0,-6.2 C-4.6,-7.4 -7,-12.6 -5.6,-16.8 C-4.6,-19.8 -1.9,-20.9 0,-18.7 C1.9,-20.9 4.6,-19.8 5.6,-16.8 C7,-12.6 4.6,-7.4 0,-6.2 Z" transform="rotate(72)"/><path d="M0,-6.2 C-4.6,-7.4 -7,-12.6 -5.6,-16.8 C-4.6,-19.8 -1.9,-20.9 0,-18.7 C1.9,-20.9 4.6,-19.8 5.6,-16.8 C7,-12.6 4.6,-7.4 0,-6.2 Z" transform="rotate(144)"/><path d="M0,-6.2 C-4.6,-7.4 -7,-12.6 -5.6,-16.8 C-4.6,-19.8 -1.9,-20.9 0,-18.7 C1.9,-20.9 4.6,-19.8 5.6,-16.8 C7,-12.6 4.6,-7.4 0,-6.2 Z" transform="rotate(216)"/><path d="M0,-6.2 C-4.6,-7.4 -7,-12.6 -5.6,-16.8 C-4.6,-19.8 -1.9,-20.9 0,-18.7 C1.9,-20.9 4.6,-19.8 5.6,-16.8 C7,-12.6 4.6,-7.4 0,-6.2 Z" transform="rotate(288)"/><polygon points="3.38,1.95 0.00,3.90 -3.38,1.95 -3.38,-1.95 -0.00,-3.90 3.38,-1.95"/></g></svg><a class="marq__it" href="./industries/telecommunication-satcom/">Telecom &amp; satcom</a><svg class="spark marq__sp" viewBox="-22 -22 44 44" aria-hidden="true"><g fill="currentColor"><path d="M0,-6.2 C-4.6,-7.4 -7,-12.6 -5.6,-16.8 C-4.6,-19.8 -1.9,-20.9 0,-18.7 C1.9,-20.9 4.6,-19.8 5.6,-16.8 C7,-12.6 4.6,-7.4 0,-6.2 Z" transform="rotate(0)"/><path d="M0,-6.2 C-4.6,-7.4 -7,-12.6 -5.6,-16.8 C-4.6,-19.8 -1.9,-20.9 0,-18.7 C1.9,-20.9 4.6,-19.8 5.6,-16.8 C7,-12.6 4.6,-7.4 0,-6.2 Z" transform="rotate(72)"/><path d="M0,-6.2 C-4.6,-7.4 -7,-12.6 -5.6,-16.8 C-4.6,-19.8 -1.9,-20.9 0,-18.7 C1.9,-20.9 4.6,-19.8 5.6,-16.8 C7,-12.6 4.6,-7.4 0,-6.2 Z" transform="rotate(144)"/><path d="M0,-6.2 C-4.6,-7.4 -7,-12.6 -5.6,-16.8 C-4.6,-19.8 -1.9,-20.9 0,-18.7 C1.9,-20.9 4.6,-19.8 5.6,-16.8 C7,-12.6 4.6,-7.4 0,-6.2 Z" transform="rotate(216)"/><path d="M0,-6.2 C-4.6,-7.4 -7,-12.6 -5.6,-16.8 C-4.6,-19.8 -1.9,-20.9 0,-18.7 C1.9,-20.9 4.6,-19.8 5.6,-16.8 C7,-12.6 4.6,-7.4 0,-6.2 Z" transform="rotate(288)"/><polygon points="3.38,1.95 0.00,3.90 -3.38,1.95 -3.38,-1.95 -0.00,-3.90 3.38,-1.95"/></g></svg><a class="marq__it" href="./industries/industry-4-0/">Industry 4.0</a><svg class="spark marq__sp" viewBox="-22 -22 44 44" aria-hidden="true"><g fill="currentColor"><path d="M0,-6.2 C-4.6,-7.4 -7,-12.6 -5.6,-16.8 C-4.6,-19.8 -1.9,-20.9 0,-18.7 C1.9,-20.9 4.6,-19.8 5.6,-16.8 C7,-12.6 4.6,-7.4 0,-6.2 Z" transform="rotate(0)"/><path d="M0,-6.2 C-4.6,-7.4 -7,-12.6 -5.6,-16.8 C-4.6,-19.8 -1.9,-20.9 0,-18.7 C1.9,-20.9 4.6,-19.8 5.6,-16.8 C7,-12.6 4.6,-7.4 0,-6.2 Z" transform="rotate(72)"/><path d="M0,-6.2 C-4.6,-7.4 -7,-12.6 -5.6,-16.8 C-4.6,-19.8 -1.9,-20.9 0,-18.7 C1.9,-20.9 4.6,-19.8 5.6,-16.8 C7,-12.6 4.6,-7.4 0,-6.2 Z" transform="rotate(144)"/><path d="M0,-6.2 C-4.6,-7.4 -7,-12.6 -5.6,-16.8 C-4.6,-19.8 -1.9,-20.9 0,-18.7 C1.9,-20.9 4.6,-19.8 5.6,-16.8 C7,-12.6 4.6,-7.4 0,-6.2 Z" transform="rotate(216)"/><path d="M0,-6.2 C-4.6,-7.4 -7,-12.6 -5.6,-16.8 C-4.6,-19.8 -1.9,-20.9 0,-18.7 C1.9,-20.9 4.6,-19.8 5.6,-16.8 C7,-12.6 4.6,-7.4 0,-6.2 Z" transform="rotate(288)"/><polygon points="3.38,1.95 0.00,3.90 -3.38,1.95 -3.38,-1.95 -0.00,-3.90 3.38,-1.95"/></g></svg><a class="marq__it" href="./industries/raas/">Robotics as a service</a><svg class="spark marq__sp" viewBox="-22 -22 44 44" aria-hidden="true"><g fill="currentColor"><path d="M0,-6.2 C-4.6,-7.4 -7,-12.6 -5.6,-16.8 C-4.6,-19.8 -1.9,-20.9 0,-18.7 C1.9,-20.9 4.6,-19.8 5.6,-16.8 C7,-12.6 4.6,-7.4 0,-6.2 Z" transform="rotate(0)"/><path d="M0,-6.2 C-4.6,-7.4 -7,-12.6 -5.6,-16.8 C-4.6,-19.8 -1.9,-20.9 0,-18.7 C1.9,-20.9 4.6,-19.8 5.6,-16.8 C7,-12.6 4.6,-7.4 0,-6.2 Z" transform="rotate(72)"/><path d="M0,-6.2 C-4.6,-7.4 -7,-12.6 -5.6,-16.8 C-4.6,-19.8 -1.9,-20.9 0,-18.7 C1.9,-20.9 4.6,-19.8 5.6,-16.8 C7,-12.6 4.6,-7.4 0,-6.2 Z" transform="rotate(144)"/><path d="M0,-6.2 C-4.6,-7.4 -7,-12.6 -5.6,-16.8 C-4.6,-19.8 -1.9,-20.9 0,-18.7 C1.9,-20.9 4.6,-19.8 5.6,-16.8 C7,-12.6 4.6,-7.4 0,-6.2 Z" transform="rotate(216)"/><path d="M0,-6.2 C-4.6,-7.4 -7,-12.6 -5.6,-16.8 C-4.6,-19.8 -1.9,-20.9 0,-18.7 C1.9,-20.9 4.6,-19.8 5.6,-16.8 C7,-12.6 4.6,-7.4 0,-6.2 Z" transform="rotate(288)"/><polygon points="3.38,1.95 0.00,3.90 -3.38,1.95 -3.38,-1.95 -0.00,-3.90 3.38,-1.95"/></g></svg></div></div>
-</section>
-
-<section class="amen" data-theme="dark" aria-label="What we do">
-  <div class="amen__sticky">
-    <picture class="amen__bg"><img src="./assets/scene/amen.webp" alt="The terrace at blue hour: the rover and the arm by the lit pool" loading="lazy" decoding="async"></picture>
-    <div class="amen__w">
-      <p class="amen__label l2">What we do</p>
-      <div class="amen__listw"><span class="amen__hl" aria-hidden="true"></span><ol class="amen__list">
-        <li class="is-on"><a href="./industries/"><span class="amen__n">01</span>Custom robotics</a></li>
-        <li><a href="./industries/industry-4-0/"><span class="amen__n">02</span>Industry 4.0</a></li>
-        <li><a href="./industries/raas/"><span class="amen__n">03</span>Robotics as a service</a></li>
-        <li><a href="./industries/software-solutions/"><span class="amen__n">04</span>Software solutions</a></li>
-        <li><a href="./industries/dna/"><span class="amen__n">05</span>Defence, nuclear, aerospace</a></li>
-      </ol></div>
-      <div class="amen__q chip"><p class="p1">We don’t sell machines off a shelf. We engineer the robot your plant needs, then stay to run it with you.</p><a class="pill pill--blue" href="./contact-us/" data-magnetic><span class="pill__t">Book a demo</span><span class="pill__i" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M5 12h14M13.5 6.5 19 12l-5.5 5.5"/></svg></span></a></div>
+  <div class="intro__inner">
+    <h2 class="display reveal-lines"><span>At JanyuTEch!</span></h2>
+    <div class="intro__copy">
+      <p class="reveal">We specialize in pioneering custom-designed robotics and cutting-edge solutions to reduce human risk in the core manufacturing sector. Our products are expertly crafted to enhance compliance with ESG commitments and the principles of Industry 4.0, ensuring a safer, more efficient, and environmentally conscious manufacturing environment.</p>
+      <ul class="chips reveal"><li><span>Cement &amp; Construction</span></li><li><span>Steel industry</span></li><li><span>Aluminium Industry</span></li><li><span>Copper Industry</span></li><li><span>Mining Industry</span></li><li><span>Thermal &amp; Power Industry</span></li><li><span>DNA - Defence, Nuclear, Aerospace</span></li><li><span>Industry 4.0</span></li><li><span>RaaS - Robotics as a Service</span></li><li><span>Software Solutions</span></li></ul>
+      <div class="btn-row reveal-up"><a class="btn" href="./about-us/" data-magnetic><span>Know More</span><i>→</i></a></div>
     </div>
   </div>
+  <div class="intro__gallery"><div class="intro__shot" data-fluid><img src="./assets/img/2026-05-44.webp" alt="44" loading="lazy"></div><div class="intro__shot" data-fluid><img src="./assets/img/2026-05-49.webp" alt="49" loading="lazy"></div><div class="intro__shot" data-fluid><img src="./assets/img/2026-05-45.webp" alt="45" loading="lazy"></div></div>
 </section>
 
-<section class="rely" data-theme="light" aria-label="Built to rely on">
-  <div class="rely__sheet">
-    <div class="flower flower--arch-l" aria-hidden="true"><video muted loop playsinline preload="none" poster="./assets/blossom/bl-side.webp" width="960" height="960"><source data-src="./assets/blossom/bl-side.webm" type="video/webm"><source data-src="./assets/blossom/bl-side.mov" type='video/mp4; codecs="hvc1"'></video></div>
-    <div class="flower flower--arch-r flower--flip" aria-hidden="true"><video muted loop playsinline preload="none" poster="./assets/blossom/bl-side.webp" width="960" height="960"><source data-src="./assets/blossom/bl-side.webm" type="video/webm"><source data-src="./assets/blossom/bl-side.mov" type='video/mp4; codecs="hvc1"'></video></div>
-    <div class="rely__in" data-reveal-w>
-      <p class="l2" data-reveal="label">Built to last</p>
-      <h2 class="rely__h h1" data-reveal="h">The robots to rely on</h2>
-    </div>
+<section class="marquee" aria-label="Safety, Robotics, ESG, Automation, Industry 4.0">
+  <div class="marquee__track">
+    <div class="marquee__row"><span>SAFETY</span><i>✦</i><span>ROBOTICS</span><i>✦</i><span>ESG</span><i>✦</i><span>AUTOMATION</span><i>✦</i><span>INDUSTRY 4.0</span><i>✦</i></div>
+    <div class="marquee__row" aria-hidden="true"><span>SAFETY</span><i>✦</i><span>ROBOTICS</span><i>✦</i><span>ESG</span><i>✦</i><span>AUTOMATION</span><i>✦</i><span>INDUSTRY 4.0</span><i>✦</i></div>
   </div>
 </section>
 
-<section class="inter" data-theme="light">
-  <div class="inter__top">
-    <div class="inter__panel" data-theme="dark">
-      <div class="inter__panel-img"><picture><img src="./assets/scene/panel.webp" alt="The rover on the terrace" loading="lazy" decoding="async"></picture></div>
-      <ul class="inter__also" data-reveal-w><li class="l2" data-reveal="label">Also available</li><li data-reveal="ctn">Robotics as a service (RaaS)</li><li data-reveal="ctn">Annual maintenance</li><li data-reveal="ctn">Operator training</li></ul>
-    </div>
-    <div class="inter__text" data-reveal-w>
-      <h2 class="h4" data-reveal="h">Every robot is built around the plant it serves, and engineered, manufactured and tested in India</h2>
-      <p class="p1" data-reveal="p">Remote operation from a safe distance, live cameras and sensors, rugged hydraulics and our own control software: each robot is made for one job, in one kind of plant, and supported for as long as it runs.</p>
-      <div data-reveal="ctn"><a class="pill pill--blue" href="./products/" data-magnetic><span class="pill__t">View products</span><span class="pill__i" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M5 12h14M13.5 6.5 19 12l-5.5 5.5"/></svg></span></a></div>
-    </div>
+<section id="industries" class="industries">
+  <div class="sec-head">
+    <h2 class="display reveal-lines"><span>INDUSTRIES WE Transform</span></h2>
+    <div><p class="reveal">Our exceptional, high-performing robots serve a diverse range of industries demanding superior performance and redefining productivity standards, ensuring seamless operations and unmatched reliability.</p><p class="reveal">JanyuTech believes in versatility and offers solutions to various industries, such as:</p></div>
   </div>
-  <figure class="field" data-field>
-    <div class="field__frame">
-      <video class="field__vid" muted loop playsinline preload="none" poster="./assets/video/janyu-in-the-field.webp" width="960" height="540"><source data-src="./assets/video/janyu-in-the-field.mp4" type="video/mp4"></video>
-      <span class="field__tag chip">In the field</span>
-    </div>
-    <figcaption class="field__cap"><span class="l2">Our robots at work</span><span class="p2">Robot arms, automated lines, lab automation and all-terrain crawlers, filmed where they work.</span></figcaption>
-  </figure>
-  <div class="duo" aria-hidden="true">
-    <div class="duo__img"><picture><img src="./assets/scene/split-a.webp" alt="" loading="lazy" decoding="async"></picture></div>
-    <div class="duo__img"><picture><img src="./assets/scene/split-b.webp" alt="" loading="lazy" decoding="async"></picture></div>
-  </div>
+  <div class="panels"><article class="panel">
+        <div class="panel__bg" data-fluid-panel><img src="./assets/img/2024-04-industrial-auto.webp" alt="" loading="eager"></div>
+        <div class="panel__body">
+          <span class="panel__num">01 / 10</span>
+          <h3>Industrial Automation</h3>
+          <p>Experience JanyuTech&#x27;s Cutting-Edge Industrial Automation Solutions.</p>
+          <a href="./industries/industrial-automation/" class="reach">View Products <b>✦</b></a>
+        </div>
+      </article><article class="panel">
+        <div class="panel__bg" data-fluid-panel><img src="./assets/img/2024-04-Metal-extraction-mining.webp" alt="" loading="lazy"></div>
+        <div class="panel__body">
+          <span class="panel__num">02 / 10</span>
+          <h3>Metal Extraction Mining</h3>
+          <p>Extract Excellence With Our Metal Extraction &amp; Mining Robotic Solutions.</p>
+          <a href="./industries/metal-extraction-mining/" class="reach">View Products <b>✦</b></a>
+        </div>
+      </article><article class="panel">
+        <div class="panel__bg" data-fluid-panel><img src="./assets/img/2024-04-pharma-f-g-And-FM.webp" alt="" loading="lazy"></div>
+        <div class="panel__body">
+          <span class="panel__num">03 / 10</span>
+          <h3>Pharma, F&amp;B and FMCG</h3>
+          <p>Our Robotic Solutions in Pharma, F&amp;B, and FMCG, Where Safety and Quality Matters.</p>
+          <a href="./industries/pharma-fb-and-fmcg/" class="reach">View Products <b>✦</b></a>
+        </div>
+      </article><article class="panel">
+        <div class="panel__bg" data-fluid-panel><img src="./assets/img/2024-04-Defence-security-2.webp" alt="" loading="lazy"></div>
+        <div class="panel__body">
+          <span class="panel__num">04 / 10</span>
+          <h3>Defence Security</h3>
+          <p>Secure Tomorrow With JanyuTech&#x27;s Defence Security Robotic Solutions.</p>
+          <a href="./industries/defence-security/" class="reach">View Products <b>✦</b></a>
+        </div>
+      </article><article class="panel">
+        <div class="panel__bg" data-fluid-panel><img src="./assets/img/2024-04-Heavy-Engineering-2.webp" alt="" loading="lazy"></div>
+        <div class="panel__body">
+          <span class="panel__num">05 / 10</span>
+          <h3>Heavy Engineering</h3>
+          <p>JanyuTech&#x27;s Heavy Engineering Solutions, Where Strength Meets Precision.</p>
+          <a href="./industries/heavy-engineering/" class="reach">View Products <b>✦</b></a>
+        </div>
+      </article><article class="panel">
+        <div class="panel__bg" data-fluid-panel><img src="./assets/img/2024-04-Renewable-Energy-2.webp" alt="" loading="lazy"></div>
+        <div class="panel__body">
+          <span class="panel__num">06 / 10</span>
+          <h3>Renewable Energy</h3>
+          <p>Empower a Sustainable Future Through Our Renewable Energy Solutions.</p>
+          <a href="./industries/renewable-energy/" class="reach">View Products <b>✦</b></a>
+        </div>
+      </article><article class="panel">
+        <div class="panel__bg" data-fluid-panel><img src="./assets/img/2024-04-Cement-Construction-Industry.webp" alt="" loading="lazy"></div>
+        <div class="panel__body">
+          <span class="panel__num">07 / 10</span>
+          <h3>Cement and Construction</h3>
+          <p>Building Tomorrow, Today, with JanyuTech&#x27;s Cement and Construction Solutions.</p>
+          <a href="./industries/cement-construction/" class="reach">View Products <b>✦</b></a>
+        </div>
+      </article><article class="panel">
+        <div class="panel__bg" data-fluid-panel><img src="./assets/img/2024-04-Chemicals-oil-Gas.webp" alt="" loading="lazy"></div>
+        <div class="panel__body">
+          <span class="panel__num">08 / 10</span>
+          <h3>Chemicals, Oil and Gas</h3>
+          <p>Fuel Progress With JanyuTech’s Chemicals, Oils, and Gas Solutions.</p>
+          <a href="./industries/chemicals-oil-gas/" class="reach">View Products <b>✦</b></a>
+        </div>
+      </article><article class="panel">
+        <div class="panel__bg" data-fluid-panel><img src="./assets/img/2024-04-glass-fiber-manufacturing.webp" alt="" loading="lazy"></div>
+        <div class="panel__body">
+          <span class="panel__num">09 / 10</span>
+          <h3>Glass</h3>
+          <p>Embrace Crystal Clear Innovation Through JanyuTech’s Glass Industry Solutions.</p>
+          <a href="./industries/glass/" class="reach">View Products <b>✦</b></a>
+        </div>
+      </article><article class="panel">
+        <div class="panel__bg" data-fluid-panel><img src="./assets/img/2024-04-UV-DISINFECTION-ROBOTS-2.webp" alt="" loading="lazy"></div>
+        <div class="panel__body">
+          <span class="panel__num">10 / 10</span>
+          <h3>UV Disinfection Robots</h3>
+          <p>Experience Germ-Free Zones With JanyuTech&#x27;s UV Disinfection Robots.</p>
+          <a href="./products/uv-disinfection-robots/" class="reach">View Product. <b>✦</b></a>
+        </div>
+      </article></div>
 </section>
 
-<section class="eng" data-theme="dark" aria-label="Engineering">
-  <div class="eng__bg"><picture><img src="./assets/scene/engineering.webp" alt="The Kara robotic arm on the terrace, the sea behind it" loading="lazy" decoding="async"></picture></div>
-  <div class="eng__shade"></div>
-  <div class="marq eng__marq" data-marq="1"><div class="marq__row"><span class="marq__it">Engineering</span><svg class="spark marq__sp" viewBox="-22 -22 44 44" aria-hidden="true"><g fill="currentColor"><path d="M0,-6.2 C-4.6,-7.4 -7,-12.6 -5.6,-16.8 C-4.6,-19.8 -1.9,-20.9 0,-18.7 C1.9,-20.9 4.6,-19.8 5.6,-16.8 C7,-12.6 4.6,-7.4 0,-6.2 Z" transform="rotate(0)"/><path d="M0,-6.2 C-4.6,-7.4 -7,-12.6 -5.6,-16.8 C-4.6,-19.8 -1.9,-20.9 0,-18.7 C1.9,-20.9 4.6,-19.8 5.6,-16.8 C7,-12.6 4.6,-7.4 0,-6.2 Z" transform="rotate(72)"/><path d="M0,-6.2 C-4.6,-7.4 -7,-12.6 -5.6,-16.8 C-4.6,-19.8 -1.9,-20.9 0,-18.7 C1.9,-20.9 4.6,-19.8 5.6,-16.8 C7,-12.6 4.6,-7.4 0,-6.2 Z" transform="rotate(144)"/><path d="M0,-6.2 C-4.6,-7.4 -7,-12.6 -5.6,-16.8 C-4.6,-19.8 -1.9,-20.9 0,-18.7 C1.9,-20.9 4.6,-19.8 5.6,-16.8 C7,-12.6 4.6,-7.4 0,-6.2 Z" transform="rotate(216)"/><path d="M0,-6.2 C-4.6,-7.4 -7,-12.6 -5.6,-16.8 C-4.6,-19.8 -1.9,-20.9 0,-18.7 C1.9,-20.9 4.6,-19.8 5.6,-16.8 C7,-12.6 4.6,-7.4 0,-6.2 Z" transform="rotate(288)"/><polygon points="3.38,1.95 0.00,3.90 -3.38,1.95 -3.38,-1.95 -0.00,-3.90 3.38,-1.95"/></g></svg><span class="marq__it">Robotics</span><svg class="spark marq__sp" viewBox="-22 -22 44 44" aria-hidden="true"><g fill="currentColor"><path d="M0,-6.2 C-4.6,-7.4 -7,-12.6 -5.6,-16.8 C-4.6,-19.8 -1.9,-20.9 0,-18.7 C1.9,-20.9 4.6,-19.8 5.6,-16.8 C7,-12.6 4.6,-7.4 0,-6.2 Z" transform="rotate(0)"/><path d="M0,-6.2 C-4.6,-7.4 -7,-12.6 -5.6,-16.8 C-4.6,-19.8 -1.9,-20.9 0,-18.7 C1.9,-20.9 4.6,-19.8 5.6,-16.8 C7,-12.6 4.6,-7.4 0,-6.2 Z" transform="rotate(72)"/><path d="M0,-6.2 C-4.6,-7.4 -7,-12.6 -5.6,-16.8 C-4.6,-19.8 -1.9,-20.9 0,-18.7 C1.9,-20.9 4.6,-19.8 5.6,-16.8 C7,-12.6 4.6,-7.4 0,-6.2 Z" transform="rotate(144)"/><path d="M0,-6.2 C-4.6,-7.4 -7,-12.6 -5.6,-16.8 C-4.6,-19.8 -1.9,-20.9 0,-18.7 C1.9,-20.9 4.6,-19.8 5.6,-16.8 C7,-12.6 4.6,-7.4 0,-6.2 Z" transform="rotate(216)"/><path d="M0,-6.2 C-4.6,-7.4 -7,-12.6 -5.6,-16.8 C-4.6,-19.8 -1.9,-20.9 0,-18.7 C1.9,-20.9 4.6,-19.8 5.6,-16.8 C7,-12.6 4.6,-7.4 0,-6.2 Z" transform="rotate(288)"/><polygon points="3.38,1.95 0.00,3.90 -3.38,1.95 -3.38,-1.95 -0.00,-3.90 3.38,-1.95"/></g></svg><span class="marq__it">Automation</span><svg class="spark marq__sp" viewBox="-22 -22 44 44" aria-hidden="true"><g fill="currentColor"><path d="M0,-6.2 C-4.6,-7.4 -7,-12.6 -5.6,-16.8 C-4.6,-19.8 -1.9,-20.9 0,-18.7 C1.9,-20.9 4.6,-19.8 5.6,-16.8 C7,-12.6 4.6,-7.4 0,-6.2 Z" transform="rotate(0)"/><path d="M0,-6.2 C-4.6,-7.4 -7,-12.6 -5.6,-16.8 C-4.6,-19.8 -1.9,-20.9 0,-18.7 C1.9,-20.9 4.6,-19.8 5.6,-16.8 C7,-12.6 4.6,-7.4 0,-6.2 Z" transform="rotate(72)"/><path d="M0,-6.2 C-4.6,-7.4 -7,-12.6 -5.6,-16.8 C-4.6,-19.8 -1.9,-20.9 0,-18.7 C1.9,-20.9 4.6,-19.8 5.6,-16.8 C7,-12.6 4.6,-7.4 0,-6.2 Z" transform="rotate(144)"/><path d="M0,-6.2 C-4.6,-7.4 -7,-12.6 -5.6,-16.8 C-4.6,-19.8 -1.9,-20.9 0,-18.7 C1.9,-20.9 4.6,-19.8 5.6,-16.8 C7,-12.6 4.6,-7.4 0,-6.2 Z" transform="rotate(216)"/><path d="M0,-6.2 C-4.6,-7.4 -7,-12.6 -5.6,-16.8 C-4.6,-19.8 -1.9,-20.9 0,-18.7 C1.9,-20.9 4.6,-19.8 5.6,-16.8 C7,-12.6 4.6,-7.4 0,-6.2 Z" transform="rotate(288)"/><polygon points="3.38,1.95 0.00,3.90 -3.38,1.95 -3.38,-1.95 -0.00,-3.90 3.38,-1.95"/></g></svg></div></div>
-  <div class="eng__q chip" data-reveal-w><p class="h6" data-reveal="p">Every JanyuTech robot balances rugged hardware with smart software, built to work where people shouldn’t.</p><p class="l2" data-reveal="label">JanyuTech R&amp;D · Vasai</p></div>
-  <a class="pill pill--light eng__btn" href="./contact-us/" data-magnetic><span class="pill__t">Book a demo</span><span class="pill__i" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M5 12h14M13.5 6.5 19 12l-5.5 5.5"/></svg></span></a>
+<section class="biz">
+  <h2 class="biz__title reveal-up">For Business Inquiries, Please Contact sales@janyutech.com</h2>
+  <div class="btn-row reveal-up"><a class="btn" href="./contact-us/" data-magnetic><span>Contact Us</span><i>→</i></a></div>
 </section>
 
-<section class="cred" data-theme="light" aria-label="Credentials">
-  <div class="cred__head" data-reveal-w><p class="l2" data-reveal="label">Leading the way</p><h2 class="h4" data-reveal="h">In human risk mitigation robotics</h2></div>
-  <ul class="cred__grid" data-reveal-w>
-    <li class="cred__card" data-reveal="ctn"><div class="cred__in"><span class="cred__plus" aria-hidden="true">+</span><h3 class="h5">Trusted by</h3><p class="p2">UltraTech Cement, Tata Steel, Hindalco, Grasim, Vedanta, ISRO, DRDO, Indian Oil, JSW, Cairn, Voltas, Owens Corning and many more across India.</p></div></li>
-    <li class="cred__card" data-reveal="ctn"><div class="cred__in"><span class="cred__plus" aria-hidden="true">+</span><h3 class="h5">Awarded</h3><p class="p2">Recognised by industry and academia for robotics that reduce human risk. <a class="ulink" href="./awards-and-certificates/">See them all</a></p></div></li>
-    <li class="cred__card" data-reveal="ctn"><div class="cred__in"><span class="cred__plus" aria-hidden="true">+</span><h3 class="h5">Made in India</h3><p class="p2">Designed, engineered and manufactured at our works in Vasai, Maharashtra.</p></div></li>
-    <li class="cred__card" data-reveal="ctn"><div class="cred__in"><span class="cred__plus" aria-hidden="true">+</span><h3 class="h5">2026</h3><p class="p2">New robots in the field every quarter, for cement, steel, aluminium, mining, power and defence.</p></div></li>
-  </ul>
-  <div class="cred__logos" data-marq="0.6"><div class="marq__row"><img src="./assets/img/2024-04-ultratechcement.webp" alt="ultratechcement" loading="lazy"><img src="./assets/img/2024-04-aarti_industries_limited.webp" alt="aarti industries limited" loading="lazy"><img src="./assets/img/2024-04-aditya_birla_grasim.webp" alt="aditya birla grasim" loading="lazy"><img src="./assets/img/2024-04-aditya_birla_hindalco.webp" alt="aditya birla hindalco" loading="lazy"><img src="./assets/img/2024-04-air_india_sats.webp" alt="air india sats" loading="lazy"><img src="./assets/img/2024-04-astra_microwave_products_limited.webp" alt="astra microwave products limited" loading="lazy"><img src="./assets/img/2024-04-azure-power.webp" alt="azure power" loading="lazy"><img src="./assets/img/2024-04-drdo.webp" alt="drdo" loading="lazy"><img src="./assets/img/2024-04-fireglass_company.webp" alt="fireglass company" loading="lazy"><img src="./assets/img/2024-04-isro.webp" alt="isro" loading="lazy"><img src="./assets/img/2024-04-jubilant.webp" alt="jubilant" loading="lazy"><img src="./assets/img/2024-04-neutralfoundry.webp" alt="neutralfoundry" loading="lazy"><img src="./assets/img/2024-04-owens_corning.webp" alt="owens corning" loading="lazy"><img src="./assets/img/2024-04-strides.webp" alt="strides" loading="lazy"></div></div>
-</section>
-
-<section class="cta" data-theme="dark">
-  <div class="cta__in">
-    <div class="cta__bg"><picture><img src="./assets/scene/cta.webp" alt="The terrace at blue hour, the robots by the pool" loading="lazy" decoding="async"></picture></div>
-    <div class="cta__ctn" data-reveal-w>
-      <p class="l2" data-reveal="label">From sewers to smelters</p>
-      <h2 class="cta__h h1" data-reveal="h">Safer by design</h2>
-      <p class="cta__small p1" data-reveal="p">A short conversation is enough to know which robot fits your plant: a cleaning robot, an inspection crawler or a fully automated line.</p>
-      <div data-reveal="ctn"><a class="pill pill--light" href="./contact-us/" data-magnetic><span class="pill__t">Book a demo</span><span class="pill__i" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M5 12h14M13.5 6.5 19 12l-5.5 5.5"/></svg></span></a></div>
+<section id="products" class="products">
+  <div class="products__head">
+    <div>
+      <h2 class="display reveal-lines"><span>Products We Offer</span></h2>
+      <p class="products__lead reveal">Explore JanyuTech&#x27;s Cutting-Edge Products!</p><p class="products__lead reveal">Our high-performing robots, engineered for excellence and driven by innovation, redefining productivity standards, delivering unparalleled performance and reliability to optimize your manufacturing processes.</p>
+    </div>
+    <div class="toggle" role="tablist" aria-label="Product layout">
+      <button class="toggle__btn is-active" data-view="list" role="tab" aria-selected="true">List View</button>
+      <button class="toggle__btn" data-view="card" role="tab" aria-selected="false">Card View</button>
+      <span class="toggle__pill"></span>
     </div>
   </div>
+  <ul class="plist is-list" id="plist"><li class="pitem" data-img="./assets/img/2024-04-SLUDGE-CLEANING-ROBOT.webp" data-bp="./assets/bp/sludge-cleaning-robot-bp.webp" data-photo="./assets/bp/sludge-cleaning-robot.webp">
+        <a href="./products/varaha-sludge-cleaning/">
+          <div class="pitem__img bpx"><img class="bpx__bp" src="./assets/bp/sludge-cleaning-robot-bp.webp" alt="" loading="lazy" decoding="async"><img class="bpx__photo" src="./assets/bp/sludge-cleaning-robot.webp" alt="Varaha Sludge Cleaning" loading="lazy" decoding="async"><span class="bpx__scan"></span></div>
+          <span class="pitem__n">01</span>
+          <h3>Varaha Sludge Cleaning</h3>
+          <span class="pitem__meta">View Product →</span>
+        </a>
+      </li><li class="pitem" data-img="./assets/img/2024-04-Denka-Arm-Robot.webp" data-bp="./assets/bp/denka-arm-robot-bp.webp" data-photo="./assets/bp/denka-arm-robot.webp">
+        <a href="./products/kara-robotic-arm/">
+          <div class="pitem__img bpx"><img class="bpx__bp" src="./assets/bp/denka-arm-robot-bp.webp" alt="" loading="lazy" decoding="async"><img class="bpx__photo" src="./assets/bp/denka-arm-robot.webp" alt="Kara Robotic Arm" loading="lazy" decoding="async"><span class="bpx__scan"></span></div>
+          <span class="pitem__n">02</span>
+          <h3>Kara Robotic Arm</h3>
+          <span class="pitem__meta">View Product →</span>
+        </a>
+      </li><li class="pitem" data-img="./assets/img/2024-04-Cement-Industry.webp" data-bp="./assets/bp/cement-industry-bp.webp" data-photo="./assets/bp/cement-industry.webp">
+        <a href="./products/cement-automation/">
+          <div class="pitem__img bpx"><img class="bpx__bp" src="./assets/bp/cement-industry-bp.webp" alt="" loading="lazy" decoding="async"><img class="bpx__photo" src="./assets/bp/cement-industry.webp" alt="Cement Automation" loading="lazy" decoding="async"><span class="bpx__scan"></span></div>
+          <span class="pitem__n">03</span>
+          <h3>Cement Automation</h3>
+          <span class="pitem__meta">View Product →</span>
+        </a>
+      </li><li class="pitem" data-img="./assets/img/2024-04-Varaha-Four-Legged-Robot.webp" data-bp="./assets/bp/varaha-four-legged-robot-bp.webp" data-photo="./assets/bp/varaha-four-legged-robot.webp">
+        <a href="./products/defence-robots/">
+          <div class="pitem__img bpx"><img class="bpx__bp" src="./assets/bp/varaha-four-legged-robot-bp.webp" alt="" loading="lazy" decoding="async"><img class="bpx__photo" src="./assets/bp/varaha-four-legged-robot.webp" alt="Defence Robots" loading="lazy" decoding="async"><span class="bpx__scan"></span></div>
+          <span class="pitem__n">04</span>
+          <h3>Defence Robots</h3>
+          <span class="pitem__meta">View Product →</span>
+        </a>
+      </li><li class="pitem" data-img="./assets/img/2024-04-Solar-panel-cleaning-Robot.webp" data-bp="./assets/bp/solar-panel-cleaning-robot-bp.webp" data-photo="./assets/bp/solar-panel-cleaning-robot.webp">
+        <a href="./products/solar-panel-cleaner/">
+          <div class="pitem__img bpx"><img class="bpx__bp" src="./assets/bp/solar-panel-cleaning-robot-bp.webp" alt="" loading="lazy" decoding="async"><img class="bpx__photo" src="./assets/bp/solar-panel-cleaning-robot.webp" alt="Solar Panel Cleaner" loading="lazy" decoding="async"><span class="bpx__scan"></span></div>
+          <span class="pitem__n">05</span>
+          <h3>Solar Panel Cleaner</h3>
+          <span class="pitem__meta">View Product →</span>
+        </a>
+      </li><li class="pitem" data-img="./assets/img/2024-04-VARAHA-MAGNETIC-CRAWLER-FOR-NDT-TESTING.webp" data-bp="./assets/bp/varaha-magnetic-crawler-for-ndt-testing-bp.webp" data-photo="./assets/bp/varaha-magnetic-crawler-for-ndt-testing.webp">
+        <a href="./products/heavy-engineering-metals/">
+          <div class="pitem__img bpx"><img class="bpx__bp" src="./assets/bp/varaha-magnetic-crawler-for-ndt-testing-bp.webp" alt="" loading="lazy" decoding="async"><img class="bpx__photo" src="./assets/bp/varaha-magnetic-crawler-for-ndt-testing.webp" alt="Heavy Engineering Metals" loading="lazy" decoding="async"><span class="bpx__scan"></span></div>
+          <span class="pitem__n">06</span>
+          <h3>Heavy Engineering Metals</h3>
+          <span class="pitem__meta">View Product →</span>
+        </a>
+      </li><li class="pitem" data-img="./assets/img/2024-04-VARAH-Miner-A.webp" data-bp="./assets/bp/varah-dozer-a-bp.webp" data-photo="./assets/bp/varah-dozer-a.webp">
+        <a href="./products/varaha-mining-robots/">
+          <div class="pitem__img bpx"><img class="bpx__bp" src="./assets/bp/varah-dozer-a-bp.webp" alt="" loading="lazy" decoding="async"><img class="bpx__photo" src="./assets/bp/varah-dozer-a.webp" alt="Varaha Mining Robots" loading="lazy" decoding="async"><span class="bpx__scan"></span></div>
+          <span class="pitem__n">07</span>
+          <h3>Varaha Mining Robots</h3>
+          <span class="pitem__meta">View Product →</span>
+        </a>
+      </li></ul>
+  <div class="btn-row reveal-up"><a class="btn" href="./products/" data-magnetic><span>View All</span><i>→</i></a></div>
+  <div class="hover-img bpx" aria-hidden="true"><img class="bpx__bp" src="" alt=""><img class="bpx__photo" src="" alt=""><span class="bpx__scan"></span></div>
+</section>
+
+<section id="why" class="why">
+  <h2 class="display reveal-lines"><span>Why Choose us</span></h2>
+  <ol class="why__list"><li class="reveal-up"><span>01</span><h3>Custom-designed for the core industry</h3></li><li class="reveal-up"><span>02</span><h3>Reduction in shutdown time</h3></li><li class="reveal-up"><span>03</span><h3>Risk mitigation and accident prevention</h3></li><li class="reveal-up"><span>04</span><h3>International Standards</h3></li><li class="reveal-up"><span>05</span><h3>Rejuvenating the legacy systems</h3></li></ol>
+</section>
+
+<section class="clients">
+  <p class="eyebrow reveal">Our Trusted Clients</p>
+  <div class="clients__track"><div class="clients__row"><img src="./assets/img/2024-04-ultratechcement.webp" alt="ultratechcement" loading="lazy"><img src="./assets/img/2024-04-aarti_industries_limited.webp" alt="aarti industries limited" loading="lazy"><img src="./assets/img/2024-04-aditya_birla_grasim.webp" alt="aditya birla grasim" loading="lazy"><img src="./assets/img/2024-04-aditya_birla_hindalco.webp" alt="aditya birla hindalco" loading="lazy"><img src="./assets/img/2024-04-air_india_sats.webp" alt="air india sats" loading="lazy"><img src="./assets/img/2024-04-astra_microwave_products_limited.webp" alt="astra microwave products limited" loading="lazy"><img src="./assets/img/2024-04-azure-power.webp" alt="azure power" loading="lazy"><img src="./assets/img/2024-04-drdo.webp" alt="drdo" loading="lazy"><img src="./assets/img/2024-04-fireglass_company.webp" alt="fireglass company" loading="lazy"><img src="./assets/img/2024-04-isro.webp" alt="isro" loading="lazy"><img src="./assets/img/2024-04-jubilant.webp" alt="jubilant" loading="lazy"><img src="./assets/img/2024-04-neutralfoundry.webp" alt="neutralfoundry" loading="lazy"><img src="./assets/img/2024-04-owens_corning.webp" alt="owens corning" loading="lazy"><img src="./assets/img/2024-04-strides.webp" alt="strides" loading="lazy"><img src="./assets/img/2024-04-tata_steel.webp" alt="tata steel" loading="lazy"><img src="./assets/img/2024-04-vedanta.webp" alt="vedanta" loading="lazy"><img src="./assets/img/2024-04-voltas.webp" alt="voltas" loading="lazy"><img src="./assets/img/2024-04-cairn.webp" alt="cairn" loading="lazy"><img src="./assets/img/2024-04-chola.webp" alt="chola" loading="lazy"><img src="./assets/img/2024-04-granules.webp" alt="granules" loading="lazy"><img src="./assets/img/2024-04-indian_oil.webp" alt="indian oil" loading="lazy"><img src="./assets/img/2024-04-jsw.webp" alt="jsw" loading="lazy"><img src="./assets/img/2024-04-ultratechcement.webp" alt="" aria-hidden="true" loading="lazy"><img src="./assets/img/2024-04-aarti_industries_limited.webp" alt="" aria-hidden="true" loading="lazy"><img src="./assets/img/2024-04-aditya_birla_grasim.webp" alt="" aria-hidden="true" loading="lazy"><img src="./assets/img/2024-04-aditya_birla_hindalco.webp" alt="" aria-hidden="true" loading="lazy"><img src="./assets/img/2024-04-air_india_sats.webp" alt="" aria-hidden="true" loading="lazy"><img src="./assets/img/2024-04-astra_microwave_products_limited.webp" alt="" aria-hidden="true" loading="lazy"><img src="./assets/img/2024-04-azure-power.webp" alt="" aria-hidden="true" loading="lazy"><img src="./assets/img/2024-04-drdo.webp" alt="" aria-hidden="true" loading="lazy"><img src="./assets/img/2024-04-fireglass_company.webp" alt="" aria-hidden="true" loading="lazy"><img src="./assets/img/2024-04-isro.webp" alt="" aria-hidden="true" loading="lazy"><img src="./assets/img/2024-04-jubilant.webp" alt="" aria-hidden="true" loading="lazy"><img src="./assets/img/2024-04-neutralfoundry.webp" alt="" aria-hidden="true" loading="lazy"><img src="./assets/img/2024-04-owens_corning.webp" alt="" aria-hidden="true" loading="lazy"><img src="./assets/img/2024-04-strides.webp" alt="" aria-hidden="true" loading="lazy"><img src="./assets/img/2024-04-tata_steel.webp" alt="" aria-hidden="true" loading="lazy"><img src="./assets/img/2024-04-vedanta.webp" alt="" aria-hidden="true" loading="lazy"><img src="./assets/img/2024-04-voltas.webp" alt="" aria-hidden="true" loading="lazy"><img src="./assets/img/2024-04-cairn.webp" alt="" aria-hidden="true" loading="lazy"><img src="./assets/img/2024-04-chola.webp" alt="" aria-hidden="true" loading="lazy"><img src="./assets/img/2024-04-granules.webp" alt="" aria-hidden="true" loading="lazy"><img src="./assets/img/2024-04-indian_oil.webp" alt="" aria-hidden="true" loading="lazy"><img src="./assets/img/2024-04-jsw.webp" alt="" aria-hidden="true" loading="lazy"></div></div>
 </section>
 </main>
-<footer class="ftr" id="contact">
-  <div class="ftr__in">
-    <div class="ftr__top">
-      <p class="ftr__lead h4" data-reveal="h">Let’s put a robot where people shouldn’t go.</p>
-      <a class="pill pill--light" href="./contact-us/" data-magnetic><span class="pill__t">Book a demo</span><span class="pill__i" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M5 12h14M13.5 6.5 19 12l-5.5 5.5"/></svg></span></a>
+<footer class="site-footer" id="contact">
+  <div class="contact">
+    <p class="eyebrow">For business inquiries, please contact sales@janyutech.com</p>
+    <h2 class="contact__big" aria-label="Let's talk">
+      <span class="line"><span class="split">Let's</span></span>
+      <span class="line line--indent"><span class="split">Talk</span></span>
+    </h2>
+    <div class="contact__row">
+      <a href="mailto:sales@janyutech.com" class="contact__btn" data-magnetic><span>sales@janyutech.com</span></a>
+      <a href="tel:+917770012260" class="contact__btn contact__btn--ghost" data-magnetic><span>+91 77700 12260</span></a>
     </div>
-    <div class="ftr__cols">
-      <div class="ftr__col ftr__col--call"><p class="l2">Talk to us</p><a class="ftr__phone" href="tel:+917770012260">+91 77700 12260</a><a href="mailto:sales@janyutech.com">sales@janyutech.com</a></div>
-      <div class="ftr__col"><p class="l2">Visit</p><address>Unit 1 &amp; 2, Dhuri Industrial Complex No.1, Madhu Vrinda Phase 4, Waliv Phata, Sativali Road, Vasai East 401208, India</address></div>
-      <nav class="ftr__col" aria-label="Explore"><p class="l2">Explore</p><a href="./products/">Products</a><a href="./industries/">Industries</a><a href="./services/">Services</a><a href="./projects/">Projects</a><a href="./about-us/">About us</a></nav>
-      <nav class="ftr__col" aria-label="Company"><p class="l2">Company</p><a href="./career/">Careers</a><a href="./events/">Events</a><a href="./gallery/">Gallery</a><a href="./awards-and-certificates/">Awards</a><a href="./contact-us/">Contact</a></nav>
-      <nav class="ftr__col" aria-label="Follow"><p class="l2">Follow</p><a href="https://www.linkedin.com/company/janyu-tech/">LinkedIn</a><a href="https://twitter.com/janyutech">X</a><a href="https://www.youtube.com/@JanyuTechOfficial/videos">YouTube</a><a href="https://www.instagram.com/janyutech_?igshid=YmMyMTA2M2Y=">Instagram</a></nav>
-    </div>
-    <div class="ftr__mark"><svg class="jt-logo ftr__logo" viewBox="0 0 200 38" aria-hidden="true"><defs><clipPath id="jt-logo-c"><rect width="200" height="38" rx="8"/></clipPath><linearGradient id="jt-logo-g" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#b4b7bd"/><stop offset="1" stop-color="#9a9da4"/></linearGradient><linearGradient id="jt-logo-b" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#0a86e2"/><stop offset="1" stop-color="#006ec2"/></linearGradient><linearGradient id="jt-logo-s" x1="0" x2="1"><stop offset="0" stop-color="#fff" stop-opacity="0"/><stop offset=".5" stop-color="#fff" stop-opacity=".5"/><stop offset="1" stop-color="#fff" stop-opacity="0"/></linearGradient></defs><g clip-path="url(#jt-logo-c)"><rect class="jt-l" width="111" height="38" fill="url(#jt-logo-g)"/><rect class="jt-r" x="114" width="86" height="38" fill="url(#jt-logo-b)"/><g class="jt-shine"><rect x="-70" y="-10" width="46" height="58" fill="url(#jt-logo-s)" transform="skewX(-18)"/></g></g><text class="jt-lt" x="55.5" y="28" text-anchor="middle" fill="#1f1d24" textLength="86" lengthAdjust="spacingAndGlyphs">JANYU</text><text x="157" y="28" text-anchor="middle" fill="#fff" textLength="62" lengthAdjust="spacingAndGlyphs">TECH</text></svg></div>
-    <div class="ftr__bottom"><span>© 2026 JanyuTech. All rights reserved.</span><a href="./privacy-policy/">Privacy policy</a><a href="#top" class="ftr__top-link">Back to top ↑</a></div>
   </div>
+  <div class="foot-grid">
+    <div class="foot-col foot-col--brand">
+      <img src="./assets/logo.png" alt="JanyuTech" class="foot__logo" width="368" height="86" loading="lazy">
+      <p>Spearheading Robotic Revolution</p>
+      <address>Unit 1 &amp; 2, Dhuri Industrial Complex No.1, Madhu Vrinda Phase 4, Waliv Phata, Sativali Road, Vasai East 401208.</address>
+    </div>
+    <div class="foot-col"><h3>Useful Links</h3><ul><li><a href="./" class="roll"><span data-text="Home">Home</span></a></li><li><a href="./products/" class="roll"><span data-text="Products">Products</span></a></li><li><a href="./services/" class="roll"><span data-text="Services">Services</span></a></li><li><a href="./about-us/" class="roll"><span data-text="About us">About us</span></a></li><li><a href="./contact-us/" class="roll"><span data-text="Contact us">Contact us</span></a></li></ul></div>
+    <div class="foot-col"><h3>Quick Links</h3><ul><li><a href="./career/" class="roll"><span data-text="Careers">Careers</span></a></li><li><a href="./events/" class="roll"><span data-text="Events">Events</span></a></li><li><a href="./gallery/" class="roll"><span data-text="Gallery">Gallery</span></a></li><li><a href="./awards-and-certificates/" class="roll"><span data-text="Awards &amp; Certificates">Awards &amp; Certificates</span></a></li><li><a href="./privacy-policy/" class="roll"><span data-text="Privacy Policy">Privacy Policy</span></a></li></ul></div>
+    <div class="foot-col"><h3>Contact Us</h3><ul>
+      <li><a href="tel:+917770012260">+91 77700 12260</a></li><li><a href="mailto:sales@janyutech.com">sales@janyutech.com</a></li></ul>
+      <div class="social"><a href="https://www.linkedin.com/company/janyu-tech/" target="_blank" rel="noopener">LinkedIn ↗</a><a href="https://twitter.com/janyutech" target="_blank" rel="noopener">X / Twitter ↗</a><a href="https://www.youtube.com/@JanyuTechOfficial/videos" target="_blank" rel="noopener">YouTube ↗</a><a href="https://www.instagram.com/janyutech_?igshid=YmMyMTA2M2Y=" target="_blank" rel="noopener">Instagram ↗</a></div>
+    </div>
+  </div>
+  <div class="foot-bottom"><span>Copyright © 2026 JanyuTech All Rights Reserved.</span><a href="#top" class="to-top">Back to top ↑</a></div>
 </footer>
-<div class="lightbox" hidden><button class="lightbox__close" aria-label="Close">×</button><button class="lightbox__prev" aria-label="Previous">←</button><figure><img alt=""><figcaption class="p1"></figcaption></figure><button class="lightbox__next" aria-label="Next">→</button></div>
-<script src="https://cdn.jsdelivr.net/npm/gsap@3.15.0/dist/gsap.min.js"></script>
-<script src="https://cdn.jsdelivr.net/npm/gsap@3.15.0/dist/ScrollTrigger.min.js"></script>
-<script src="https://cdn.jsdelivr.net/npm/gsap@3.15.0/dist/SplitText.min.js"></script>
-<script src="https://cdn.jsdelivr.net/npm/lenis@1.3.26/dist/lenis.min.js"></script>
-<script src="./main.js?v=19"></script>
+<div class="lightbox" hidden><button class="lightbox__close" aria-label="Close">×</button><button class="lightbox__prev" aria-label="Previous">←</button><figure><img alt=""><figcaption></figcaption></figure><button class="lightbox__next" aria-label="Next">→</button></div>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.5/gsap.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.5/ScrollTrigger.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/lenis@1.1.13/dist/lenis.min.js"></script>
+<script src="./fluid.js?v=11"></script>
+<script src="./main.js?v=11"></script>
+<script type="module">import("./world.js?v=11").catch(e => { console.warn("world:", e); document.querySelector("[data-xp]")?.classList.add("is-flat"); });</script>
 </body>
 </html>

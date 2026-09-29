@@ -1,16 +1,20 @@
 """Check every internal link, #anchor, image and document in the built site
 (relative and root-absolute URLs are both resolved against the page they appear on)."""
-import os, re, json
+import os, re, glob
 from urllib.parse import urljoin, urlparse, unquote
 
 SITE = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 ORIGIN = "http://site.local"
-# only the pages build.py generates (other folders in the working copy are ignored)
-PAGES = json.load(open(os.path.join(SITE, "build", "content.json")))["pages"]
-pages = {"/404.html": open(os.path.join(SITE, "404.html")).read()}
-for p in PAGES.values():
-    url = "/" + p["path"] + "/" if p["path"] else "/"
-    pages[url] = open(os.path.join(SITE, p["path"], "index.html")).read()
+pages = {}
+for f in glob.glob(os.path.join(SITE, "**", "*.html"), recursive=True):
+    rel = os.path.relpath(f, SITE)
+    if rel.startswith(("build" + os.sep, ".")): continue
+    if rel == "404.html":
+        url = "/404.html"
+    else:
+        d = os.path.dirname(rel)
+        url = "/" if d in ("", ".") else "/" + d.replace(os.sep, "/") + "/"
+    pages[url] = open(f).read()
 
 ids = {u: set(re.findall(r'\sid="([^"]+)"', h)) for u, h in pages.items()}
 bad, n = [], 0

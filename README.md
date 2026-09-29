@@ -2,58 +2,27 @@
 
 **Live:** https://janyutech.duckdns.org
 
-A static rebuild of every page of janyutech.com (55 pages), with the original content and a new design.
-
-**The home page** is set on a rooftop terrace above the sea, rendered in Blender. JanyuTech's quadruped, rover and Kara robot arm stand under blue cherry blossom, by day or by night.
-
-- **Loader.** The JanyuTech mark and logo appear with a count to 100, then an iris opens onto the terrace.
-- **Hero.** The view moves in depth with the cursor. A WebGL shader shifts the render by a depth map made from the same scene: near things move one way and far things the other, on a spring that overshoots a little. Phones get a slow drift instead. The hotspots and the title move with the view. **View products** goes to `/products/`.
-- **The sections below:**
-  - a pale sheet with a band of words that runs with the scroll;
-  - five reasons, with the icons from janyutech.com;
-  - the quote, over the orange Varaha sludge cleaner;
-  - the concept, whose words fill in as you scroll;
-  - Make in India, running sideways along a circuit trace;
-  - the terrace from above, drawn as a blueprint and scanned into the real render;
-  - the products, each drawn as a blueprint first and then scanned into its photo;
-  - the industries, in two running bands;
-  - what we do, with a light pill that springs from line to line;
-  - the film from janyutech.com's home page;
-  - an Engineering band of outlined words;
-  - the credentials;
-  - the last view, which the footer slides up over like a sheet.
-
-**On every page:**
-
-- **Type.** One typeface, Inter Tight, on one fixed scale: each size is the body size times a power of 1.333 (1.25 on phones).
-- **Corner controls.** The logo sits on a frosted white chip with a sprig of blue blossom tucked over its corner; the sprig sways on hover and bends with the scroll. The nav is a frosted bar of plain links with one underline that stretches from link to link like a rubber band. Bottom left, a hex nut draws its outline as you scroll, with the percentage in its hole; pressing it goes down a screen, or back to the top at the end.
-- **Elasticity.** Pictures lean with the speed of the scroll and spring back. Buttons, cards and the menu give like springs, and pill buttons lean towards the pointer.
-- **Petals.** Blue petals drift down the screen; the scroll carries them and the pointer pushes them aside.
-- **Text.** Headings rise out of a blur, and small labels decode from random characters.
-- **Navigation.** The menu opens as a circle out of the Menu button, and pages change behind a blue veil.
-
-Everything is readable without JavaScript. Visitors who ask for reduced motion get it still.
+A static rebuild of every page of janyutech.com (55 pages), with the original content and a new design:
+smooth scrolling, letter-by-letter title reveals, a liquid-flow effect on photos, page transitions, a mega-menu, a full-screen menu, sliders, a lightbox, tabs and more.
 
 ## Folder layout
 
 | Path | What it is |
 | --- | --- |
 | `index.html`, `*/index.html` | The built pages (one folder per URL, same URLs as the old site) |
-| `styles.css` | The base: colours, the type scale, the corner chips, menu, loader, footer, lightbox |
-| `site.css` | Pill buttons, running bands, slider controls, every home-page section and every inner-page component |
-| `main.js` | All behaviour. It runs on every page and switches on what each page has: smooth scrolling (Lenis) with GSAP ScrollTrigger, the reveals, the hero's WebGL depth parallax, sliders, petals, bands and springs |
-| `assets/scene/` | The terrace renders. `hero-depth.webp` and `hero-m-depth.webp` are the hero's depth maps. `aerial-bp.webp` is the aerial view as a line drawing |
-| `assets/blossom/` | The looping blossom sprays (transparent VP9 `.webm` for Chrome and Firefox, HEVC `.mov` for Safari, and a poster for each), the sprig on the logo and the petal used as a bullet |
-| `assets/icons/` | The five "why choose us" icons from janyutech.com |
-| `assets/video/` | The film from janyutech.com's home page (H.264) and its poster |
+| `styles.css` | Base styles and the home page |
+| `site.css` | Header, menus, footer and every inner-page component |
+| `main.js` | All interaction and animation (runs on every page, switches on what each page has), including the Menu: it opens as a circle growing out of the Menu button |
+| `fluid.js` | FluidFlow: photos flow like liquid around the pointer, then settle (a small WebGL fluid simulation, no colour split or zoom) |
+| `hero.js` | Home hero: pointer parallax and the blueprint → photo robot stage |
 | `assets/bp/` | Robot photos and their matching blueprint drawings (made by `build/blueprint.py`) |
 | `assets/img/` | Every site image, converted to WebP |
 | `assets/docs/` | The PDFs the site links to (brochure, internship, course details, Saturday Talk) |
-| `build/` | The generator, the extracted content, and the Blender scripts for the renders (`build/render/`) |
+| `build/` | The generator and the extracted content |
 
 ## Editing content and rebuilding
 
-All page text lives in `build/content.json`. The home page's own copy (the reasons, the products, the industries, the notes on the blueprint) is at the bottom of `build/build.py`. Change either, then run (needs Pillow: `pip install Pillow`, because image sizes decide which pages get a banner and which cards show cutouts):
+All page text lives in `build/content.json`. The generator needs Pillow (`python3 -m pip install Pillow`) to measure images; without it, it stops rather than build pages with missing banners. Change the text, then run:
 
 ```bash
 python3 build/build.py
@@ -67,24 +36,15 @@ python3 build/check_links.py
 
 confirms every internal link, anchor, image and PDF exists.
 
-`python3 build/verify.py build/raw` compares each built page, word for word, with the saved copy of the original site in `build/raw` (needs `beautifulsoup4`).
+`python3 build/verify.py build/raw` compares each built page, word for word, with the saved copy of the original site in `build/raw` (needs `beautifulsoup4`). Two pages differ on purpose: About Us shows the evolution timeline once instead of three times, and Careers leaves out the old job openings (see below).
 
-### The renders
+### Careers
 
-The terrace images come from `build/render/terrace.py`, run in Blender 5.2 (Cycles on the GPU). It links the robots from `robots.blend`, which `build/render/make_lib.py` builds from the robot models. Each view is a camera in `SHOTS`:
-
-```bash
-blender -b --factory-startup -P build/render/terrace.py -- --shot hero --time day --res 2400 1800 --samples 256 --out hero-day.png
-blender -b --factory-startup -P build/render/terrace.py -- --shot hero --time day --res 1200 900 --out hero-depth.png --depth
-blender -b --factory-startup -P build/render/terrace.py -- --shot aerial --time day --res 2400 1500 --out aerial-lines.png --lines
-python3 build/render/depth_map.py hero-depth.png assets/scene/hero-depth.webp 800 600 9
-```
-
-`--depth` renders how far each pixel is. `depth_map.py` turns that into the parallax map (the phone version is `--shot hero_m`, at 600 × 1000, converted to 420 × 700 with 7). `--lines` draws the view as a blueprint. Convert the PNGs to WebP to put them in `assets/scene/`. The blossom videos come from `build/render/blossom.py`; the sprig on the logo is its `--shape sprig --seed 19 --density 0.55 --still 0`.
+There are no open positions right now, so the Careers page says so and invites a CV (to hr@janyutech.com). The old openings are still in `content.json`: set `CAREER_HIRING = True` in `build/build.py` and rebuild to show them again.
 
 ### Blueprint images
 
-The blueprint versions of robot photos are generated, not drawn by hand. To add or change them, run:
+The blueprint versions of robot photos are generated, not drawn by hand. To add or change them (for example after swapping a hero robot in `STAGE` inside `build/build.py`), run:
 
 ```bash
 python3 build/blueprint.py 2024-04-Some-Robot.webp
@@ -107,15 +67,14 @@ Upload everything **except the `build/` folder** to the web root, on any static 
 Links between pages are relative, so the site also works under a sub-path. For a local preview, serve the folder rather than opening the files:
 
 ```bash
-python3 -m http.server 5190
+python3 -m http.server 5178
 ```
 
-Then open http://localhost:5190.
+Then open http://localhost:5178. (The preview in the Claude app uses `.claude/launch.json`, which serves the same folder with no-cache headers so the browser never shows an old copy of a page.)
 
 ## Things to know
 
 - **Contact form:** there is no server, so **Submit** opens the visitor's email app with the message addressed to sales@janyutech.com. To receive submissions directly instead, point the form at a service such as Formspree or your own endpoint (`form[data-mailto]` in `main.js`).
-- **Careers:** there are no open positions for now, so the Careers page says so and invites people to email their CV anyway (to the same addresses the old **Apply Now** button used). The old listings are still in `content.json`: set `CAREER_HIRING = True` in `build/build.py` and rebuild to show them again.
-- **Hero parallax:** it needs WebGL. Without it, or with reduced motion, the hero shows the plain renders and still switches between day and night. Its strength is `AMT` in `depthHero()` in `main.js`.
-- **Blossom videos:** only the spray most in view plays at a time, because two transparent videos decoding at once pull Chrome down to 30 frames a second. The others hold still and sway gently.
+- **Photo effect:** runs only on desktop browsers with a mouse and WebGL, and only on images served from the same domain. Phones, touch screens and visitors who turn on "reduce motion" get the plain images.
+- **Menu:** the full-screen menu is reached from the Menu button at every screen size. Below 1340px wide the row of header links is hidden and the Menu button carries every page.
 - **Links fixed during the rebuild:** a few menu and card links were broken on the old site (wrong page, anchor typos or an old URL). They now point to the right sections. The fixes are listed in `LINK_FIX` in `build/build.py`.
