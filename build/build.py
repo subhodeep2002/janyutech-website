@@ -31,7 +31,7 @@ for _p in PAGES.values():
             if b["t"] == "gallery": b["imgs"] = [x for x in b["imgs"] if x["src"] not in GONE]
             if b["t"] == "card" and b.get("img") in GONE: b["img"] = ""
         _s["blocks"] = [b for b in _s["blocks"] if not (b["t"] == "slider" and not b["slides"]) and not (b["t"] == "gallery" and not b["imgs"])]
-VER = "11"
+VER = "12"
 
 # Links that are broken on the live site (anchor id typos) – point them at the real ids.
 LINK_FIX = {
@@ -756,14 +756,16 @@ def home_page():
 
     bots = "".join(f'''<a class="xp__bot" data-bot="{b["key"]}" href="{b["href"]}">
           <span class="xp__bot-img"><img src="{b["img"]}" alt="" width="288" height="288" decoding="async"></span>
-          <span class="xp__bot-txt"><span class="xp__bot-n">{b["n"]}</span><span class="xp__bot-name">{esc(b["name"])}</span><span class="xp__bot-kind">{esc(b["kind"])} · {esc(b["trait"])}</span></span>
+          <span class="xp__bot-n">{b["n"]}</span>
+          <span class="xp__bot-name">{esc(b["name"])}</span>
+          <span class="xp__bot-kind">{esc(b["kind"])}. {esc(b["trait"])}.</span>
           <span class="xp__bot-go" aria-hidden="true"><span class="xp__if-gl">Drive</span><span class="xp__if-flat">View</span> <i>→</i></span>
         </a>''' for b in XP_BOTS)
 
     body = f'''
 <section class="xp" data-xp data-mode="boot" aria-labelledby="xp-title">
   <div class="xp__stage" tabindex="-1">
-    <div class="xp__backdrop" aria-hidden="true"><span class="xp__contours"></span><span class="xp__grid"></span></div>
+    <div class="xp__backdrop" aria-hidden="true"></div>
     <canvas class="xp__gl" aria-hidden="true"></canvas>
     <video class="xp__film" src="{FILM["src"]}" poster="{FILM["poster"]}" muted loop playsinline preload="none" width="960" height="540" aria-hidden="true" tabindex="-1"></video>
     <div class="xp__water" aria-hidden="true"></div>
@@ -774,16 +776,16 @@ def home_page():
       <h1 class="xp__title" id="xp-title" aria-label="Janyu Tech"><span class="xp__line" data-text="Janyu">Janyu</span> <span class="xp__line" data-text="Tech">Tech</span></h1>
       <p class="xp__quote">“{esc(hero_sub)}”</p>
       <div class="xp__pick">
-        <p class="xp__pick-label" id="xp-pick"><span class="xp__if-gl">Choose a robot to drive</span><span class="xp__if-flat">Two of our robots</span></p>
+        <p class="eyebrow xp__pick-label" id="xp-pick"><span class="xp__if-gl">Choose a robot to drive</span><span class="xp__if-flat">Two of our robots</span><span class="xp__boot" aria-hidden="true">Loading the robots <b class="xp__boot-n">000</b>%</span></p>
         <div class="xp__bots" role="group" aria-labelledby="xp-pick">{bots}</div>
-        <p class="xp__hint"><kbd>W</kbd><kbd>A</kbd><kbd>S</kbd><kbd>D</kbd> to drive, <kbd>Space</kbd> to hop</p>
+        <p class="xp__hint">Drive with <kbd>W</kbd><kbd>A</kbd><kbd>S</kbd><kbd>D</kbd> and hop with <kbd>Space</kbd></p>
       </div>
     </div>
 
     <div class="xp__hud">
       <div class="xp__hud-top">
-        <p class="xp__hud-bot"><span>Driving</span> <b class="xp__hud-name">{esc(XP_BOTS[0]["name"])}</b></p>
-        <p class="xp__speed" aria-hidden="true"><b class="xp__speed-n">0</b><span>km/h</span></p>
+        <p class="xp__hud-bot"><span class="eyebrow">Driving</span> <b class="xp__hud-name">{esc(XP_BOTS[0]["name"])}</b></p>
+        <p class="xp__speed" aria-hidden="true"><b class="xp__speed-n">0</b><span class="eyebrow">km/h</span></p>
       </div>
       <div class="xp__keys" aria-hidden="true">
         <span class="xp__pad"><kbd data-k="up">W</kbd><kbd data-k="left">A</kbd><kbd data-k="down">S</kbd><kbd data-k="right">D</kbd></span><span class="xp__keys-t">Drive</span>
@@ -801,20 +803,16 @@ def home_page():
     </div>
 
     <div class="xp__two">
-      <p class="xp__chap"><span>#02</span> {esc(FILM["tag"])}</p>
+      <p class="eyebrow xp__chap">{esc(FILM["tag"])}</p>
       <h2 class="xp__two-title">{esc(FILM["title"])}</h2>
       <p class="xp__two-lead">{esc(FILM["text"])}</p>
     </div>
     <div class="xp__film-cap">
-      <p class="xp__chap"><span>#02</span> {esc(FILM["tag"])}</p>
-      <button type="button" class="xp__watch" data-film-open><span class="xp__watch-ring" aria-hidden="true"><i>▶</i></span><span>Watch the film</span></button>
+      <div><p class="eyebrow xp__chap">{esc(FILM["tag"])}</p><p class="xp__film-title">{esc(FILM["title"])}</p></div>
+      <button type="button" class="btn btn--light xp__watch" data-film-open><span>Watch the film</span><i aria-hidden="true">▶</i></button>
     </div>
 
-    <div class="xp__foot">
-      <p class="xp__seo">{esc(seo_h2[0] if seo_h2 else "")}</p>
-      <p class="xp__cue" aria-hidden="true"><span>Scroll to dive</span><i></i></p>
-    </div>
-    <div class="xp__boot" aria-hidden="true"><span>JT / world</span><b class="xp__boot-n">000</b></div>
+    <p class="xp__cue" aria-hidden="true">Scroll <span class="hero__scroll-line"></span></p>
   </div>
 </section>
 
@@ -825,6 +823,7 @@ def home_page():
 
 <section class="intro">
   <div class="lede">
+    <p class="eyebrow lede__eyebrow reveal">{esc(seo_h2[0] if seo_h2 else "")}</p>
     <p class="lede__text reveal">{esc(seo_h2[1] if len(seo_h2) > 1 else "")}</p>
     {btns(hero_btns)}
   </div>

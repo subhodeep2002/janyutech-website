@@ -3,7 +3,7 @@
 **Live:** https://janyutech.duckdns.org
 
 A static rebuild of every page of janyutech.com (55 pages), with the original content and a new design:
-smooth scrolling, letter-by-letter title reveals, a liquid-flow effect on photos, page transitions, a mega-menu, a full-screen menu, sliders, a lightbox, tabs and more.
+a landing page where visitors drive one of our robots through a small 3D world, smooth scrolling, letter-by-letter title reveals, a liquid-flow effect on photos, page transitions, a full-screen menu, sliders, a lightbox, tabs and more.
 
 ## Folder layout
 
@@ -14,7 +14,10 @@ smooth scrolling, letter-by-letter title reveals, a liquid-flow effect on photos
 | `site.css` | Header, menus, footer and every inner-page component |
 | `main.js` | All interaction and animation (runs on every page, switches on what each page has), including the Menu: it opens as a circle growing out of the Menu button |
 | `fluid.js` | FluidFlow: photos flow like liquid around the pointer, then settle (a small WebGL fluid simulation, no colour split or zoom) |
-| `hero.js` | Home hero: pointer parallax and the blueprint → photo robot stage |
+| `world.js` | The landing's first screen: a dark, hilly world (three.js from jsDelivr) where you pick the Defence Bot or the Quad Bot and drive it with W A S D. Scrolling floods it and the field film comes up out of the water |
+| `world.css` | Styles for that first screen |
+| `assets/models/` | The two robots as 3D models (GLB) and the pictures on their cards |
+| `assets/video/` | The field film and its poster |
 | `assets/bp/` | Robot photos and their matching blueprint drawings (made by `build/blueprint.py`) |
 | `assets/img/` | Every site image, converted to WebP |
 | `assets/docs/` | The PDFs the site links to (brochure, internship, course details, Saturday Talk) |
@@ -44,7 +47,7 @@ There are no open positions right now, so the Careers page says so and invites a
 
 ### Blueprint images
 
-The blueprint versions of robot photos are generated, not drawn by hand. To add or change them (for example after swapping a hero robot in `STAGE` inside `build/build.py`), run:
+The blueprint versions of robot photos are generated, not drawn by hand. To add or change them (for example after changing a product card's photo), run:
 
 ```bash
 python3 build/blueprint.py 2024-04-Some-Robot.webp
@@ -76,5 +79,7 @@ Then open http://localhost:5178. (The preview in the Claude app uses `.claude/la
 
 - **Contact form:** there is no server, so **Submit** opens the visitor's email app with the message addressed to sales@janyutech.com. To receive submissions directly instead, point the form at a service such as Formspree or your own endpoint (`form[data-mailto]` in `main.js`).
 - **Photo effect:** runs only on desktop browsers with a mouse and WebGL, and only on images served from the same domain. Phones, touch screens and visitors who turn on "reduce motion" get the plain images.
-- **Menu:** the full-screen menu is reached from the Menu button at every screen size. Below 1340px wide the row of header links is hidden and the Menu button carries every page.
+- **Menu:** the header has the logo, Contact Us and the Menu button; the full-screen menu carries every page, at every screen size.
+- **The landing's world:** needs WebGL 2. Without it, or if three.js can't be fetched, the first screen shows the title, the two robots as links to their pages and the film, with the same scroll. To stay light it has no bloom or extra passes, draws 30 frames a second while nobody is driving or scrolling, and stops drawing once the film covers it.
+- **A local copy on a Mac:** keep the folder out of iCloud's "Optimise Mac Storage" (or outside Desktop and Documents). When macOS offloads the images, builds take minutes and the local preview loads images slowly.
 - **Links fixed during the rebuild:** a few menu and card links were broken on the old site (wrong page, anchor typos or an old URL). They now point to the right sections. The fixes are listed in `LINK_FIX` in `build/build.py`.

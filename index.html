@@ -13,9 +13,9 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Unbounded:wght@500;700;900&family=Inter+Tight:ital,wght@0,300;0,400;0,500;0,600;0,800;1,800&display=swap" rel="stylesheet">
-<link rel="stylesheet" href="./styles.css?v=11">
-<link rel="stylesheet" href="./site.css?v=11">
-<link rel="stylesheet" href="./world.css?v=11">
+<link rel="stylesheet" href="./styles.css?v=12">
+<link rel="stylesheet" href="./site.css?v=12">
+<link rel="stylesheet" href="./world.css?v=12">
 <script type="importmap">{"imports": {"three": "https://cdn.jsdelivr.net/npm/three@0.186.1/build/three.module.min.js", "three/addons/": "https://cdn.jsdelivr.net/npm/three@0.186.1/examples/jsm/"}}</script>
 <link rel="modulepreload" href="https://cdn.jsdelivr.net/npm/three@0.186.1/build/three.module.min.js">
 <link rel="modulepreload" href="https://cdn.jsdelivr.net/npm/three@0.186.1/build/three.core.min.js">
@@ -51,7 +51,7 @@
 
 <section class="xp" data-xp data-mode="boot" aria-labelledby="xp-title">
   <div class="xp__stage" tabindex="-1">
-    <div class="xp__backdrop" aria-hidden="true"><span class="xp__contours"></span><span class="xp__grid"></span></div>
+    <div class="xp__backdrop" aria-hidden="true"></div>
     <canvas class="xp__gl" aria-hidden="true"></canvas>
     <video class="xp__film" src="./assets/video/janyu-in-the-field.mp4" poster="./assets/video/janyu-in-the-field.webp" muted loop playsinline preload="none" width="960" height="540" aria-hidden="true" tabindex="-1"></video>
     <div class="xp__water" aria-hidden="true"></div>
@@ -62,24 +62,28 @@
       <h1 class="xp__title" id="xp-title" aria-label="Janyu Tech"><span class="xp__line" data-text="Janyu">Janyu</span> <span class="xp__line" data-text="Tech">Tech</span></h1>
       <p class="xp__quote">“Leading the Way in Human Risk Mitigation Robotics”</p>
       <div class="xp__pick">
-        <p class="xp__pick-label" id="xp-pick"><span class="xp__if-gl">Choose a robot to drive</span><span class="xp__if-flat">Two of our robots</span></p>
+        <p class="eyebrow xp__pick-label" id="xp-pick"><span class="xp__if-gl">Choose a robot to drive</span><span class="xp__if-flat">Two of our robots</span><span class="xp__boot" aria-hidden="true">Loading the robots <b class="xp__boot-n">000</b>%</span></p>
         <div class="xp__bots" role="group" aria-labelledby="xp-pick"><a class="xp__bot" data-bot="rover" href="./products/defence-robots/">
           <span class="xp__bot-img"><img src="./assets/models/defence-rover.webp" alt="" width="288" height="288" decoding="async"></span>
-          <span class="xp__bot-txt"><span class="xp__bot-n">01</span><span class="xp__bot-name">Defence Bot</span><span class="xp__bot-kind">Four-wheel UGV · Quick, and drifts on sand</span></span>
+          <span class="xp__bot-n">01</span>
+          <span class="xp__bot-name">Defence Bot</span>
+          <span class="xp__bot-kind">Four-wheel UGV. Quick, and drifts on sand.</span>
           <span class="xp__bot-go" aria-hidden="true"><span class="xp__if-gl">Drive</span><span class="xp__if-flat">View</span> <i>→</i></span>
         </a><a class="xp__bot" data-bot="quad" href="./industries/dna/#legged">
           <span class="xp__bot-img"><img src="./assets/models/quadruped-robot.webp" alt="" width="288" height="288" decoding="async"></span>
-          <span class="xp__bot-txt"><span class="xp__bot-n">02</span><span class="xp__bot-name">Quad Bot</span><span class="xp__bot-kind">Four-legged robot · Sure-footed, turns on the spot</span></span>
+          <span class="xp__bot-n">02</span>
+          <span class="xp__bot-name">Quad Bot</span>
+          <span class="xp__bot-kind">Four-legged robot. Sure-footed, turns on the spot.</span>
           <span class="xp__bot-go" aria-hidden="true"><span class="xp__if-gl">Drive</span><span class="xp__if-flat">View</span> <i>→</i></span>
         </a></div>
-        <p class="xp__hint"><kbd>W</kbd><kbd>A</kbd><kbd>S</kbd><kbd>D</kbd> to drive, <kbd>Space</kbd> to hop</p>
+        <p class="xp__hint">Drive with <kbd>W</kbd><kbd>A</kbd><kbd>S</kbd><kbd>D</kbd> and hop with <kbd>Space</kbd></p>
       </div>
     </div>
 
     <div class="xp__hud">
       <div class="xp__hud-top">
-        <p class="xp__hud-bot"><span>Driving</span> <b class="xp__hud-name">Defence Bot</b></p>
-        <p class="xp__speed" aria-hidden="true"><b class="xp__speed-n">0</b><span>km/h</span></p>
+        <p class="xp__hud-bot"><span class="eyebrow">Driving</span> <b class="xp__hud-name">Defence Bot</b></p>
+        <p class="xp__speed" aria-hidden="true"><b class="xp__speed-n">0</b><span class="eyebrow">km/h</span></p>
       </div>
       <div class="xp__keys" aria-hidden="true">
         <span class="xp__pad"><kbd data-k="up">W</kbd><kbd data-k="left">A</kbd><kbd data-k="down">S</kbd><kbd data-k="right">D</kbd></span><span class="xp__keys-t">Drive</span>
@@ -97,20 +101,16 @@
     </div>
 
     <div class="xp__two">
-      <p class="xp__chap"><span>#02</span> In the field</p>
+      <p class="eyebrow xp__chap">In the field</p>
       <h2 class="xp__two-title">Our robots at work</h2>
       <p class="xp__two-lead">Robot arms, automated lines, lab automation and all-terrain crawlers, filmed where they work.</p>
     </div>
     <div class="xp__film-cap">
-      <p class="xp__chap"><span>#02</span> In the field</p>
-      <button type="button" class="xp__watch" data-film-open><span class="xp__watch-ring" aria-hidden="true"><i>▶</i></span><span>Watch the film</span></button>
+      <div><p class="eyebrow xp__chap">In the field</p><p class="xp__film-title">Our robots at work</p></div>
+      <button type="button" class="btn btn--light xp__watch" data-film-open><span>Watch the film</span><i aria-hidden="true">▶</i></button>
     </div>
 
-    <div class="xp__foot">
-      <p class="xp__seo">Janyu Tech - Best Robotics Solutions Provider in India</p>
-      <p class="xp__cue" aria-hidden="true"><span>Scroll to dive</span><i></i></p>
-    </div>
-    <div class="xp__boot" aria-hidden="true"><span>JT / world</span><b class="xp__boot-n">000</b></div>
+    <p class="xp__cue" aria-hidden="true">Scroll <span class="hero__scroll-line"></span></p>
   </div>
 </section>
 
@@ -121,6 +121,7 @@
 
 <section class="intro">
   <div class="lede">
+    <p class="eyebrow lede__eyebrow reveal">Janyu Tech - Best Robotics Solutions Provider in India</p>
     <p class="lede__text reveal">Janyu Tech, an Indian OEM, provides software solutions &amp; Robotics as a Service (RaaS) for defence, nuclear, aerospace, cement &amp; construction &amp; mining industries</p>
     <div class="btn-row reveal-up"><a class="btn" href="./products/" data-magnetic><span>View Products</span><i>→</i></a><a class="btn btn--ghost" href="./contact-us/" data-magnetic><span>Contact Us</span><i>→</i></a></div>
   </div>
@@ -342,8 +343,8 @@
 <script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.5/gsap.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.5/ScrollTrigger.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/lenis@1.1.13/dist/lenis.min.js"></script>
-<script src="./fluid.js?v=11"></script>
-<script src="./main.js?v=11"></script>
-<script type="module">import("./world.js?v=11").catch(e => { console.warn("world:", e); document.querySelector("[data-xp]")?.classList.add("is-flat"); });</script>
+<script src="./fluid.js?v=12"></script>
+<script src="./main.js?v=12"></script>
+<script type="module">import("./world.js?v=12").catch(e => { console.warn("world:", e); document.querySelector("[data-xp]")?.classList.add("is-flat"); });</script>
 </body>
 </html>

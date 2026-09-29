@@ -16,11 +16,13 @@
   });
   $$(".reveal-lines > span").forEach(el => { el.innerHTML = `<span>${el.innerHTML}</span>`; });
 
-  /* ---------- Smooth scroll ---------- */
+  /* ---------- Smooth scroll ----------
+     Wheel input eases on every page (touch stays native). The ease is short, so the page glides
+     without trailing the hand; the landing's world renders cheaply enough to keep up with it. */
   const headerOffset = () => -(($("[data-header]")?.offsetHeight || 80) + 12);
   let lenis = null;
-  if (!isHome && !reduce && window.Lenis) {
-    lenis = new Lenis({ lerp: 0.1, smoothWheel: true });
+  if (!reduce && window.Lenis) {
+    lenis = new Lenis({ lerp: 0.13, smoothWheel: true, wheelMultiplier: 1 });
     lenis.on("scroll", ScrollTrigger.update);
     gsap.ticker.add(t => lenis.raf(t * 1000));
     gsap.ticker.lagSmoothing(0);
@@ -61,7 +63,7 @@
   /* ---------- Landing: the world (world.js draws it), the flood and the film ----------
      Through the tall first section the scroll runs one sequence: the world floods (0.06 to 0.40), the camera
      surfaces on a dark sea (to 0.50), chapter two's title, then the film comes down over it (0.62 to 0.90).
-     Scroll stays native on the home page; the scene follows it without snapping or intercepting input. */
+     The scene follows the scroll without snapping to chapters or holding the page back. */
   const xp = $("[data-xp]");
   if (xp) {
     const S = window.JT_XP = { q: 0, flood: 0, rise: 0, surf: 0, dir: 1, inView: true };
@@ -102,6 +104,7 @@
       headerHeight = header?.offsetHeight || 80;
       schedule();
     };
+    if (lenis) lenis.on("scroll", xpRead);                  // same frame as the eased scroll
     addEventListener("scroll", schedule, { passive: true });
     addEventListener("resize", measure, { passive: true });
     addEventListener("load", measure);
@@ -376,7 +379,7 @@
     gsap.timeline({ delay: 0.15, onComplete: setupFluid })
       .from(".site-header", { yPercent: -100, opacity: 0, duration: 0.9, ease: "expo.out", clearProps: "transform,opacity" })
       .from(".xp__eyebrow, .xp__line, .xp__quote, .xp__pick", { y: 40, opacity: 0, duration: 1.1, stagger: 0.08, ease: "expo.out", clearProps: "transform,opacity" }, "<0.1")
-      .from(".xp__foot", { opacity: 0, duration: 1 }, "<0.4");
+      .from(".xp__cue", { opacity: 0, duration: 1, clearProps: "opacity" }, "<0.4");
 
     gsap.fromTo(".intro__shot", { yPercent: 8 }, { yPercent: -8, ease: "none", stagger: 0.1, scrollTrigger: { trigger: ".intro__gallery", start: "top bottom", end: "bottom top", scrub: true } });
 
@@ -419,6 +422,11 @@
   const m = { x: innerWidth / 2, y: innerHeight / 2 }, c = { ...m }, h = { ...m };
   let prevX = m.x;
   addEventListener("mousemove", e => { m.x = e.clientX; m.y = e.clientY; }, { passive: true });
+  addEventListener("mousemove", e => {
+    c.x = h.x = prevX = e.clientX; c.y = h.y = e.clientY;
+    cursor.style.transform = dot.style.transform = `translate3d(${e.clientX}px,${e.clientY}px,0)`;
+    document.body.classList.add("has-pointer");
+  }, { passive: true, once: true });
   gsap.ticker.add(() => {
     if (document.hidden || Math.max(Math.abs(m.x - c.x), Math.abs(m.y - c.y), Math.abs(m.x - h.x), Math.abs(m.y - h.y), Math.abs(m.x - prevX)) < 0.1) return;
     c.x += (m.x - c.x) * 0.18; c.y += (m.y - c.y) * 0.18;

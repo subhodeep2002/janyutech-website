@@ -21,7 +21,7 @@
   const CFG = {
     simRes: 128,        // velocity grid, short side
     dispRes: 256,       // displacement grid, short side
-    curl: 12,           // vorticity confinement: how curly the flow gets
+    curl: 9,            // vorticity confinement: how curly the flow gets
     velDecay: 2,        // velocity dissipation per second
     pressureDecay: 0.8,
     pressureIter: 8,
@@ -29,7 +29,7 @@
     maxSpeed: 2400,     // px/s cap on pointer speed
     relax: 6,           // per second: how fast the picture flows back
     strength: 0.5,      // share of the fluid's displacement that shows
-    maxDisp: 0.14,      // UV clamp on displacement
+    maxDisp: 0.1,       // UV clamp on displacement
     settleMs: 2200,     // keep simulating this long after the last movement
     maxPixels: 1.2e6,   // render budget per image, in device pixels
   };
@@ -314,7 +314,7 @@
 
     const aspect = bw / bh, key = aspect.toFixed(2);
     if (f.simKey !== key) { freeSim(f); allocSim(f, aspect); f.simKey = key; }
-    f.brushPx = Math.max(40, Math.min(96, Math.min(bw, bh) * 0.1));
+    f.brushPx = Math.max(18, Math.min(44, Math.min(bw, bh) * 0.045));   // a tight wake that stays near the pointer
     return true;
   }
   function allocSim(f, aspect) {

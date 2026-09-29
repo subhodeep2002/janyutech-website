@@ -1,8 +1,9 @@
 /*
- * JanyuTech landing: a moonlit terrain with warm sand, a steady mineral glow and two drivable robots.
- * Native scroll drives the flood and film transition through window.JT_XP.
+ * JanyuTech landing: a moonlit terrain of dark rock and wind-rippled sand, traced with steady green
+ * contour lines, and two drivable robots. The scroll (main.js, window.JT_XP) drives the flood and film.
  * The world renders directly while visible; postprocessing runs only during the water transition.
  * Once the film fills the screen, the browser plays the video without a WebGL copy.
+ * Everything that glows does so in the ground shader itself: no bloom, no extra passes.
  */
 import * as THREE from "three";
 import { GLTFLoader } from "three/addons/loaders/GLTFLoader.js";
@@ -107,7 +108,7 @@ async function world() {
   };
   const PAD = rawH(0, 0);
   const heightFn = (x, z) => {
-    let h = lerp(PAD, rawH(x, z), smooth(9, 30, Math.hypot(x, z)));   // a level pad to start on
+    let h = lerp(PAD, rawH(x, z), smooth(10, 46, Math.hypot(x, z)));  // a level start; the hills stand back
     const e = Math.max(Math.abs(x), Math.abs(z));
     h += Math.pow(smooth(HALF - 60, HALF - 4, e), 2) * 48;          // the rim: ridges rise at the edge
     return h;
@@ -160,37 +161,98 @@ async function world() {
     return g;
   })();
 
-  // Matte mineral soil and wind-shaped sand. Broad, steady light replaces the grid and sonar.
+  // Surface detail, generated once and tiled across the ground: grit and pebbles for the rock, wind ripples
+  // and grains for the sand. Stored as the slope of each (for the light) and a brightness (for the colour),
+  // mipmapped so it's crisp underfoot and melts smoothly with distance instead of shimmering.
+  const detail = (() => {
+    const S2 = 256, rnd = rng(4242);
+    const lattice = n => { const a = new Float32Array(n * n); for (let i = 0; i < a.length; i++) a[i] = rnd(); return a; };
+    const tileNoise = (lat, n, x, y) => {                  // value noise that wraps every S2 pixels
+      const fx = x / S2 * n, fy = y / S2 * n, ix = Math.floor(fx), iy = Math.floor(fy), u = fx - ix, v = fy - iy;
+      const at = (i, j) => lat[((j % n + n) % n) * n + ((i % n + n) % n)];
+      const su = u * u * (3 - 2 * u), sv = v * v * (3 - 2 * v);
+      return lerp(lerp(at(ix, iy), at(ix + 1, iy), su), lerp(at(ix, iy + 1), at(ix + 1, iy + 1), su), sv);
+    };
+    const L = [4, 8, 16, 32, 64].map(n => [n, lattice(n)]);
+    const rockH = new Float32Array(S2 * S2), sandH = new Float32Array(S2 * S2), grain = new Float32Array(S2 * S2);
+    for (let y = 0; y < S2; y++) for (let x = 0; x < S2; x++) {
+      const i = y * S2 + x;
+      let r = 0, a = 1, n = 0;
+      for (const [k, lat] of L) { r += a * tileNoise(lat, k, x, y); n += a; a *= 0.55; }
+      const g = rnd();
+      grain[i] = g;
+      rockH[i] = r / n + (g > 0.94 ? (g - 0.94) * 4 : 0);   // rough ground with the odd pebble
+      const warp = tileNoise(L[1][1], 8, x, y) * 2.2 + tileNoise(L[2][1], 16, x, y) * 0.6;
+      const ph = (x * 9 + y * 3) / S2 * TAU + warp;          // 9 x 3 whole ripples per tile, so it wraps
+      sandH[i] = Math.pow(0.5 + 0.5 * Math.sin(ph), 1.6) * 0.8 + g * 0.08;
+    }
+    const slope = new Uint8Array(S2 * S2 * 4), tone = new Uint8Array(S2 * S2 * 4);
+    const at = (h, x, y) => h[((y + S2) % S2) * S2 + ((x + S2) % S2)];
+    const enc = v => Math.max(0, Math.min(255, Math.round(128 + v * 127)));
+    for (let y = 0; y < S2; y++) for (let x = 0; x < S2; x++) {
+      const i = (y * S2 + x) * 4;
+      slope[i] = enc((at(rockH, x + 1, y) - at(rockH, x - 1, y)) * 6);
+      slope[i + 1] = enc((at(rockH, x, y + 1) - at(rockH, x, y - 1)) * 6);
+      slope[i + 2] = enc((at(sandH, x + 1, y) - at(sandH, x - 1, y)) * 2.2);
+      slope[i + 3] = enc((at(sandH, x, y + 1) - at(sandH, x, y - 1)) * 2.2);
+      tone[i] = Math.round(255 * Math.min(1, rockH[y * S2 + x]));
+      tone[i + 1] = Math.round(255 * (0.55 + 0.3 * sandH[y * S2 + x] + 0.15 * grain[y * S2 + x]));
+      tone[i + 3] = 255;
+    }
+    const tex = data => {
+      const t = new THREE.DataTexture(data, S2, S2);
+      t.wrapS = t.wrapT = THREE.RepeatWrapping;
+      t.magFilter = THREE.LinearFilter; t.minFilter = THREE.LinearMipmapLinearFilter;
+      t.generateMipmaps = true; t.anisotropy = Math.min(8, renderer.capabilities.getMaxAnisotropy());
+      t.needsUpdate = true;
+      return t;
+    };
+    return { slope: tex(slope), tone: tex(tone) };
+  })();
+
+  // Dark rock and soil, wind-rippled sand in the hollows, and green contour lines that glow on their own
+  // (a sharp core and a soft halo, drawn here rather than by a bloom pass). Nothing flashes or moves.
   const terrainMat = new THREE.MeshStandardMaterial({ color: 0xffffff, roughness: 0.94, metalness: 0, envMapIntensity: 0 });
   terrainMat.onBeforeCompile = sh => {
-    Object.assign(sh.uniforms, U);
+    Object.assign(sh.uniforms, U, { tSlope: { value: detail.slope }, tTone: { value: detail.tone } });
     sh.vertexShader = sh.vertexShader
       .replace("#include <common>", "#include <common>\nattribute vec2 aZone;\nvarying vec2 vZone;\nvarying vec3 vW;")
       .replace("#include <begin_vertex>", "#include <begin_vertex>\nvZone = aZone;\nvW = (modelMatrix * vec4(transformed, 1.0)).xyz;");
     sh.fragmentShader = sh.fragmentShader
       .replace("#include <common>", `#include <common>
         varying vec2 vZone; varying vec3 vW;
+        uniform sampler2D tSlope, tTone;
         
         float h21(vec2 p) { p = fract(p * vec2(123.34, 456.21)); p += dot(p, p + 45.32); return fract(p.x * p.y); }
         float vn(vec2 p) { vec2 i = floor(p), f = fract(p), u = f * f * (3.0 - 2.0 * f);
           return mix(mix(h21(i), h21(i + vec2(1.0, 0.0)), u.x), mix(h21(i + vec2(0.0, 1.0)), h21(i + vec2(1.0, 1.0)), u.x), u.y); }
         `)
       .replace("#include <color_fragment>", `#include <color_fragment>
-        float n1 = vn(vW.xz * 0.31), n2 = vn(vW.xz * 2.3), n3 = vn(vW.xz * 9.0);
-        vec3 soil = mix(vec3(0.028, 0.032, 0.041), vec3(0.075, 0.069, 0.061), n1);
-        float ripples = 0.5 + 0.5 * sin(vW.x * 12.0 + vW.z * 5.2 + n1 * 9.0);
-        vec3 sand = mix(vec3(0.065, 0.047, 0.028), vec3(0.14, 0.105, 0.065), n2 * 0.55 + ripples * 0.45);
-        vec3 turf = mix(vec3(0.006, 0.020, 0.012), vec3(0.012, 0.036, 0.020), n1);
-        float sandWeight = max(vZone.x, (1.0 - vZone.y) * 0.48);
-        vec3 base = mix(mix(soil, turf, vZone.y * 0.65), sand, sandWeight);
-        diffuseColor.rgb = base * (0.72 + 0.4 * n2 + 0.18 * n3);`)
+        float n1 = vn(vW.xz * 0.31);
+        vec2 duv = vW.xz / 1.3, duv2 = vW.xz / 4.9 + 0.37;         // the detail tile, at two sizes so it doesn't repeat
+        vec4 dt = (texture2D(tTone, duv) + texture2D(tTone, duv2)) * 0.5;
+        vec3 rock = mix(vec3(0.014, 0.017, 0.022), vec3(0.05, 0.051, 0.056), n1 * 0.55 + dt.r * 0.45);
+        vec3 sand = mix(vec3(0.05, 0.039, 0.026), vec3(0.11, 0.084, 0.055), dt.g);
+        vec3 turf = mix(vec3(0.008, 0.024, 0.014), vec3(0.014, 0.042, 0.023), n1);
+        diffuseColor.rgb = mix(mix(rock, turf, vZone.y), sand, vZone.x);`)
+      .replace("#include <normal_fragment_maps>", `#include <normal_fragment_maps>
+        {  // grit on the rock and ripples on the sand, as a tilt of the surface that catches the moon
+          vec4 sl = (texture2D(tSlope, duv) + texture2D(tSlope, duv2)) - 1.0;   // back to -1..1, both sizes
+          vec2 tilt = mix(sl.xy * 0.55, sl.zw * 0.8, vZone.x);
+          normal = normalize(normal - (viewMatrix * vec4(tilt.x, 0.0, tilt.y, 0.0)).xyz);
+        }`)
       .replace("#include <emissivemap_fragment>", `#include <emissivemap_fragment>
-        float near = exp(-length(vW - cameraPosition) * 0.023);
-        float mineral = smoothstep(0.46, 0.77, n1) * (1.0 - vZone.y * 0.7);
-        float trough = pow(1.0 - ripples, 5.0) * sandWeight;
-        vec3 glow = vec3(0.012, 0.055, 0.085) * mineral * near
-                  + vec3(0.15, 0.085, 0.028) * trough * near * 0.24;
-        totalEmissiveRadiance += glow;`);
+        {  // green contour lines, every 1.6 m of height, each fifth one brighter
+          float dist = length(vW - cameraPosition);
+          float hc = vW.y / 1.6, fh = max(fwidth(vW.y), 1e-4);
+          float px = abs(fract(hc + 0.5) - 0.5) * 1.6 / fh;       // pixels to the nearest line
+          float dens = 1.0 - smoothstep(0.16, 0.45, fwidth(hc));  // fade where lines would crowd together
+          float major = step(0.79, fract((floor(hc + 0.5) + 0.5) / 5.0));
+          float core = 1.0 - smoothstep(0.5, 1.5, px);
+          float halo = exp(-px * 0.25);
+          float far = 0.3 + 0.7 * exp(-dist * 0.011);
+          totalEmissiveRadiance += vec3(0.14, 0.95, 0.45) * (core * (0.42 + 0.55 * major) + halo * (0.05 + 0.06 * major)) * dens * far;
+        }`);
   };
   const terrain = new THREE.Mesh(terrainGeo, terrainMat);
   terrain.receiveShadow = true;
@@ -229,7 +291,7 @@ async function world() {
   }
 
   /* ------------------------------------------------ light: moonlight, and one lamp that goes with the robot */
-  scene.add(new THREE.HemisphereLight(0x6d86c9, 0x05070a, 0.45));
+  scene.add(new THREE.HemisphereLight(0x4d628f, 0x040507, 0.32));
   const moon = new THREE.DirectionalLight(0xaec6ff, 1.55);
   moon.castShadow = true;
   moon.shadow.mapSize.set(low ? 512 : 1024, low ? 512 : 1024);
@@ -299,9 +361,9 @@ async function world() {
         #include <common>
         #include <fog_pars_fragment>
         void main() {
-          vec3 tip = mix(vec3(0.055, 0.14, 0.095), vec3(0.14, 0.11, 0.055), vHue);
-          vec3 root = mix(vec3(0.006, 0.02, 0.012), vec3(0.03, 0.004, 0.006), vHue);
-          gl_FragColor = vec4(mix(root, tip, pow(vT, 1.8)), 1.0);
+          vec3 tip = mix(vec3(0.16, 0.95, 0.42), vec3(0.85, 0.1, 0.12), vHue);
+          vec3 root = mix(vec3(0.01, 0.05, 0.025), vec3(0.06, 0.008, 0.01), vHue);
+          gl_FragColor = vec4(mix(root, tip, pow(vT, 1.4)) * (0.35 + 0.65 * vT), 1.0);
           #include <fog_fragment>
         }`,
     });
@@ -344,7 +406,7 @@ async function world() {
           float tread = 0.7 + 0.3 * step(0.45, fract(vUv.y * 4.5));        // the tread's bars
           float a = (1.0 - smoothstep(0.72, 1.0, e)) * tread * vMeta.y * (1.0 - smoothstep(70.0, 110.0, age));
           float fresh = exp(-age * 0.55);
-          vec3 c = mix(vec3(0.0, 0.004, 0.008), vec3(0.2, 0.75, 1.0) * 1.6, fresh * smoothstep(0.55, 0.95, e));
+          vec3 c = mix(vec3(0.0, 0.004, 0.006), vec3(0.14, 0.95, 0.45) * 1.3, fresh * smoothstep(0.55, 0.95, e));
           gl_FragColor = vec4(c, a * 0.86);
           #include <fog_fragment>
         }`,
@@ -415,7 +477,7 @@ async function world() {
           float rings = 0.75 + 0.25 * step(0.5, fract(r * 3.2));
           float a = pad * rings * (1.0 - smoothstep(90.0, 130.0, age));
           float fresh = exp(-age * 0.5);
-          vec3 c = mix(vec3(0.0, 0.004, 0.01), vec3(0.3, 0.6, 1.0) * 1.8, fresh * smoothstep(0.55, 0.9, r));
+          vec3 c = mix(vec3(0.0, 0.004, 0.006), vec3(0.14, 0.95, 0.45) * 1.4, fresh * smoothstep(0.55, 0.9, r));
           gl_FragColor = vec4(c, a * 0.8);
           #include <fog_fragment>
         }`,
@@ -549,12 +611,17 @@ async function world() {
     if (model.getObjectByName("Hip_FL")) rigLegs(R, model);
     const moving = new Set([...R.wheels.map(w => w.pivot), ant, ...(R.legs || []).flatMap(L => [L.hip, L.knee])]);
     mergeStatic(R.tilt || model, o => moving.has(o));
-    // A diffuse pool of light on the sand, with no hard ring or pulsing.
-    const ring = new THREE.Mesh(new THREE.PlaneGeometry(3.8, 3.8).rotateX(-Math.PI / 2),
-      new THREE.MeshBasicMaterial({ map: groundGlow, color: 0x77d2df, transparent: true, opacity: 0,
+    // a soft green pool of light on the ground (brighter when it's the one you're pointing at), and a dark
+    // contact shadow under the body so it stands on the ground rather than hovering over it
+    const ring = new THREE.Mesh(new THREE.PlaneGeometry(3.4, 3.4).rotateX(-Math.PI / 2),
+      new THREE.MeshBasicMaterial({ map: groundGlow, color: 0x3dff8e, transparent: true, opacity: 0,
         depthWrite: false, blending: THREE.AdditiveBlending, polygonOffset: true, polygonOffsetFactor: -1 }));
     ring.position.y = 0.025;
-    g.add(ring); R.ring = ring;
+    const contact = new THREE.Mesh(new THREE.PlaneGeometry(R.legs ? 1.9 : 1.7, R.legs ? 1.5 : 1.9).rotateX(-Math.PI / 2),
+      new THREE.MeshBasicMaterial({ map: groundGlow, color: 0x000000, transparent: true, opacity: 0.75,
+        depthWrite: false, polygonOffset: true, polygonOffsetFactor: -2 }));
+    contact.position.y = 0.03;
+    g.add(ring, contact); R.ring = ring;
     return R;
   }
   // one mesh per material for the parts that don't move by themselves (fewer draw calls)
@@ -827,7 +894,7 @@ async function world() {
     }
     if (R.ant) R.ant.node.rotation.set(0.03 * Math.sin(t * 1.7), 0, 0.05 * Math.sin(t * 2.1));
     const hot = mode === "select" && hover === R.key;
-    R.ring.material.opacity += ((mode === "select" ? (hot ? 0.6 : 0.32) : 0) - R.ring.material.opacity) * damp(8, dt);
+    R.ring.material.opacity += ((mode === "select" ? (hot ? 0.5 : 0.2) : 0) - R.ring.material.opacity) * damp(8, dt);
     R.rim.value += ((hot ? 1.7 : 0.55) - R.rim.value) * damp(8, dt);
   }
 
@@ -1088,6 +1155,12 @@ async function world() {
   selectCamera(true);
   updateCamera(0);
   await renderer.compileAsync(scene, camera).catch(() => {});    // build the shaders now, not mid-drive
+  {  // and the flood and film passes, so the first scroll into them doesn't stall on compiling
+    const F = final.uniforms;
+    F.uFlood.value = 0.5; composer.render(0);
+    F.uFlood.value = 1; F.uSurf.value = 0.5; composer.render(0);
+    F.uFlood.value = F.uSurf.value = 0;
+  }
   setBoot(1);
   mode = "select"; xp.dataset.mode = "select";
   xp.classList.remove("is-booting");
@@ -1125,9 +1198,9 @@ async function world() {
         lamp.target.position.set(car.x + fx * 10, car.y - 0.5, car.z + fz * 10);
         lamp.intensity = car.R.legs ? 26 : 55; lamp.angle = car.R.legs ? 0.62 : 0.5;
       } else {
-        lamp.position.set(1.2, PAD + 5.5, 5.2);
-        lamp.target.position.set(0, PAD + 0.3, 0);
-        lamp.intensity = 22; lamp.angle = 0.5;
+        lamp.position.set(1.4, PAD + 6.5, 4.6);
+        lamp.target.position.set(0, PAD + 0.2, -0.3);
+        lamp.intensity = 16; lamp.angle = 0.4;
       }
       const px = car.R ? car.x : 0, pz = car.R ? car.z : 0, py = car.R ? car.y : PAD;
       grass.uniforms.uBot.value.set(px, car.R ? py : -99, pz);
@@ -1249,7 +1322,7 @@ vec3 sea(vec2 uv, float H, bool mirror) {
     skyR = mix(skyR, texture2D(tDiffuse, ru).rgb * vec3(0.55, 0.65, 0.85), 0.55 * exp(-d * 9.0));
   }
   vec3 col = mix(vec3(0.003, 0.009, 0.018), skyR, fres);
-  col += vec3(0.45, 0.85, 1.0) * pow(m, 50.0) * step(0.83, noise(p * vec2(38.0, 11.0) + uTime * 0.7)) * 1.2;   // glints
+  col += vec3(0.45, 0.85, 1.0) * pow(m, 50.0) * smoothstep(0.8, 0.93, noise(p * vec2(38.0, 11.0) + uTime * 0.7)) * 0.9;   // glints
   return col * mix(1.0, 0.4, smoothstep(0.0, 0.7, d));
 }
 vec3 sky(vec2 uv, float H) {
@@ -1267,9 +1340,10 @@ float spray(vec2 uv, float L, float up) {
   float dy = (uv.y - L) * up;
   float line = exp(-abs(dy) * 110.0);
   float band = smoothstep(-0.005, 0.03, dy) * (1.0 - smoothstep(0.03, 0.11, dy));
-  float drops = step(0.8, noise(vec2(uv.x * 110.0, dy * 80.0 - uTime * 7.0))) * band;
-  float mist = smoothstep(0.55, 1.0, noise(vec2(uv.x * 34.0, dy * 26.0 - uTime * 3.0))) * exp(-max(dy, 0.0) * 45.0) * step(0.0, dy);
-  return line * 0.9 + drops + mist * 0.45;
+  float ax = uv.x * uRes.x / uRes.y;
+  float drops = smoothstep(0.84, 0.97, noise(vec2(ax * 170.0, dy * 150.0 - uTime * 5.0))) * band * 0.55;
+  float mist = smoothstep(0.5, 1.0, noise(vec2(ax * 40.0, dy * 30.0 - uTime * 2.4))) * exp(-max(dy, 0.0) * 50.0) * step(0.0, dy);
+  return line * 0.85 + drops + mist * 0.3;
 }
 
 void main() {
